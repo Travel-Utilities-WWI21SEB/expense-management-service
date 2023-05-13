@@ -2,25 +2,24 @@ name: Continious Integration
 
 on:
   pull_request:
-    branches: [ "main" ]
+    branches: ["main"]
 
 jobs:
-
-  build:
+  verify:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v3
+      - uses: actions/checkout@v3
 
-    - name: Set up Go
-      uses: actions/setup-go@v3
-      with:
-        go-version: 1.20
-        
-    - name: Install Staticcheck
-      run: go install honnef.co/go/tools/cmd/staticcheck@latest
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version-file: "./go.mod"
 
-    - name: Build project
-      run: go build -v ./...
+      - name: Install Staticcheck
+        run: go install honnef.co/go/tools/cmd/staticcheck@latest
 
-    - name: Verify Code Quality
-      run: go vet ./... && staticcheck ./...
+      - name: Build project and verify dependencies
+        run: go build -v ./... && go mod verify
+
+      - name: Verify Code Quality
+        run: go vet ./... && staticcheck ./...
