@@ -1,0 +1,10 @@
+#!/bin/bash
+
+# Check if the docker container exists and remove it if it does
+if [[ $(docker ps -a | grep expense-api-container) ]]; then
+    docker rm -f expense-api-container
+    echo "Container removed"
+else
+    echo "No container to remove"
+fi
+
