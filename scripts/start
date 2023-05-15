@@ -1,4 +1,16 @@
 #!/bin/bash
 
-# Start the server
-cd ../src && go install && go run .
+# Check if the container already exists
+if [[ $(docker ps -a | grep expense-api-container) ]]; then
+    echo "Container already exists, run scripts/stop first"
+    exit 1
+fi
+
+# Build the docker image
+docker build . -t expense-api
+docker run -d -p 8081:8080 --name expense-api-container expense-api
+
+docker logs expense-api-container
+docker ps
+
+echo "Container started at http://localhost:8081"
