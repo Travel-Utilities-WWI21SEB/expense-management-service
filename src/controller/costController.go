@@ -9,38 +9,32 @@ import (
 
 // Exposed interface to the handler-package
 type CostCtl interface {
-	createCostEntry(ctx context.Context) (*model.CostResponse, error)
-	updateCostEntry(ctx context.Context) (*model.CostResponse, error)
-	getTripCosts(ctx context.Context) (*model.CostResponse, error)
-	getCostDetails(ctx context.Context) (*model.CostResponse, error)
-	deleteCostEntry(ctx context.Context) error
+	CreateCostEntry(ctx context.Context) (*model.CostResponse, error)
+	UpdateCostEntry(ctx context.Context) (*model.CostResponse, error)
+	GetCostDetails(ctx context.Context) (*model.CostResponse, error)
+	DeleteCostEntry(ctx context.Context) error
 }
 
 // Cost Controller structure
 type CostController struct {
 }
 
-func (cc *CostController) createCostEntry(ctx context.Context) (*model.CostResponse, error) {
+func (cc *CostController) CreateCostEntry(ctx context.Context) (*model.CostResponse, error) {
 	// TO-DO
 	return nil, errors.New("not implemented")
 }
 
-func (cc *CostController) updateCostEntry(ctx context.Context) (*model.CostResponse, error) {
+func (cc *CostController) UpdateCostEntry(ctx context.Context) (*model.CostResponse, error) {
 	// TO-DO
 	return nil, errors.New("not implemented")
 }
 
-func (cc *CostController) getTripCosts(ctx context.Context) (*model.CostResponse, error) {
+func (cc *CostController) GetCostDetails(ctx context.Context) (*model.CostResponse, error) {
 	// TO-DO
 	return nil, errors.New("not implemented")
 }
 
-func (cc *CostController) getCostDetails(ctx context.Context) (*model.CostResponse, error) {
+func (cc *CostController) DeleteCostEntry(ctx context.Context) error {
 	// TO-DO
-	return nil, errors.New("not implemented")
-}
-
-func (cc *CostController) deleteCostEntry(ctx context.Context) (*model.CostResponse, error) {
-	// TO-DO
-	return nil, errors.New("not implemented")
+	return errors.New("not implemented")
 }
