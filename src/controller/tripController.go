@@ -10,38 +10,32 @@ import (
 
 // Exposed interface to the handler-package
 type TripCtl interface {
-	createTripEntry(ctx context.Context) (*model.TripResponse, error)
-	updateTripEntry(ctx context.Context, tripID *uuid.UUID) (*model.TripResponse, error)
-	getTripDetails(ctx context.Context, tripID *uuid.UUID) (*model.TripResponse, error)
-	getTripsByUser(ctx context.Context, userID *uuid.UUID) (*model.TripResponse, error)
-	deleteTripEntry(ctx context.Context) error
+	CreateTripEntry(ctx context.Context) (*model.TripResponse, error)
+	UpdateTripEntry(ctx context.Context, tripID *uuid.UUID) (*model.TripResponse, error)
+	GetTripDetails(ctx context.Context, tripID *uuid.UUID) (*model.TripResponse, error)
+	DeleteTripEntry(ctx context.Context, tripID *uuid.UUID) error
 }
 
-// Cost Controller structure
+// Trip Controller structure
 type TripController struct {
 }
 
-func (tc *TripController) createTripEntry(ctx context.Context) (*model.TripResponse, error) {
+func (tc *TripController) CreateTripEntry(ctx context.Context) (*model.TripResponse, error) {
 	// TO-DO
 	return nil, errors.New("not implemented")
 }
 
-func (tc *TripController) updateTripEntry(ctx context.Context, tripID *uuid.UUID) (*model.TripResponse, error) {
+func (tc *TripController) UpdateTripEntry(ctx context.Context, tripID *uuid.UUID) (*model.TripResponse, error) {
 	// TO-DO
 	return nil, errors.New("not implemented")
 }
 
-func (tc *TripController) getTripDetails(ctx context.Context, tripID *uuid.UUID) (*model.TripResponse, error) {
+func (tc *TripController) GetTripDetails(ctx context.Context, tripID *uuid.UUID) (*model.TripResponse, error) {
 	// TO-DO
 	return nil, errors.New("not implemented")
 }
 
-func (tc *TripController) getTripsByUser(ctx context.Context, userID *uuid.UUID) (*model.TripResponse, error) {
+func (tc *TripController) DeleteTripEntry(ctx context.Context, tripID *uuid.UUID) error {
 	// TO-DO
-	return nil, errors.New("not implemented")
-}
-
-func (tc *TripController) deleteTripEntry(ctx context.Context, tripID *uuid.UUID) (*model.TripResponse, error) {
-	// TO-DO
-	return nil, errors.New("not implemented")
+	return errors.New("not implemented")
 }
