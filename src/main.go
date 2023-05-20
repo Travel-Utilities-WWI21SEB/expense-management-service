@@ -18,8 +18,7 @@ func main() {
 	router := createRouter()
 
 	if err := godotenv.Load(); err != nil {
-		log.Fatalf("Error loading .env file: %v", err)
-		panic(err)
+		log.Printf("Error loading .env file: %v", err)
 	}
 
 	// GET ENVIRONMENT VARIABLES
