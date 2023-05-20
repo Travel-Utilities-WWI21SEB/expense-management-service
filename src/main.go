@@ -8,7 +8,9 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"strings"
 
+	"github.com/Travel-Utilities-WWI21SEB/expense-management-service/src/utils"
 	"github.com/joho/godotenv"
 	_ "github.com/lib/pq"
 )
@@ -22,13 +24,19 @@ func main() {
 	}
 
 	// GET ENVIRONMENT VARIABLES
-	environment := os.Getenv("ENVIRONMENT")
+	environment := strings.ToUpper(os.Getenv("ENVIRONMENT"))
 
 	db_host := os.Getenv(fmt.Sprintf("%s_DB_HOST", environment))
 	db_port := os.Getenv(fmt.Sprintf("%s_DB_PORT", environment))
 	db_user := os.Getenv(fmt.Sprintf("%s_DB_USER", environment))
 	db_password := os.Getenv(fmt.Sprintf("%s_DB_PASSWORD", environment))
 	db_name := os.Getenv(fmt.Sprintf("%s_DB_NAME", environment))
+
+	// Check if environment variables are set
+	if utils.ContainsEmptyString(db_host, db_port, db_user, db_password, db_name) {
+		log.Fatalf("Required environment variables are not set")
+		os.Exit(1)
+	}
 
 	// CONNECT TO DATABASE
 	psqlInfo := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=disable", db_host, db_port, db_user, db_password, db_name)
