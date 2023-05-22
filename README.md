@@ -1,5 +1,10 @@
 # expense-management-service
 
+[![Continious Integration](https://github.com/Travel-Utilities-WWI21SEB/expense-management-service/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/Travel-Utilities-WWI21SEB/expense-management-service/actions/workflows/ci.yml)
+[![Continuous Delivery](https://github.com/Travel-Utilities-WWI21SEB/expense-management-service/actions/workflows/cd.yml/badge.svg?branch=main)](https://github.com/Travel-Utilities-WWI21SEB/expense-management-service/actions/workflows/cd.yml)
+[![CodeScene Code Health](https://codescene.io/projects/39275/status-badges/code-health?component-name=Expense-management-service)](https://codescene.io/projects/39275/architecture/biomarkers?component=Expense-management-service)
+
+
 Backend Service for the Expense Management Tool
 
 ## Developing
@@ -12,7 +17,7 @@ go mod download
 
 After installing the dependencies you need to populate a local `.env` file in the root directory with the following variables:
 
-````bash
+```bash
 # The port that the application will be exposed on
 ENVIROMENT=DEV or PROD
 
@@ -29,6 +34,7 @@ PROD_DB_PORT=ask luca
 PROD_DB_USER=ask luca
 PROD_DB_PASSWORD=ask luca
 PROD_DB_NAME=ask luca
+```
 
 For the dev-enviroment you will also need a local postgres cluster running on port 5432 with the credentials as specified in the example above. The database itself should be setup with the expense_db.sql file in the root directory of this repository.
 
