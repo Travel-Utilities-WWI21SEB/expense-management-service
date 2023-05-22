@@ -4,9 +4,11 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 
 	"github.com/Travel-Utilities-WWI21SEB/expense-management-service/src/controller"
 	"github.com/Travel-Utilities-WWI21SEB/expense-management-service/src/model"
+	"github.com/Travel-Utilities-WWI21SEB/expense-management-service/src/utils"
 )
 
 func LifeCheckHandler() gin.HandlerFunc {
@@ -33,18 +35,17 @@ func LifeCheckHandler() gin.HandlerFunc {
 
 func RegisterUserHandler(userCtl controller.UserCtl) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		// TO-DO
 		ctx := c.Request.Context()
 
 		var registrationData model.RegistrationRequest
 		if err := c.ShouldBindJSON(&registrationData); err != nil {
-			c.AbortWithError(http.StatusBadRequest, err)
+			utils.HandleErrorAndAbort(c, "invalid request body", http.StatusBadRequest, err)
 			return
 		}
 
 		response, err := userCtl.RegisterUser(ctx, registrationData)
 		if err != nil {
-			c.AbortWithError(err.Status, err.Err)
+			utils.HandleErrorAndAbort(c, err.Err.Error(), err.Status, err.Err)
 			return
 		}
 
@@ -58,13 +59,13 @@ func LoginUserHandler(userCtl controller.UserCtl) gin.HandlerFunc {
 
 		var loginData model.LoginRequest
 		if err := c.ShouldBindJSON(&loginData); err != nil {
-			c.AbortWithError(http.StatusBadRequest, err)
+			utils.HandleErrorAndAbort(c, "invalid request body", http.StatusBadRequest, err)
 			return
 		}
 
 		response, err := userCtl.LoginUser(ctx, loginData)
 		if err != nil {
-			c.JSON(err.Status, err.Err)
+			utils.HandleErrorAndAbort(c, err.Err.Error(), err.Status, err.Err)
 			return
 		}
 
@@ -79,7 +80,7 @@ func UpdateUserHandler(userCtl controller.UserCtl) gin.HandlerFunc {
 
 		response, err := userCtl.UpdateUser(ctx)
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, err.Error())
+			utils.HandleErrorAndAbort(c, err.Err.Error(), err.Status, err.Err)
 			return
 		}
 
@@ -92,9 +93,16 @@ func DeleteUserHandler(userCtl controller.UserCtl) gin.HandlerFunc {
 		// TO-DO
 		ctx := c.Request.Context()
 
-		err := userCtl.DeleteUser(ctx)
+		userIdParam := c.Param("userId")
+		userId, err := uuid.Parse(userIdParam)
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, err.Error())
+			utils.HandleErrorAndAbort(c, "invalid user id", http.StatusBadRequest, err)
+			return
+		}
+
+		serviceError := userCtl.DeleteUser(ctx, &userId)
+		if err != nil {
+			utils.HandleErrorAndAbort(c, serviceError.Err.Error(), serviceError.Status, serviceError.Err)
 			return
 		}
 
@@ -109,7 +117,7 @@ func ActivateUserHandler(userCtl controller.UserCtl) gin.HandlerFunc {
 
 		err := userCtl.ActivateUser(ctx)
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, err.Error())
+			utils.HandleErrorAndAbort(c, err.Err.Error(), err.Status, err.Err)
 			return
 		}
 
@@ -119,12 +127,17 @@ func ActivateUserHandler(userCtl controller.UserCtl) gin.HandlerFunc {
 
 func GetUserDetailsHandler(userCtl controller.UserCtl) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		// TO-DO
 		ctx := c.Request.Context()
 
-		response, err := userCtl.GetUserDetails(ctx)
+		var userId *uuid.UUID
+		if err := c.ShouldBindUri(&userId); err != nil {
+			utils.HandleErrorAndAbort(c, "invalid user id", http.StatusBadRequest, err)
+			return
+		}
+
+		response, err := userCtl.GetUserDetails(ctx, userId)
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, err.Error())
+			utils.HandleErrorAndAbort(c, err.Err.Error(), err.Status, err.Err)
 			return
 		}
 
@@ -137,9 +150,10 @@ func SuggestUsersHandler(userCtl controller.UserCtl) gin.HandlerFunc {
 		// TO-DO
 		ctx := c.Request.Context()
 
-		response, err := userCtl.SuggestUsers(ctx)
+		query := c.Param("q")
+		response, err := userCtl.SuggestUsers(ctx, query)
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, err.Error())
+			utils.HandleErrorAndAbort(c, err.Err.Error(), err.Status, err.Err)
 			return
 		}
 
