@@ -36,9 +36,15 @@ func RegisterUserHandler(userCtl controller.UserCtl) gin.HandlerFunc {
 		// TO-DO
 		ctx := c.Request.Context()
 
-		response, err := userCtl.RegisterUser(ctx)
+		var registrationData model.RegistrationRequest
+		if err := c.ShouldBindJSON(&registrationData); err != nil {
+			c.AbortWithError(http.StatusBadRequest, err)
+			return
+		}
+
+		response, err := userCtl.RegisterUser(ctx, registrationData)
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, err.Error())
+			c.AbortWithError(err.Status, err.Err)
 			return
 		}
 
@@ -48,12 +54,17 @@ func RegisterUserHandler(userCtl controller.UserCtl) gin.HandlerFunc {
 
 func LoginUserHandler(userCtl controller.UserCtl) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		// TO-DO
 		ctx := c.Request.Context()
 
-		response, err := userCtl.LoginUser(ctx)
+		var loginData model.LoginRequest
+		if err := c.ShouldBindJSON(&loginData); err != nil {
+			c.AbortWithError(http.StatusBadRequest, err)
+			return
+		}
+
+		response, err := userCtl.LoginUser(ctx, loginData)
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, err.Error())
+			c.JSON(err.Status, err.Err)
 			return
 		}
 
