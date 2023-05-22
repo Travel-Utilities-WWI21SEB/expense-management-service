@@ -16,7 +16,7 @@ func CloseDbConnection() {
 	connection.Close()
 }
 
-func ExecuteInsert(query string, args ...interface{}) error {
+func ExecuteStatement(query string, args ...interface{}) error {
 	_, err := connection.Exec(query, args...)
 	return err
 }
@@ -27,4 +27,9 @@ func ExecuteQuery(query string, args ...interface{}) (*sql.Rows, error) {
 		return nil, err
 	}
 	return rows, nil
+}
+
+func ExecuteQueryRow(query string, args ...interface{}) *sql.Row {
+	row := connection.QueryRow(query, args...)
+	return row
 }
