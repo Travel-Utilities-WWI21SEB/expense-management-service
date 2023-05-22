@@ -1,0 +1,952 @@
+{
+    "_type": "export",
+    "__export_format": 4,
+    "__export_date": "2023-05-22T13:16:38.280Z",
+    "__export_source": "insomnia.desktop.app:v2023.2.2",
+    "resources": [
+        {
+            "_id": "req_fb1cd4be800d49979eaa48674f200623",
+            "parentId": "fld_bc43c21088784b179d1bfd1dca18ef61",
+            "modified": 1684760487577,
+            "created": 1684746520798,
+            "url": "{{ _.localUrl }}/{{ _.route }}/register",
+            "name": "Register",
+            "description": "This endpoint is used to register a new user in our webapplication.\n\n---\n\n### Method\n\nHTTP Method: `POST`\n\n---\n\n### URL\n\n`baseUrl/user/register`\n\n---\n\n### Parameters\n\n| Parameter  | Type   | Description       |\n|------------|--------|-------------------|\n\n---\n\n### Request Body\n\n```json\n{\n\t\"username\": \"someUserName\",\n\t\"email\": \"someMail@domain.com\",\n\t\"password\": \"somePassword\"\n}\n```\n\n---\n\n### Response\n\n#### Success Response\n\n- Status Code: `200`\n- Content Type: `application/json`\n\nExample response:\n\n```json\n{\n  \"userId\": \"ea64bfb9-9f0a-4803-8536-e0280e06a630\"\n}\n```\n\n#### Success Response\n\n- Status Code: `500`\n- Content Type: `application/json`\n\nExample response:\n\n```json\n{\n  \"err\": \"some error message\"\n}\n```\n",
+            "method": "POST",
+            "body": {
+                "mimeType": "application/json",
+                "text": "{\n\t\"username\": \"{% prompt 'Username', '', 'testUser', 'username', _.username, true %}\",\n\t\"email\": \"{% prompt 'Email', _.email, 'testEmail', true, _.email, true %}\",\n\t\"password\": \"{% prompt 'Password', 'password', 'testPassword', true, true, true %}\"\n}"
+            },
+            "parameters": [],
+            "headers": [
+                {
+                    "name": "Content-Type",
+                    "value": "application/json"
+                }
+            ],
+            "authentication": {},
+            "metaSortKey": -1684747537060.25,
+            "isPrivate": false,
+            "settingStoreCookies": true,
+            "settingSendCookies": true,
+            "settingDisableRenderRequestBody": false,
+            "settingEncodeUrl": true,
+            "settingRebuildPath": true,
+            "settingFollowRedirects": "global",
+            "_type": "request"
+        },
+        {
+            "_id": "fld_bc43c21088784b179d1bfd1dca18ef61",
+            "parentId": "wrk_7d42eaf17c424ac1b5db4b952f62c4be",
+            "modified": 1684748985696,
+            "created": 1684746482507,
+            "name": "User",
+            "description": "User Routes",
+            "environment": {
+                "route": "user"
+            },
+            "environmentPropertyOrder": {
+                "&": [
+                    "route"
+                ]
+            },
+            "metaSortKey": -1684746503679,
+            "_type": "request_group"
+        },
+        {
+            "_id": "wrk_7d42eaf17c424ac1b5db4b952f62c4be",
+            "parentId": null,
+            "modified": 1684761373234,
+            "created": 1684746394961,
+            "name": "Expense API",
+            "description": "## Travel Utilties | Expense API\n\nThis Insomnia Collection contains all endpoints that are exposed by the Expense API.",
+            "scope": "collection",
+            "_type": "workspace"
+        },
+        {
+            "_id": "req_931794b1387545d7b33d0ffd8764deeb",
+            "parentId": "fld_bc43c21088784b179d1bfd1dca18ef61",
+            "modified": 1684760484165,
+            "created": 1684746860492,
+            "url": "{{ _.localUrl }}/{{ _.route }}/login",
+            "name": "Login",
+            "description": "This endpoint is used to login a user in our webapplication with given credentials and set a JWT Header.\n\n---\n\n### Method\n\nHTTP Method: `POST`\n\n---\n\n### URL\n\n`baseUrl/user/login`\n\n---\n\n### Parameters\n\n| Parameter  | Type   | Description       |\n|------------|--------|-------------------|\n\n---\n\n### Request Body\n\n```json\n{\n\t\"email\": \"someMail@domain.com\",\n\t\"password\": \"somePassword\"\n}\n```\n\n---\n\n### Response\n\n#### <span style=\"color:green\">Success</span>\n\n- Status Code: `200`\n\n#### <span style=\"color:red\">Wrong Credentials</span>\n\n- Status Code: `401`\n- Content Type: `application/json`\n\nExample response:\n\n```json\n{\n  \"err\": \"some error message\"\n}\n```\n",
+            "method": "POST",
+            "body": {
+                "mimeType": "application/json",
+                "text": "{\n\t\"email\": \"{% prompt 'Email', 'Email', 'testEmail', true, true, true %}\",\n\t\"password\": \"{% prompt 'Password', 'password', 'testPassword', 'password', true, true %}\"\n}"
+            },
+            "parameters": [],
+            "headers": [
+                {
+                    "name": "Content-Type",
+                    "value": "application/json"
+                }
+            ],
+            "authentication": {},
+            "metaSortKey": -1684747535026.375,
+            "isPrivate": false,
+            "settingStoreCookies": true,
+            "settingSendCookies": true,
+            "settingDisableRenderRequestBody": false,
+            "settingEncodeUrl": true,
+            "settingRebuildPath": true,
+            "settingFollowRedirects": "global",
+            "_type": "request"
+        },
+        {
+            "_id": "req_b597d53a56634feeab5c772607fa6c39",
+            "parentId": "fld_bc43c21088784b179d1bfd1dca18ef61",
+            "modified": 1684760481112,
+            "created": 1684747524857,
+            "url": "{{ _.localUrl }}/{{ _.route }}/{% prompt 'UserId', '', 'userId', 'userid', false, true %}",
+            "name": "User Details",
+            "description": "This endpoint is used to login a user in our webapplication with given credentials and set a JWT Header.\n\n---\n\n### Method\n\nHTTP Method: `POST`\n\n---\n\n### URL\n\n`baseUrl/user/login`\n\n---\n\n### Parameters\n\n| Parameter  | Type   | Description       |\n|------------|--------|-------------------|\n\n---\n\n### Request Body\n\n```json\n{\n\t\"email\": \"someMail@domain.com\",\n\t\"password\": \"somePassword\"\n}\n```\n\n---\n\n### Response\n\n#### <span style=\"color:green\">Success</span>\n\n- Status Code: `200`\n\n#### <span style=\"color:red\">Wrong Credentials</span>\n\n- Status Code: `401`\n- Content Type: `application/json`\n\nExample response:\n\n```json\n{\n  \"err\": \"some error message\"\n}\n```\n",
+            "method": "GET",
+            "body": {},
+            "parameters": [],
+            "headers": [],
+            "authentication": {},
+            "metaSortKey": -1684747534009.4375,
+            "isPrivate": false,
+            "settingStoreCookies": true,
+            "settingSendCookies": true,
+            "settingDisableRenderRequestBody": false,
+            "settingEncodeUrl": true,
+            "settingRebuildPath": true,
+            "settingFollowRedirects": "global",
+            "_type": "request"
+        },
+        {
+            "_id": "req_9ce4a78a3f9a4040b7e1266dffa31302",
+            "parentId": "fld_bc43c21088784b179d1bfd1dca18ef61",
+            "modified": 1684760478660,
+            "created": 1684747608058,
+            "url": "{{ _.localUrl }}/{{ _.route }}/suggest",
+            "name": "Suggest Users",
+            "description": "This endpoint is used to login a user in our webapplication with given credentials and set a JWT Header.\n\n---\n\n### Method\n\nHTTP Method: `POST`\n\n---\n\n### URL\n\n`baseUrl/user/login`\n\n---\n\n### Parameters\n\n| Parameter  | Type   | Description       |\n|------------|--------|-------------------|\n\n---\n\n### Request Body\n\n```json\n{\n\t\"email\": \"someMail@domain.com\",\n\t\"password\": \"somePassword\"\n}\n```\n\n---\n\n### Response\n\n#### <span style=\"color:green\">Success</span>\n\n- Status Code: `200`\n\n#### <span style=\"color:red\">Wrong Credentials</span>\n\n- Status Code: `401`\n- Content Type: `application/json`\n\nExample response:\n\n```json\n{\n  \"err\": \"some error message\"\n}\n```\n",
+            "method": "GET",
+            "body": {},
+            "parameters": [
+                {
+                    "id": "pair_6d302e8582b04c99a5cd413484f73470",
+                    "name": "q",
+                    "value": "{% prompt 'Query string', '', 'queryString', 'queryUserString', false, true %}",
+                    "description": "QueryString to restrict suggested users"
+                }
+            ],
+            "headers": [],
+            "authentication": {},
+            "metaSortKey": -1684747533500.9688,
+            "isPrivate": false,
+            "settingStoreCookies": true,
+            "settingSendCookies": true,
+            "settingDisableRenderRequestBody": false,
+            "settingEncodeUrl": true,
+            "settingRebuildPath": true,
+            "settingFollowRedirects": "global",
+            "_type": "request"
+        },
+        {
+            "_id": "req_3749504e402146329892d7857c5e5e26",
+            "parentId": "fld_bc43c21088784b179d1bfd1dca18ef61",
+            "modified": 1684760474696,
+            "created": 1684747392889,
+            "url": "{{ _.localUrl }}/{{ _.route }}/activate/{% prompt 'token', '', 'token', '', false, false %}",
+            "name": "Activate User",
+            "description": "This endpoint is used to login a user in our webapplication with given credentials and set a JWT Header.\n\n---\n\n### Method\n\nHTTP Method: `POST`\n\n---\n\n### URL\n\n`baseUrl/user/login`\n\n---\n\n### Parameters\n\n| Parameter  | Type   | Description       |\n|------------|--------|-------------------|\n\n---\n\n### Request Body\n\n```json\n{\n\t\"email\": \"someMail@domain.com\",\n\t\"password\": \"somePassword\"\n}\n```\n\n---\n\n### Response\n\n#### <span style=\"color:green\">Success</span>\n\n- Status Code: `200`\n\n#### <span style=\"color:red\">Wrong Credentials</span>\n\n- Status Code: `401`\n- Content Type: `application/json`\n\nExample response:\n\n```json\n{\n  \"err\": \"some error message\"\n}\n```\n",
+            "method": "PUT",
+            "body": {},
+            "parameters": [],
+            "headers": [],
+            "authentication": {},
+            "metaSortKey": -1684747532992.5,
+            "isPrivate": false,
+            "settingStoreCookies": true,
+            "settingSendCookies": true,
+            "settingDisableRenderRequestBody": false,
+            "settingEncodeUrl": true,
+            "settingRebuildPath": true,
+            "settingFollowRedirects": "global",
+            "_type": "request"
+        },
+        {
+            "_id": "req_6a5d142b4f104aa59b13b185acce85aa",
+            "parentId": "fld_bc43c21088784b179d1bfd1dca18ef61",
+            "modified": 1684760470228,
+            "created": 1684747487640,
+            "url": "{{ _.localUrl }}/{{ _.route }}/{% prompt 'UserId', '', 'userId', 'userid', false, true %}",
+            "name": "Update User",
+            "description": "This endpoint is used to login a user in our webapplication with given credentials and set a JWT Header.\n\n---\n\n### Method\n\nHTTP Method: `POST`\n\n---\n\n### URL\n\n`baseUrl/user/login`\n\n---\n\n### Parameters\n\n| Parameter  | Type   | Description       |\n|------------|--------|-------------------|\n\n---\n\n### Request Body\n\n```json\n{\n\t\"email\": \"someMail@domain.com\",\n\t\"password\": \"somePassword\"\n}\n```\n\n---\n\n### Response\n\n#### <span style=\"color:green\">Success</span>\n\n- Status Code: `200`\n\n#### <span style=\"color:red\">Wrong Credentials</span>\n\n- Status Code: `401`\n- Content Type: `application/json`\n\nExample response:\n\n```json\n{\n  \"err\": \"some error message\"\n}\n```\n",
+            "method": "PUT",
+            "body": {
+                "mimeType": "application/json",
+                "text": "{\n\t\"username\": \"{% prompt 'Username', '', 'testUser', 'username', _.username, true %}\",\n\t\"email\": \"{% prompt 'Email', _.email, 'testEmail', true, _.email, true %}\",\n\t\"password\": \"{% prompt 'Password', 'password', 'testPassword', true, true, true %}\"\n}"
+            },
+            "parameters": [],
+            "headers": [
+                {
+                    "name": "Content-Type",
+                    "value": "application/json"
+                }
+            ],
+            "authentication": {},
+            "metaSortKey": -1684747528924.75,
+            "isPrivate": false,
+            "settingStoreCookies": true,
+            "settingSendCookies": true,
+            "settingDisableRenderRequestBody": false,
+            "settingEncodeUrl": true,
+            "settingRebuildPath": true,
+            "settingFollowRedirects": "global",
+            "_type": "request"
+        },
+        {
+            "_id": "req_801f08b3218647d59626b06351f6f2c0",
+            "parentId": "fld_bc43c21088784b179d1bfd1dca18ef61",
+            "modified": 1684760468139,
+            "created": 1684747557399,
+            "url": "{{ _.localUrl }}/{{ _.route }}/{% prompt 'UserId', '', 'userId', 'userid', false, true %}",
+            "name": "Delete User",
+            "description": "This endpoint is used to login a user in our webapplication with given credentials and set a JWT Header.\n\n---\n\n### Method\n\nHTTP Method: `POST`\n\n---\n\n### URL\n\n`baseUrl/user/login`\n\n---\n\n### Parameters\n\n| Parameter  | Type   | Description       |\n|------------|--------|-------------------|\n\n---\n\n### Request Body\n\n```json\n{\n\t\"email\": \"someMail@domain.com\",\n\t\"password\": \"somePassword\"\n}\n```\n\n---\n\n### Response\n\n#### <span style=\"color:green\">Success</span>\n\n- Status Code: `200`\n\n#### <span style=\"color:red\">Wrong Credentials</span>\n\n- Status Code: `401`\n- Content Type: `application/json`\n\nExample response:\n\n```json\n{\n  \"err\": \"some error message\"\n}\n```\n",
+            "method": "DELETE",
+            "body": {},
+            "parameters": [],
+            "headers": [],
+            "authentication": {},
+            "metaSortKey": -1684746520748,
+            "isPrivate": false,
+            "settingStoreCookies": true,
+            "settingSendCookies": true,
+            "settingDisableRenderRequestBody": false,
+            "settingEncodeUrl": true,
+            "settingRebuildPath": true,
+            "settingFollowRedirects": "global",
+            "_type": "request"
+        },
+        {
+            "_id": "req_9137dd836b5a4c9bbbff1941df5b5e0d",
+            "parentId": "fld_27571fd553c047c293c107f858a8712c",
+            "modified": 1684760465314,
+            "created": 1684747727157,
+            "url": "{{ _.localUrl }}/{{ _.route }}",
+            "name": "Create Trip",
+            "description": "This endpoint is used to login a user in our webapplication with given credentials and set a JWT Header.\n\n---\n\n### Method\n\nHTTP Method: `POST`\n\n---\n\n### URL\n\n`baseUrl/user/login`\n\n---\n\n### Parameters\n\n| Parameter  | Type   | Description       |\n|------------|--------|-------------------|\n\n---\n\n### Request Body\n\n```json\n{\n\t\"email\": \"someMail@domain.com\",\n\t\"password\": \"somePassword\"\n}\n```\n\n---\n\n### Response\n\n#### <span style=\"color:green\">Success</span>\n\n- Status Code: `200`\n\n#### <span style=\"color:red\">Wrong Credentials</span>\n\n- Status Code: `401`\n- Content Type: `application/json`\n\nExample response:\n\n```json\n{\n  \"err\": \"some error message\"\n}\n```\n",
+            "method": "POST",
+            "body": {
+                "mimeType": "application/json",
+                "text": "{\n\t\"creator\": \"{% prompt 'UserID of Creator', 'userid', 'userId', 'userid', false, true %}\",\n\t\"location\": \"{% prompt 'Location', 'location', 'testLocation', 'tripLocation', false, true %}\",\n\t\"description\": \"{% prompt 'Description', 'tripDescription', 'Description of trip', 'tripDescription', false, true %}\",\n\t\"startDate\": \"{% prompt 'StartDate', 'startdate', '02/08/2023', 'startdate', false, true %}\",\n\t\"endDate\": \"{% prompt 'EndDate', 'enddate', '30/10/2023', 'enddate', false, true %}\"\n}"
+            },
+            "parameters": [],
+            "headers": [
+                {
+                    "name": "Content-Type",
+                    "value": "application/json"
+                }
+            ],
+            "authentication": {},
+            "metaSortKey": -1684747857768.5,
+            "isPrivate": false,
+            "settingStoreCookies": true,
+            "settingSendCookies": true,
+            "settingDisableRenderRequestBody": false,
+            "settingEncodeUrl": true,
+            "settingRebuildPath": true,
+            "settingFollowRedirects": "global",
+            "_type": "request"
+        },
+        {
+            "_id": "fld_27571fd553c047c293c107f858a8712c",
+            "parentId": "fld_29914d24026e424899180f9ac0faa477",
+            "modified": 1684753704381,
+            "created": 1684753098814,
+            "name": "Trip",
+            "description": "",
+            "environment": {},
+            "environmentPropertyOrder": null,
+            "metaSortKey": -1684753098814,
+            "_type": "request_group"
+        },
+        {
+            "_id": "fld_29914d24026e424899180f9ac0faa477",
+            "parentId": "wrk_7d42eaf17c424ac1b5db4b952f62c4be",
+            "modified": 1684753698055,
+            "created": 1684746491124,
+            "name": "Trip Related",
+            "description": "",
+            "environment": {
+                "route": "trip",
+                "subRoute": ""
+            },
+            "environmentPropertyOrder": {
+                "&": [
+                    "route",
+                    "subRoute"
+                ]
+            },
+            "metaSortKey": -1684746503506.875,
+            "_type": "request_group"
+        },
+        {
+            "_id": "req_61edc703a7524aaeb1d5bf7fe867b15c",
+            "parentId": "fld_27571fd553c047c293c107f858a8712c",
+            "modified": 1684760462435,
+            "created": 1684749711277,
+            "url": "{{ _.localUrl }}/{{ _.route }}/{% prompt 'TripId', '', 'TripId', 'tripid', false, true %}/invite",
+            "name": "Invite to trip",
+            "description": "This endpoint is used to login a user in our webapplication with given credentials and set a JWT Header.\n\n---\n\n### Method\n\nHTTP Method: `POST`\n\n---\n\n### URL\n\n`baseUrl/user/login`\n\n---\n\n### Parameters\n\n| Parameter  | Type   | Description       |\n|------------|--------|-------------------|\n\n---\n\n### Request Body\n\n```json\n{\n\t\"email\": \"someMail@domain.com\",\n\t\"password\": \"somePassword\"\n}\n```\n\n---\n\n### Response\n\n#### <span style=\"color:green\">Success</span>\n\n- Status Code: `200`\n\n#### <span style=\"color:red\">Wrong Credentials</span>\n\n- Status Code: `401`\n- Content Type: `application/json`\n\nExample response:\n\n```json\n{\n  \"err\": \"some error message\"\n}\n```\n",
+            "method": "POST",
+            "body": {
+                "mimeType": "application/json",
+                "text": "{\n\t\"invitingUserId\": \"{% prompt 'UserID of Inviting Person', 'invitingUserId', 'invitingUserId', 'invitingUserId', false, true %}\",\n\t\"invitedUserId\": \"{% prompt 'UserID of invited User', 'invitedUserId', 'invitedUserId', 'invitedUserId', false, true %}\"\n}"
+            },
+            "parameters": [],
+            "headers": [
+                {
+                    "name": "Content-Type",
+                    "value": "application/json"
+                }
+            ],
+            "authentication": {},
+            "metaSortKey": -1684747857718.5,
+            "isPrivate": false,
+            "settingStoreCookies": true,
+            "settingSendCookies": true,
+            "settingDisableRenderRequestBody": false,
+            "settingEncodeUrl": true,
+            "settingRebuildPath": true,
+            "settingFollowRedirects": "global",
+            "_type": "request"
+        },
+        {
+            "_id": "req_5d8406698b044adb8d90dd46f620be07",
+            "parentId": "fld_27571fd553c047c293c107f858a8712c",
+            "modified": 1684760458038,
+            "created": 1684747846830,
+            "url": "{{ _.localUrl }}/{{ _.route }}/{% prompt 'TripId', '', 'TripId', 'tripid', false, true %}",
+            "name": "Trip Details",
+            "description": "This endpoint is used to login a user in our webapplication with given credentials and set a JWT Header.\n\n---\n\n### Method\n\nHTTP Method: `POST`\n\n---\n\n### URL\n\n`baseUrl/user/login`\n\n---\n\n### Parameters\n\n| Parameter  | Type   | Description       |\n|------------|--------|-------------------|\n\n---\n\n### Request Body\n\n```json\n{\n\t\"email\": \"someMail@domain.com\",\n\t\"password\": \"somePassword\"\n}\n```\n\n---\n\n### Response\n\n#### <span style=\"color:green\">Success</span>\n\n- Status Code: `200`\n\n#### <span style=\"color:red\">Wrong Credentials</span>\n\n- Status Code: `401`\n- Content Type: `application/json`\n\nExample response:\n\n```json\n{\n  \"err\": \"some error message\"\n}\n```\n",
+            "method": "GET",
+            "body": {},
+            "parameters": [],
+            "headers": [],
+            "authentication": {},
+            "metaSortKey": -1684747857668.5,
+            "isPrivate": false,
+            "settingStoreCookies": true,
+            "settingSendCookies": true,
+            "settingDisableRenderRequestBody": false,
+            "settingEncodeUrl": true,
+            "settingRebuildPath": true,
+            "settingFollowRedirects": "global",
+            "_type": "request"
+        },
+        {
+            "_id": "req_a7a931b75ee643a0956d5b2d0f6c91fe",
+            "parentId": "fld_27571fd553c047c293c107f858a8712c",
+            "modified": 1684760455296,
+            "created": 1684747799383,
+            "url": "{{ _.localUrl }}/{{ _.route }}/{% prompt 'TripId', '', 'TripId', 'tripid', false, true %}",
+            "name": "Update Trip",
+            "description": "This endpoint is used to login a user in our webapplication with given credentials and set a JWT Header.\n\n---\n\n### Method\n\nHTTP Method: `POST`\n\n---\n\n### URL\n\n`baseUrl/user/login`\n\n---\n\n### Parameters\n\n| Parameter  | Type   | Description       |\n|------------|--------|-------------------|\n\n---\n\n### Request Body\n\n```json\n{\n\t\"email\": \"someMail@domain.com\",\n\t\"password\": \"somePassword\"\n}\n```\n\n---\n\n### Response\n\n#### <span style=\"color:green\">Success</span>\n\n- Status Code: `200`\n\n#### <span style=\"color:red\">Wrong Credentials</span>\n\n- Status Code: `401`\n- Content Type: `application/json`\n\nExample response:\n\n```json\n{\n  \"err\": \"some error message\"\n}\n```\n",
+            "method": "PUT",
+            "body": {
+                "mimeType": "application/json",
+                "text": "{\n\t\"location\": \"{% prompt 'Location', 'location', 'testLocation', 'tripLocation', false, true %}\",\n\t\"description\": \"{% prompt 'Description', 'tripDescription', 'Description of trip', 'tripDescription', false, true %}\",\n\t\"startDate\": \"{% prompt 'StartDate', 'startdate', '02/08/2023', 'startdate', false, true %}\",\n\t\"endDate\": \"{% prompt 'EndDate', 'enddate', '30/10/2023', 'enddate', false, true %}\"\n}"
+            },
+            "parameters": [],
+            "headers": [
+                {
+                    "name": "Content-Type",
+                    "value": "application/json"
+                }
+            ],
+            "authentication": {},
+            "metaSortKey": -1684747857618.5,
+            "isPrivate": false,
+            "settingStoreCookies": true,
+            "settingSendCookies": true,
+            "settingDisableRenderRequestBody": false,
+            "settingEncodeUrl": true,
+            "settingRebuildPath": true,
+            "settingFollowRedirects": "global",
+            "_type": "request"
+        },
+        {
+            "_id": "req_45a3bf1fb10040039b9665e5ecd52651",
+            "parentId": "fld_27571fd553c047c293c107f858a8712c",
+            "modified": 1684760452267,
+            "created": 1684747868707,
+            "url": "{{ _.localUrl }}/{{ _.route }}/{% prompt 'TripId', '', 'TripId', 'tripid', false, true %}",
+            "name": "Delete Trip",
+            "description": "This endpoint is used to login a user in our webapplication with given credentials and set a JWT Header.\n\n---\n\n### Method\n\nHTTP Method: `POST`\n\n---\n\n### URL\n\n`baseUrl/user/login`\n\n---\n\n### Parameters\n\n| Parameter  | Type   | Description       |\n|------------|--------|-------------------|\n\n---\n\n### Request Body\n\n```json\n{\n\t\"email\": \"someMail@domain.com\",\n\t\"password\": \"somePassword\"\n}\n```\n\n---\n\n### Response\n\n#### <span style=\"color:green\">Success</span>\n\n- Status Code: `200`\n\n#### <span style=\"color:red\">Wrong Credentials</span>\n\n- Status Code: `401`\n- Content Type: `application/json`\n\nExample response:\n\n```json\n{\n  \"err\": \"some error message\"\n}\n```\n",
+            "method": "DELETE",
+            "body": {},
+            "parameters": [],
+            "headers": [],
+            "authentication": {},
+            "metaSortKey": -1684747857568.5,
+            "isPrivate": false,
+            "settingStoreCookies": true,
+            "settingSendCookies": true,
+            "settingDisableRenderRequestBody": false,
+            "settingEncodeUrl": true,
+            "settingRebuildPath": true,
+            "settingFollowRedirects": "global",
+            "_type": "request"
+        },
+        {
+            "_id": "req_36762329f79e4e178d0102b9ed94704f",
+            "parentId": "fld_e872a42938214b8f823dd88d2d712134",
+            "modified": 1684760445707,
+            "created": 1684752866103,
+            "url": "{{ _.localUrl }}/{{ _.route }}/{% prompt 'TripId', '', 'TripId', 'tripid', false, true %}/{{ _.subRoute }}",
+            "name": "Create Cost Category",
+            "description": "This endpoint is used to login a user in our webapplication with given credentials and set a JWT Header.\n\n---\n\n### Method\n\nHTTP Method: `POST`\n\n---\n\n### URL\n\n`baseUrl/user/login`\n\n---\n\n### Parameters\n\n| Parameter  | Type   | Description       |\n|------------|--------|-------------------|\n\n---\n\n### Request Body\n\n```json\n{\n\t\"email\": \"someMail@domain.com\",\n\t\"password\": \"somePassword\"\n}\n```\n\n---\n\n### Response\n\n#### <span style=\"color:green\">Success</span>\n\n- Status Code: `200`\n\n#### <span style=\"color:red\">Wrong Credentials</span>\n\n- Status Code: `401`\n- Content Type: `application/json`\n\nExample response:\n\n```json\n{\n  \"err\": \"some error message\"\n}\n```\n",
+            "method": "POST",
+            "body": {
+                "mimeType": "application/json",
+                "text": "{\n\t\"name\": \"{% prompt 'Cost Category Name', 'costCategoryName', 'costCategoryName', 'costCategoryName', false, true %}\",\n\t\"description\": \"{% prompt 'Cost Category Description', 'costCategoryDescription', 'costCategoryDescription', 'costCategoryDescription', false, true %}\",\n\t\"icon\": \"{% prompt 'Cost Category Icon', 'costCategoryIcon', 'costCategoryIcon', 'costCategoryIcon', false, true %}\",\n\t\"color\": \"{% prompt 'Cost Category Color', 'costCategoryColor', 'costCategoryColor', 'costCategoryColor', false, true %}\"\n}"
+            },
+            "parameters": [],
+            "headers": [
+                {
+                    "name": "Content-Type",
+                    "value": "application/json"
+                }
+            ],
+            "authentication": {},
+            "metaSortKey": -1684747855033.875,
+            "isPrivate": false,
+            "settingStoreCookies": true,
+            "settingSendCookies": true,
+            "settingDisableRenderRequestBody": false,
+            "settingEncodeUrl": true,
+            "settingRebuildPath": true,
+            "settingFollowRedirects": "global",
+            "_type": "request"
+        },
+        {
+            "_id": "fld_e872a42938214b8f823dd88d2d712134",
+            "parentId": "fld_29914d24026e424899180f9ac0faa477",
+            "modified": 1684754499012,
+            "created": 1684753114191,
+            "name": "Cost Category",
+            "description": "",
+            "environment": {
+                "route": "trip",
+                "subRoute": "costCategory"
+            },
+            "environmentPropertyOrder": {
+                "&": [
+                    "route",
+                    "subRoute"
+                ]
+            },
+            "metaSortKey": -1684753098801.5,
+            "_type": "request_group"
+        },
+        {
+            "_id": "req_3f81ebee8ffe4c5189f18fbdb8165ac9",
+            "parentId": "fld_e872a42938214b8f823dd88d2d712134",
+            "modified": 1684760442048,
+            "created": 1684753016693,
+            "url": "{{ _.localUrl }}/{{ _.route }}/{% prompt 'TripId', '', 'TripId', 'tripid', false, true %}/{{ _.subRoute }}",
+            "name": "All Cost Categories",
+            "description": "This endpoint is used to login a user in our webapplication with given credentials and set a JWT Header.\n\n---\n\n### Method\n\nHTTP Method: `POST`\n\n---\n\n### URL\n\n`baseUrl/user/login`\n\n---\n\n### Parameters\n\n| Parameter  | Type   | Description       |\n|------------|--------|-------------------|\n\n---\n\n### Request Body\n\n```json\n{\n\t\"email\": \"someMail@domain.com\",\n\t\"password\": \"somePassword\"\n}\n```\n\n---\n\n### Response\n\n#### <span style=\"color:green\">Success</span>\n\n- Status Code: `200`\n\n#### <span style=\"color:red\">Wrong Credentials</span>\n\n- Status Code: `401`\n- Content Type: `application/json`\n\nExample response:\n\n```json\n{\n  \"err\": \"some error message\"\n}\n```\n",
+            "method": "GET",
+            "body": {},
+            "parameters": [],
+            "headers": [],
+            "authentication": {},
+            "metaSortKey": -1684747854983.875,
+            "isPrivate": false,
+            "settingStoreCookies": true,
+            "settingSendCookies": true,
+            "settingDisableRenderRequestBody": false,
+            "settingEncodeUrl": true,
+            "settingRebuildPath": true,
+            "settingFollowRedirects": "global",
+            "_type": "request"
+        },
+        {
+            "_id": "req_17e6b02911214843a4aa8e7c5cd012ed",
+            "parentId": "fld_e872a42938214b8f823dd88d2d712134",
+            "modified": 1684760116662,
+            "created": 1684753628959,
+            "url": "{{ _.scheme }}{{ _.localUrl }}/{{ _.route }}/{% prompt 'TripId', '', 'TripId', 'tripid', false, true %}/{{ _.subRoute }}/{% prompt 'CostCategoryId', 'costCategoryId', 'costCategoryId', 'costCategoryId', false, true %}",
+            "name": "Cost Category Details",
+            "description": "This endpoint is used to login a user in our webapplication with given credentials and set a JWT Header.\n\n---\n\n### Method\n\nHTTP Method: `POST`\n\n---\n\n### URL\n\n`baseUrl/user/login`\n\n---\n\n### Parameters\n\n| Parameter  | Type   | Description       |\n|------------|--------|-------------------|\n\n---\n\n### Request Body\n\n```json\n{\n\t\"email\": \"someMail@domain.com\",\n\t\"password\": \"somePassword\"\n}\n```\n\n---\n\n### Response\n\n#### <span style=\"color:green\">Success</span>\n\n- Status Code: `200`\n\n#### <span style=\"color:red\">Wrong Credentials</span>\n\n- Status Code: `401`\n- Content Type: `application/json`\n\nExample response:\n\n```json\n{\n  \"err\": \"some error message\"\n}\n```\n",
+            "method": "GET",
+            "body": {},
+            "parameters": [],
+            "headers": [],
+            "authentication": {},
+            "metaSortKey": -1684747854933.875,
+            "isPrivate": false,
+            "settingStoreCookies": true,
+            "settingSendCookies": true,
+            "settingDisableRenderRequestBody": false,
+            "settingEncodeUrl": true,
+            "settingRebuildPath": true,
+            "settingFollowRedirects": "global",
+            "_type": "request"
+        },
+        {
+            "_id": "req_0779677c045f4800a3784e77f39a2e67",
+            "parentId": "fld_715f7523b9344c7aa9bc8f1cf1522641",
+            "modified": 1684760438527,
+            "created": 1684747930513,
+            "url": "{{ _.localUrl }}/{{ _.route }}/{% prompt 'TripId', '', 'TripId', 'tripid', false, true %}/{{ _.subRoute }}",
+            "name": "Create Cost",
+            "description": "This endpoint is used to login a user in our webapplication with given credentials and set a JWT Header.\n\n---\n\n### Method\n\nHTTP Method: `POST`\n\n---\n\n### URL\n\n`baseUrl/user/login`\n\n---\n\n### Parameters\n\n| Parameter  | Type   | Description       |\n|------------|--------|-------------------|\n\n---\n\n### Request Body\n\n```json\n{\n\t\"email\": \"someMail@domain.com\",\n\t\"password\": \"somePassword\"\n}\n```\n\n---\n\n### Response\n\n#### <span style=\"color:green\">Success</span>\n\n- Status Code: `200`\n\n#### <span style=\"color:red\">Wrong Credentials</span>\n\n- Status Code: `401`\n- Content Type: `application/json`\n\nExample response:\n\n```json\n{\n  \"err\": \"some error message\"\n}\n```\n",
+            "method": "POST",
+            "body": {
+                "mimeType": "application/json",
+                "text": "{\n\t\n}"
+            },
+            "parameters": [],
+            "headers": [
+                {
+                    "name": "Content-Type",
+                    "value": "application/json"
+                }
+            ],
+            "authentication": {},
+            "metaSortKey": -1684747930513,
+            "isPrivate": false,
+            "settingStoreCookies": true,
+            "settingSendCookies": true,
+            "settingDisableRenderRequestBody": false,
+            "settingEncodeUrl": true,
+            "settingRebuildPath": true,
+            "settingFollowRedirects": "global",
+            "_type": "request"
+        },
+        {
+            "_id": "fld_715f7523b9344c7aa9bc8f1cf1522641",
+            "parentId": "fld_29914d24026e424899180f9ac0faa477",
+            "modified": 1684754549002,
+            "created": 1684746496623,
+            "name": "Cost",
+            "description": "",
+            "environment": {
+                "route": "trip",
+                "subRoute": "cost"
+            },
+            "environmentPropertyOrder": {
+                "&": [
+                    "route",
+                    "subRoute"
+                ]
+            },
+            "metaSortKey": -1684753098789,
+            "_type": "request_group"
+        },
+        {
+            "_id": "req_5f37edfbb1514c58adbe79d7ab25be19",
+            "parentId": "fld_715f7523b9344c7aa9bc8f1cf1522641",
+            "modified": 1684760123196,
+            "created": 1684754226862,
+            "url": "{{ _.scheme }}{{ _.localUrl }}/{{ _.route }}/{% prompt 'TripId', '', 'tripId', 'tripid', false, true %}/{{ _.subRoute }}",
+            "name": "All Costs (toggle filter)",
+            "description": "This endpoint is used to login a user in our webapplication with given credentials and set a JWT Header.\n\n---\n\n### Method\n\nHTTP Method: `POST`\n\n---\n\n### URL\n\n`baseUrl/user/login`\n\n---\n\n### Parameters\n\n| Parameter  | Type   | Description       |\n|------------|--------|-------------------|\n\n---\n\n### Request Body\n\n```json\n{\n\t\"email\": \"someMail@domain.com\",\n\t\"password\": \"somePassword\"\n}\n```\n\n---\n\n### Response\n\n#### <span style=\"color:green\">Success</span>\n\n- Status Code: `200`\n\n#### <span style=\"color:red\">Wrong Credentials</span>\n\n- Status Code: `401`\n- Content Type: `application/json`\n\nExample response:\n\n```json\n{\n  \"err\": \"some error message\"\n}\n```\n",
+            "method": "GET",
+            "body": {},
+            "parameters": [
+                {
+                    "id": "pair_12bff161bb5b41909959bbdb8bfb2ee7",
+                    "name": "user",
+                    "value": "{% prompt 'UserID of Creator', 'userid', 'userId', 'userid', false, true %}",
+                    "description": "UserID to query",
+                    "disabled": true
+                }
+            ],
+            "headers": [],
+            "authentication": {},
+            "metaSortKey": -1684747912553,
+            "isPrivate": false,
+            "settingStoreCookies": true,
+            "settingSendCookies": true,
+            "settingDisableRenderRequestBody": false,
+            "settingEncodeUrl": true,
+            "settingRebuildPath": true,
+            "settingFollowRedirects": "global",
+            "_type": "request"
+        },
+        {
+            "_id": "req_22bf7324749c48f78f10f7a2c131ce0a",
+            "parentId": "fld_715f7523b9344c7aa9bc8f1cf1522641",
+            "modified": 1684760432302,
+            "created": 1684747894593,
+            "url": "{{ _.localUrl }}/{{ _.route }}/{% prompt 'TripId', '', 'TripId', 'tripid', false, true %}/{{ _.subRoute }}/{% prompt 'CostId', '', 'costId', 'costid', false, true %}",
+            "name": "Cost Details",
+            "description": "This endpoint is used to login a user in our webapplication with given credentials and set a JWT Header.\n\n---\n\n### Method\n\nHTTP Method: `POST`\n\n---\n\n### URL\n\n`baseUrl/user/login`\n\n---\n\n### Parameters\n\n| Parameter  | Type   | Description       |\n|------------|--------|-------------------|\n\n---\n\n### Request Body\n\n```json\n{\n\t\"email\": \"someMail@domain.com\",\n\t\"password\": \"somePassword\"\n}\n```\n\n---\n\n### Response\n\n#### <span style=\"color:green\">Success</span>\n\n- Status Code: `200`\n\n#### <span style=\"color:red\">Wrong Credentials</span>\n\n- Status Code: `401`\n- Content Type: `application/json`\n\nExample response:\n\n```json\n{\n  \"err\": \"some error message\"\n}\n```\n",
+            "method": "GET",
+            "body": {},
+            "parameters": [],
+            "headers": [],
+            "authentication": {},
+            "metaSortKey": -1684747894593,
+            "isPrivate": false,
+            "settingStoreCookies": true,
+            "settingSendCookies": true,
+            "settingDisableRenderRequestBody": false,
+            "settingEncodeUrl": true,
+            "settingRebuildPath": true,
+            "settingFollowRedirects": "global",
+            "_type": "request"
+        },
+        {
+            "_id": "req_1f692c72d72d4cb9abeca22e4b63b3bd",
+            "parentId": "fld_715f7523b9344c7aa9bc8f1cf1522641",
+            "modified": 1684760428375,
+            "created": 1684747946042,
+            "url": "{{ _.localUrl }}/{{ _.route }}/{% prompt 'TripId', '', 'TripId', 'tripid', false, true %}/{{ _.subRoute }}/{% prompt 'CostId', '', 'costId', 'costid', false, true %}",
+            "name": "Update Cost",
+            "description": "This endpoint is used to login a user in our webapplication with given credentials and set a JWT Header.\n\n---\n\n### Method\n\nHTTP Method: `POST`\n\n---\n\n### URL\n\n`baseUrl/user/login`\n\n---\n\n### Parameters\n\n| Parameter  | Type   | Description       |\n|------------|--------|-------------------|\n\n---\n\n### Request Body\n\n```json\n{\n\t\"email\": \"someMail@domain.com\",\n\t\"password\": \"somePassword\"\n}\n```\n\n---\n\n### Response\n\n#### <span style=\"color:green\">Success</span>\n\n- Status Code: `200`\n\n#### <span style=\"color:red\">Wrong Credentials</span>\n\n- Status Code: `401`\n- Content Type: `application/json`\n\nExample response:\n\n```json\n{\n  \"err\": \"some error message\"\n}\n```\n",
+            "method": "PUT",
+            "body": {},
+            "parameters": [],
+            "headers": [],
+            "authentication": {},
+            "metaSortKey": -1684747894568,
+            "isPrivate": false,
+            "settingStoreCookies": true,
+            "settingSendCookies": true,
+            "settingDisableRenderRequestBody": false,
+            "settingEncodeUrl": true,
+            "settingRebuildPath": true,
+            "settingFollowRedirects": "global",
+            "_type": "request"
+        },
+        {
+            "_id": "req_a9ceae2c5cea40248a61d07ea062d265",
+            "parentId": "fld_715f7523b9344c7aa9bc8f1cf1522641",
+            "modified": 1684760424670,
+            "created": 1684748006794,
+            "url": "{{ _.localUrl }}/{{ _.route }}/{% prompt 'TripId', '', 'TripId', 'tripid', false, true %}/{{ _.subRoute }}/{% prompt 'CostId', '', 'costId', 'costid', false, true %}",
+            "name": "Delete Cost",
+            "description": "This endpoint is used to login a user in our webapplication with given credentials and set a JWT Header.\n\n---\n\n### Method\n\nHTTP Method: `POST`\n\n---\n\n### URL\n\n`baseUrl/user/login`\n\n---\n\n### Parameters\n\n| Parameter  | Type   | Description       |\n|------------|--------|-------------------|\n\n---\n\n### Request Body\n\n```json\n{\n\t\"email\": \"someMail@domain.com\",\n\t\"password\": \"somePassword\"\n}\n```\n\n---\n\n### Response\n\n#### <span style=\"color:green\">Success</span>\n\n- Status Code: `200`\n\n#### <span style=\"color:red\">Wrong Credentials</span>\n\n- Status Code: `401`\n- Content Type: `application/json`\n\nExample response:\n\n```json\n{\n  \"err\": \"some error message\"\n}\n```\n",
+            "method": "DELETE",
+            "body": {},
+            "parameters": [],
+            "headers": [],
+            "authentication": {},
+            "metaSortKey": -1684747894543,
+            "isPrivate": false,
+            "settingStoreCookies": true,
+            "settingSendCookies": true,
+            "settingDisableRenderRequestBody": false,
+            "settingEncodeUrl": true,
+            "settingRebuildPath": true,
+            "settingFollowRedirects": "global",
+            "_type": "request"
+        },
+        {
+            "_id": "req_04a5d8485ca74298b12d74fff7547b59",
+            "parentId": "fld_c8f5bdca249b46e1ba04ea06d40fbc21",
+            "modified": 1684760420320,
+            "created": 1684754527360,
+            "url": "{{ _.localUrl }}/{{ _.route }}/{% prompt 'TripId', '', 'TripId', 'tripid', false, true %}/{{ _.subRoute }}",
+            "name": "Create Debt",
+            "description": "This endpoint is used to login a user in our webapplication with given credentials and set a JWT Header.\n\n---\n\n### Method\n\nHTTP Method: `POST`\n\n---\n\n### URL\n\n`baseUrl/user/login`\n\n---\n\n### Parameters\n\n| Parameter  | Type   | Description       |\n|------------|--------|-------------------|\n\n---\n\n### Request Body\n\n```json\n{\n\t\"email\": \"someMail@domain.com\",\n\t\"password\": \"somePassword\"\n}\n```\n\n---\n\n### Response\n\n#### <span style=\"color:green\">Success</span>\n\n- Status Code: `200`\n\n#### <span style=\"color:red\">Wrong Credentials</span>\n\n- Status Code: `401`\n- Content Type: `application/json`\n\nExample response:\n\n```json\n{\n  \"err\": \"some error message\"\n}\n```\n",
+            "method": "POST",
+            "body": {},
+            "parameters": [],
+            "headers": [],
+            "authentication": {},
+            "metaSortKey": -1684754527360,
+            "isPrivate": false,
+            "settingStoreCookies": true,
+            "settingSendCookies": true,
+            "settingDisableRenderRequestBody": false,
+            "settingEncodeUrl": true,
+            "settingRebuildPath": true,
+            "settingFollowRedirects": "global",
+            "_type": "request"
+        },
+        {
+            "_id": "fld_c8f5bdca249b46e1ba04ea06d40fbc21",
+            "parentId": "fld_29914d24026e424899180f9ac0faa477",
+            "modified": 1684754555419,
+            "created": 1684746506433,
+            "name": "Debt",
+            "description": "",
+            "environment": {
+                "route": "trip",
+                "subRoute": "debt"
+            },
+            "environmentPropertyOrder": {
+                "&": [
+                    "route",
+                    "subRoute"
+                ]
+            },
+            "metaSortKey": -1684753098776.5,
+            "_type": "request_group"
+        },
+        {
+            "_id": "req_ef0a3f2843fe4167b15f9ba7ef233cc8",
+            "parentId": "fld_c8f5bdca249b46e1ba04ea06d40fbc21",
+            "modified": 1684760417097,
+            "created": 1684754525155,
+            "url": "{{ _.localUrl }}/{{ _.route }}/{% prompt 'TripId', '', 'TripId', 'tripid', false, true %}/{{ _.subRoute }}",
+            "name": "All Debts (toggle filter)",
+            "description": "This endpoint is used to login a user in our webapplication with given credentials and set a JWT Header.\n\n---\n\n### Method\n\nHTTP Method: `POST`\n\n---\n\n### URL\n\n`baseUrl/user/login`\n\n---\n\n### Parameters\n\n| Parameter  | Type   | Description       |\n|------------|--------|-------------------|\n\n---\n\n### Request Body\n\n```json\n{\n\t\"email\": \"someMail@domain.com\",\n\t\"password\": \"somePassword\"\n}\n```\n\n---\n\n### Response\n\n#### <span style=\"color:green\">Success</span>\n\n- Status Code: `200`\n\n#### <span style=\"color:red\">Wrong Credentials</span>\n\n- Status Code: `401`\n- Content Type: `application/json`\n\nExample response:\n\n```json\n{\n  \"err\": \"some error message\"\n}\n```\n",
+            "method": "GET",
+            "body": {},
+            "parameters": [
+                {
+                    "id": "pair_98a2c0f429c74994b5ade0ed7b43329a",
+                    "name": "user",
+                    "value": "{% prompt 'UserID of Creator', 'userid', 'userId', 'userid', false, true %}",
+                    "description": "UserID to query"
+                }
+            ],
+            "headers": [],
+            "authentication": {},
+            "metaSortKey": -1684754525155,
+            "isPrivate": false,
+            "settingStoreCookies": true,
+            "settingSendCookies": true,
+            "settingDisableRenderRequestBody": false,
+            "settingEncodeUrl": true,
+            "settingRebuildPath": true,
+            "settingFollowRedirects": "global",
+            "_type": "request"
+        },
+        {
+            "_id": "req_cd1bfaadaf5c4280b6ddac9bd2783508",
+            "parentId": "fld_c8f5bdca249b46e1ba04ea06d40fbc21",
+            "modified": 1684760414080,
+            "created": 1684747892683,
+            "url": "{{ _.localUrl }}/{{ _.route }}/{% prompt 'TripId', '', 'TripId', 'tripid', false, true %}/{{ _.subRoute }}/{% prompt 'DebtId', 'debtId', 'debtId', 'debtId', false, true %}",
+            "name": "Debt Details",
+            "description": "This endpoint is used to login a user in our webapplication with given credentials and set a JWT Header.\n\n---\n\n### Method\n\nHTTP Method: `POST`\n\n---\n\n### URL\n\n`baseUrl/user/login`\n\n---\n\n### Parameters\n\n| Parameter  | Type   | Description       |\n|------------|--------|-------------------|\n\n---\n\n### Request Body\n\n```json\n{\n\t\"email\": \"someMail@domain.com\",\n\t\"password\": \"somePassword\"\n}\n```\n\n---\n\n### Response\n\n#### <span style=\"color:green\">Success</span>\n\n- Status Code: `200`\n\n#### <span style=\"color:red\">Wrong Credentials</span>\n\n- Status Code: `401`\n- Content Type: `application/json`\n\nExample response:\n\n```json\n{\n  \"err\": \"some error message\"\n}\n```\n",
+            "method": "GET",
+            "body": {},
+            "parameters": [],
+            "headers": [],
+            "authentication": {},
+            "metaSortKey": -1684747892683,
+            "isPrivate": false,
+            "settingStoreCookies": true,
+            "settingSendCookies": true,
+            "settingDisableRenderRequestBody": false,
+            "settingEncodeUrl": true,
+            "settingRebuildPath": true,
+            "settingFollowRedirects": "global",
+            "_type": "request"
+        },
+        {
+            "_id": "req_77757dbeed98482d9ee44800924e22c8",
+            "parentId": "fld_c8f5bdca249b46e1ba04ea06d40fbc21",
+            "modified": 1684760410167,
+            "created": 1684754630310,
+            "url": "{{ _.localUrl }}/{{ _.route }}/{% prompt 'TripId', '', 'TripId', 'tripid', false, true %}/{{ _.subRoute }}/{% prompt 'DebtId', 'debtId', 'debtId', 'debtId', false, true %}",
+            "name": "Update Debt",
+            "description": "This endpoint is used to login a user in our webapplication with given credentials and set a JWT Header.\n\n---\n\n### Method\n\nHTTP Method: `POST`\n\n---\n\n### URL\n\n`baseUrl/user/login`\n\n---\n\n### Parameters\n\n| Parameter  | Type   | Description       |\n|------------|--------|-------------------|\n\n---\n\n### Request Body\n\n```json\n{\n\t\"email\": \"someMail@domain.com\",\n\t\"password\": \"somePassword\"\n}\n```\n\n---\n\n### Response\n\n#### <span style=\"color:green\">Success</span>\n\n- Status Code: `200`\n\n#### <span style=\"color:red\">Wrong Credentials</span>\n\n- Status Code: `401`\n- Content Type: `application/json`\n\nExample response:\n\n```json\n{\n  \"err\": \"some error message\"\n}\n```\n",
+            "method": "PUT",
+            "body": {},
+            "parameters": [],
+            "headers": [],
+            "authentication": {},
+            "metaSortKey": -1684747892633,
+            "isPrivate": false,
+            "settingStoreCookies": true,
+            "settingSendCookies": true,
+            "settingDisableRenderRequestBody": false,
+            "settingEncodeUrl": true,
+            "settingRebuildPath": true,
+            "settingFollowRedirects": "global",
+            "_type": "request"
+        },
+        {
+            "_id": "req_ee3fa7da0db7463fb131b2ad70b08c50",
+            "parentId": "fld_c8f5bdca249b46e1ba04ea06d40fbc21",
+            "modified": 1684760403141,
+            "created": 1684754652465,
+            "url": "{{ _.localUrl }}/{{ _.route }}/{% prompt 'TripId', '', 'TripId', 'tripid', false, true %}/{{ _.subRoute }}/{% prompt 'DebtId', 'debtId', 'debtId', 'debtId', false, true %}",
+            "name": "Delete Debt",
+            "description": "This endpoint is used to login a user in our webapplication with given credentials and set a JWT Header.\n\n---\n\n### Method\n\nHTTP Method: `POST`\n\n---\n\n### URL\n\n`baseUrl/user/login`\n\n---\n\n### Parameters\n\n| Parameter  | Type   | Description       |\n|------------|--------|-------------------|\n\n---\n\n### Request Body\n\n```json\n{\n\t\"email\": \"someMail@domain.com\",\n\t\"password\": \"somePassword\"\n}\n```\n\n---\n\n### Response\n\n#### <span style=\"color:green\">Success</span>\n\n- Status Code: `200`\n\n#### <span style=\"color:red\">Wrong Credentials</span>\n\n- Status Code: `401`\n- Content Type: `application/json`\n\nExample response:\n\n```json\n{\n  \"err\": \"some error message\"\n}\n```\n",
+            "method": "DELETE",
+            "body": {},
+            "parameters": [],
+            "headers": [],
+            "authentication": {},
+            "metaSortKey": -1684747892583,
+            "isPrivate": false,
+            "settingStoreCookies": true,
+            "settingSendCookies": true,
+            "settingDisableRenderRequestBody": false,
+            "settingEncodeUrl": true,
+            "settingRebuildPath": true,
+            "settingFollowRedirects": "global",
+            "_type": "request"
+        },
+        {
+            "_id": "req_1668c9109a5441faafa9e5ab5e3c88e4",
+            "parentId": "fld_d5f8694f3e5d42cb812d1fe2e543f015",
+            "modified": 1684761345887,
+            "created": 1684761345887,
+            "url": "",
+            "name": "New Request",
+            "description": "",
+            "method": "GET",
+            "body": {},
+            "parameters": [],
+            "headers": [],
+            "authentication": {},
+            "metaSortKey": -1684761345887,
+            "isPrivate": false,
+            "settingStoreCookies": true,
+            "settingSendCookies": true,
+            "settingDisableRenderRequestBody": false,
+            "settingEncodeUrl": true,
+            "settingRebuildPath": true,
+            "settingFollowRedirects": "global",
+            "_type": "request"
+        },
+        {
+            "_id": "fld_d5f8694f3e5d42cb812d1fe2e543f015",
+            "parentId": "wrk_7d42eaf17c424ac1b5db4b952f62c4be",
+            "modified": 1684752611736,
+            "created": 1684746500925,
+            "name": "Transaction",
+            "description": "",
+            "environment": {
+                "route": "transaction"
+            },
+            "environmentPropertyOrder": {
+                "&": [
+                    "route"
+                ]
+            },
+            "metaSortKey": -1684746500925,
+            "_type": "request_group"
+        },
+        {
+            "_id": "req_0341c74c2bad4af1bf5cc3ac09543d7e",
+            "parentId": "fld_d5f8694f3e5d42cb812d1fe2e543f015",
+            "modified": 1684760767690,
+            "created": 1684760183707,
+            "url": "{{ _.localUrl }}/{{ _.route }}/create",
+            "name": "Create Transaction",
+            "description": "This endpoint is used to login a user in our webapplication with given credentials and set a JWT Header.\n\n---\n\n### Method\n\nHTTP Method: `POST`\n\n---\n\n### URL\n\n`baseUrl/user/login`\n\n---\n\n### Parameters\n\n| Parameter  | Type   | Description       |\n|------------|--------|-------------------|\n\n---\n\n### Request Body\n\n```json\n{\n\t\"email\": \"someMail@domain.com\",\n\t\"password\": \"somePassword\"\n}\n```\n\n---\n\n### Response\n\n#### <span style=\"color:green\">Success</span>\n\n- Status Code: `200`\n\n#### <span style=\"color:red\">Wrong Credentials</span>\n\n- Status Code: `401`\n- Content Type: `application/json`\n\nExample response:\n\n```json\n{\n  \"err\": \"some error message\"\n}\n```\n",
+            "method": "POST",
+            "body": {
+                "mimeType": "application/json",
+                "text": "{\n\t\"senderId\": \"\",\n\t\"receiverId\": \"\",\n\t\"amount\": \"\"\n}"
+            },
+            "parameters": [],
+            "headers": [
+                {
+                    "name": "Content-Type",
+                    "value": "application/json"
+                }
+            ],
+            "authentication": {},
+            "metaSortKey": -1684746500875,
+            "isPrivate": false,
+            "settingStoreCookies": true,
+            "settingSendCookies": true,
+            "settingDisableRenderRequestBody": false,
+            "settingEncodeUrl": true,
+            "settingRebuildPath": true,
+            "settingFollowRedirects": "global",
+            "_type": "request"
+        },
+        {
+            "_id": "req_a561bb1c731f4fc2a0fbd55607b9bb44",
+            "parentId": "fld_d5f8694f3e5d42cb812d1fe2e543f015",
+            "modified": 1684760770719,
+            "created": 1684760328073,
+            "url": "{{ _.localUrl }}/{{ _.route }}/{% prompt 'TransactionId', 'transactionId', 'transactionId', 'transactionId', false, true %}",
+            "name": "Transaction Details",
+            "description": "This endpoint is used to login a user in our webapplication with given credentials and set a JWT Header.\n\n---\n\n### Method\n\nHTTP Method: `POST`\n\n---\n\n### URL\n\n`baseUrl/user/login`\n\n---\n\n### Parameters\n\n| Parameter  | Type   | Description       |\n|------------|--------|-------------------|\n\n---\n\n### Request Body\n\n```json\n{\n\t\"email\": \"someMail@domain.com\",\n\t\"password\": \"somePassword\"\n}\n```\n\n---\n\n### Response\n\n#### <span style=\"color:green\">Success</span>\n\n- Status Code: `200`\n\n#### <span style=\"color:red\">Wrong Credentials</span>\n\n- Status Code: `401`\n- Content Type: `application/json`\n\nExample response:\n\n```json\n{\n  \"err\": \"some error message\"\n}\n```\n",
+            "method": "GET",
+            "body": {},
+            "parameters": [],
+            "headers": [],
+            "authentication": {},
+            "metaSortKey": -1684746500825,
+            "isPrivate": false,
+            "settingStoreCookies": true,
+            "settingSendCookies": true,
+            "settingDisableRenderRequestBody": false,
+            "settingEncodeUrl": true,
+            "settingRebuildPath": true,
+            "settingFollowRedirects": "global",
+            "_type": "request"
+        },
+        {
+            "_id": "env_773fd6f8f8bb0f5fc101f57f5e5fcc6f734c2247",
+            "parentId": "wrk_7d42eaf17c424ac1b5db4b952f62c4be",
+            "modified": 1684746394964,
+            "created": 1684746394964,
+            "name": "Base Environment",
+            "data": {},
+            "dataPropertyOrder": null,
+            "color": null,
+            "isPrivate": false,
+            "metaSortKey": 1684746394964,
+            "_type": "environment"
+        },
+        {
+            "_id": "jar_773fd6f8f8bb0f5fc101f57f5e5fcc6f734c2247",
+            "parentId": "wrk_7d42eaf17c424ac1b5db4b952f62c4be",
+            "modified": 1684746394965,
+            "created": 1684746394965,
+            "name": "Default Jar",
+            "cookies": [],
+            "_type": "cookie_jar"
+        },
+        {
+            "_id": "spc_0abb751379534ecebc114228a226fabc",
+            "parentId": "wrk_7d42eaf17c424ac1b5db4b952f62c4be",
+            "modified": 1684746394961,
+            "created": 1684746394961,
+            "fileName": "User",
+            "contents": "",
+            "contentType": "yaml",
+            "_type": "api_spec"
+        },
+        {
+            "_id": "env_917f942417594a8091add24efe443432",
+            "parentId": "env_773fd6f8f8bb0f5fc101f57f5e5fcc6f734c2247",
+            "modified": 1684760384451,
+            "created": 1684746533608,
+            "name": "Expense API",
+            "data": {
+                "localUrl": "http://localhost:8080",
+                "apiUrl": "https://expenseapi.c930.net",
+                "route": ""
+            },
+            "dataPropertyOrder": {
+                "&": [
+                    "localUrl",
+                    "apiUrl",
+                    "route"
+                ]
+            },
+            "color": null,
+            "isPrivate": false,
+            "metaSortKey": 1684746533608,
+            "_type": "environment"
+        },
+        {
+            "_id": "env_8584af0a45e64eebb2d06bb3c2c96ee4",
+            "parentId": "env_773fd6f8f8bb0f5fc101f57f5e5fcc6f734c2247",
+            "modified": 1684746553620,
+            "created": 1684746543050,
+            "name": "Travel Utilities",
+            "data": {},
+            "dataPropertyOrder": null,
+            "color": null,
+            "isPrivate": false,
+            "metaSortKey": 1684746533607,
+            "_type": "environment"
+        }
+    ]
+}
