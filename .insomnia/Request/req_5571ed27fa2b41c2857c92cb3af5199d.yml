@@ -1,13 +1,13 @@
 _id: req_5571ed27fa2b41c2857c92cb3af5199d
 type: Request
 parentId: fld_377a889e84744fad9aa37e60971a9815
-modified: 1684776662534
+modified: 1684882420573
 created: 1684747608058
 url: "{{ _.localUrl }}/api/{{ _.apiVersion }}/{{ _.route }}/suggest"
 name: Suggest Users
 description: >
-  This endpoint is used to login a user in our webapplication with given
-  credentials and set a JWT Header.
+  
+  This endpoint serves the purpose of suggesting users based on a querystring. When you provide a querystring, the server will respond by returning users whose usernames begin with that querystring.
 
 
   ---
@@ -16,7 +16,7 @@ description: >
   ### Method
 
 
-  HTTP Method: `POST`
+  HTTP Method: `GET`
 
 
   ---
@@ -25,7 +25,7 @@ description: >
   ### URL
 
 
-  `baseUrl/user/login`
+  `baseUrl/api/v1/user/suggest?<q>`
 
 
   ---
@@ -38,21 +38,13 @@ description: >
 
   |------------|--------|-------------------|
 
+  | q | Query | QueryString to search for |
+
 
   ---
 
 
   ### Request Body
-
-
-  ```json
-
-  {
-  	"email": "someMail@domain.com",
-  	"password": "somePassword"
-  }
-
-  ```
 
 
   ---
@@ -66,11 +58,40 @@ description: >
 
   - Status Code: `200`
 
+  - Content Type: `application/json`
 
-  #### <span style="color:red">Wrong Credentials</span>
+
+  Example response:
 
 
-  - Status Code: `401`
+  ```json
+
+  baseUrl/api/v1/user/suggest?q=chmie
+
+
+  {
+  	"userSuggestions": [
+  		{
+  			"userId": "9f4b48c7-1c34-4688-a2fe-1f2531e02618",
+  			"username": "chmielarski"
+  		},
+  		{
+  			"userId": "692971f6-7f7c-4f79-87f0-ea14fbf8d6a9",
+  			"username": "chmierotzki"
+  		}
+  	]
+  }
+
+  ```
+
+
+  ---
+
+
+  #### <span style="color:red">Bad Request</span>
+
+
+  - Status Code: `400`
 
   - Content Type: `application/json`
 
@@ -81,7 +102,56 @@ description: >
   ```json
 
   {
-    "err": "some error message"
+    "errorCode": "EM-005",
+  	"errorMessage": "BAD_REQUEST"
+  }
+
+  ```
+
+
+  ---
+
+
+  #### <span style="color:red">Internal Error</span>
+
+
+  - Status Code: `500`
+
+  - Content Type: `application/json`
+
+
+  Example response:
+
+
+  ```json
+
+  {
+    "errorCode": "EM-002",
+  	"errorMessage": "INTERAL_ERROR"
+  }
+
+  ```
+
+
+  ---
+
+
+  #### <span style="color:red">Upstream Error</span>
+
+
+  - Status Code: `500`
+
+  - Content Type: `application/json`
+
+
+  Example response:
+
+
+  ```json
+
+  {
+    "errorCode": "EM-001",
+  	"errorMessage": "UPSTREAM_ERROR"
   }
 
   ```
