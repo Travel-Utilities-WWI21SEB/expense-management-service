@@ -1,0 +1,107 @@
+_id: req_d0d0e8e250fe49eda3d7e0d4ace723fd
+type: Request
+parentId: fld_fb964101ac2d4651a16e19aa1fefe039
+modified: 1684760123196
+created: 1684754226862
+url: "{{ _.scheme }}{{ _.localUrl }}/{{ _.route }}/{% prompt 'TripId', '',
+  'tripId', 'tripid', false, true %}/{{ _.subRoute }}"
+name: All Costs (toggle filter)
+description: >
+  This endpoint is used to login a user in our webapplication with given
+  credentials and set a JWT Header.
+
+
+  ---
+
+
+  ### Method
+
+
+  HTTP Method: `POST`
+
+
+  ---
+
+
+  ### URL
+
+
+  `baseUrl/user/login`
+
+
+  ---
+
+
+  ### Parameters
+
+
+  | Parameter  | Type   | Description       |
+
+  |------------|--------|-------------------|
+
+
+  ---
+
+
+  ### Request Body
+
+
+  ```json
+
+  {
+  	"email": "someMail@domain.com",
+  	"password": "somePassword"
+  }
+
+  ```
+
+
+  ---
+
+
+  ### Response
+
+
+  #### <span style="color:green">Success</span>
+
+
+  - Status Code: `200`
+
+
+  #### <span style="color:red">Wrong Credentials</span>
+
+
+  - Status Code: `401`
+
+  - Content Type: `application/json`
+
+
+  Example response:
+
+
+  ```json
+
+  {
+    "err": "some error message"
+  }
+
+  ```
+method: GET
+body: {}
+parameters:
+  - id: pair_12bff161bb5b41909959bbdb8bfb2ee7
+    name: user
+    value: "{% prompt 'UserID of Creator', 'userid', 'userId', 'userid', false, true
+      %}"
+    description: UserID to query
+    disabled: true
+headers: []
+authentication: {}
+metaSortKey: -1684747912553
+isPrivate: false
+settingStoreCookies: true
+settingSendCookies: true
+settingDisableRenderRequestBody: false
+settingEncodeUrl: true
+settingRebuildPath: true
+settingFollowRedirects: global

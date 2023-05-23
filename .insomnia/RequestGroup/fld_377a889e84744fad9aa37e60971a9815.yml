@@ -1,0 +1,13 @@
+_id: fld_377a889e84744fad9aa37e60971a9815
+type: RequestGroup
+parentId: wrk_9005ef94d55f456f853b7aef2a0cdd44
+modified: 1684852015363
+created: 1684746482507
+name: User [API v1]
+description: User Routes
+environment:
+  route: user
+environmentPropertyOrder:
+  "&":
+    - route
+metaSortKey: -1684746503679

@@ -1,0 +1,105 @@
+_id: req_5571ed27fa2b41c2857c92cb3af5199d
+type: Request
+parentId: fld_377a889e84744fad9aa37e60971a9815
+modified: 1684776662534
+created: 1684747608058
+url: "{{ _.localUrl }}/api/{{ _.apiVersion }}/{{ _.route }}/suggest"
+name: Suggest Users
+description: >
+  This endpoint is used to login a user in our webapplication with given
+  credentials and set a JWT Header.
+
+
+  ---
+
+
+  ### Method
+
+
+  HTTP Method: `POST`
+
+
+  ---
+
+
+  ### URL
+
+
+  `baseUrl/user/login`
+
+
+  ---
+
+
+  ### Parameters
+
+
+  | Parameter  | Type   | Description       |
+
+  |------------|--------|-------------------|
+
+
+  ---
+
+
+  ### Request Body
+
+
+  ```json
+
+  {
+  	"email": "someMail@domain.com",
+  	"password": "somePassword"
+  }
+
+  ```
+
+
+  ---
+
+
+  ### Response
+
+
+  #### <span style="color:green">Success</span>
+
+
+  - Status Code: `200`
+
+
+  #### <span style="color:red">Wrong Credentials</span>
+
+
+  - Status Code: `401`
+
+  - Content Type: `application/json`
+
+
+  Example response:
+
+
+  ```json
+
+  {
+    "err": "some error message"
+  }
+
+  ```
+method: GET
+body: {}
+parameters:
+  - id: pair_6d302e8582b04c99a5cd413484f73470
+    name: q
+    value: "{% prompt 'Query string', '', 'queryString', 'queryUserString', false,
+      true %}"
+    description: QueryString to restrict suggested users
+headers: []
+authentication: {}
+metaSortKey: -1684747533500.9688
+isPrivate: false
+settingStoreCookies: true
+settingSendCookies: true
+settingDisableRenderRequestBody: false
+settingEncodeUrl: true
+settingRebuildPath: true
+settingFollowRedirects: global

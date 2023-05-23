@@ -1,0 +1,109 @@
+_id: req_ec6a947a97764187989b53b2f4c84e1c
+type: Request
+parentId: fld_d83c1d0d5e75433c97b1979a5f600fb4
+modified: 1684760462435
+created: 1684749711277
+url: "{{ _.localUrl }}/{{ _.route }}/{% prompt 'TripId', '', 'TripId', 'tripid',
+  false, true %}/invite"
+name: Invite to trip
+description: >
+  This endpoint is used to login a user in our webapplication with given
+  credentials and set a JWT Header.
+
+
+  ---
+
+
+  ### Method
+
+
+  HTTP Method: `POST`
+
+
+  ---
+
+
+  ### URL
+
+
+  `baseUrl/user/login`
+
+
+  ---
+
+
+  ### Parameters
+
+
+  | Parameter  | Type   | Description       |
+
+  |------------|--------|-------------------|
+
+
+  ---
+
+
+  ### Request Body
+
+
+  ```json
+
+  {
+  	"email": "someMail@domain.com",
+  	"password": "somePassword"
+  }
+
+  ```
+
+
+  ---
+
+
+  ### Response
+
+
+  #### <span style="color:green">Success</span>
+
+
+  - Status Code: `200`
+
+
+  #### <span style="color:red">Wrong Credentials</span>
+
+
+  - Status Code: `401`
+
+  - Content Type: `application/json`
+
+
+  Example response:
+
+
+  ```json
+
+  {
+    "err": "some error message"
+  }
+
+  ```
+method: POST
+body:
+  mimeType: application/json
+  text: >-
+    {
+    	"invitingUserId": "{% prompt 'UserID of Inviting Person', 'invitingUserId', 'invitingUserId', 'invitingUserId', false, true %}",
+    	"invitedUserId": "{% prompt 'UserID of invited User', 'invitedUserId', 'invitedUserId', 'invitedUserId', false, true %}"
+    }
+parameters: []
+headers:
+  - name: Content-Type
+    value: application/json
+authentication: {}
+metaSortKey: -1684747857718.5
+isPrivate: false
+settingStoreCookies: true
+settingSendCookies: true
+settingDisableRenderRequestBody: false
+settingEncodeUrl: true
+settingRebuildPath: true
+settingFollowRedirects: global
