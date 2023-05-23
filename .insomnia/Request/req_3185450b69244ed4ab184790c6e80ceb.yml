@@ -1,11 +1,11 @@
 _id: req_3185450b69244ed4ab184790c6e80ceb
 type: Request
 parentId: fld_377a889e84744fad9aa37e60971a9815
-modified: 1684846830034
+modified: 1684882253411
 created: 1684746860492
 url: "{{ _.localUrl }}/api/{{ _.apiVersion }}/{{ _.route }}/login"
 name: Login
-description: >
+description: >-
   This endpoint is used to login a user in our webapplication with given
   credentials and set a JWT Header.
 
@@ -25,7 +25,7 @@ description: >
   ### URL
 
 
-  `baseUrl/user/login`
+  `baseUrl/api/v1/user/login`
 
 
   ---
@@ -66,6 +66,44 @@ description: >
 
   - Status Code: `200`
 
+  - Content Type: `application/json`
+
+
+  ```json
+
+  {
+  	"jwt": "some jwt"
+  }
+
+  ```
+
+
+  ---
+
+
+  #### <span style="color:red">Bad request</span>
+
+
+  - Status Code: `400`
+
+  - Content Type: `application/json`
+
+
+  Example response:
+
+
+  ```json
+
+  {
+  	"errorCode": "EM-005",
+  	"errorMessage": "BAD_REQUEST"
+  }
+
+  ```
+
+
+  ---
+
 
   #### <span style="color:red">Wrong Credentials</span>
 
@@ -81,7 +119,32 @@ description: >
   ```json
 
   {
-    "err": "some error message"
+    "errorCode": "EM-007",
+  	"errorMessage": "CREDENTIALS_INVALID"
+  }
+
+  ```
+
+
+  ---
+
+
+  #### <span style="color:red">No user found</span>
+
+
+  - Status Code: `404`
+
+  - Content Type: `application/json`
+
+
+  Example response:
+
+
+  ```json
+
+  {
+    "errorCode": "EM-009",
+  	"errorMessage": "USER_NOT_FOUND"
   }
 
   ```

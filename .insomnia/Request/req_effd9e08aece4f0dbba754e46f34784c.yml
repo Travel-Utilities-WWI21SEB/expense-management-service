@@ -1,14 +1,18 @@
 _id: req_effd9e08aece4f0dbba754e46f34784c
 type: Request
 parentId: fld_377a889e84744fad9aa37e60971a9815
-modified: 1684760470228
+modified: 1684882974423
 created: 1684747487640
 url: "{{ _.localUrl }}/{{ _.route }}/{% prompt 'UserId', '', 'userId', 'userid',
   false, true %}"
 name: Update User
 description: >
-  This endpoint is used to login a user in our webapplication with given
-  credentials and set a JWT Header.
+  This endpoint enables the update of user information within the system. By
+  making a request to this API endpoint, you can modify specific attributes of a
+  user's profile, such as their username, email address, password, profile
+  picture, biography, or any other relevant details associated with their
+  account. This endpoint provides a flexible and efficient way to manage user
+  information dynamically.
 
 
   ---
@@ -17,7 +21,7 @@ description: >
   ### Method
 
 
-  HTTP Method: `POST`
+  HTTP Method: `PATCH`
 
 
   ---
@@ -26,7 +30,7 @@ description: >
   ### URL
 
 
-  `baseUrl/user/login`
+  `baseUrl/api/v1/user/<UserId>`
 
 
   ---
@@ -39,6 +43,8 @@ description: >
 
   |------------|--------|-------------------|
 
+  | UserId | Path | Id of User to update |
+
 
   ---
 
@@ -50,10 +56,14 @@ description: >
 
   {
   	"email": "someMail@domain.com",
+  	"username": "someUsername",
   	"password": "somePassword"
   }
 
   ```
+
+
+  Note that every element in the body is optional and only the given fields will be updated.
 
 
   ---
@@ -68,10 +78,13 @@ description: >
   - Status Code: `200`
 
 
-  #### <span style="color:red">Wrong Credentials</span>
+  ---
 
 
-  - Status Code: `401`
+  #### <span style="color:red">Bad request</span>
+
+
+  - Status Code: `400`
 
   - Content Type: `application/json`
 
@@ -82,7 +95,8 @@ description: >
   ```json
 
   {
-    "err": "some error message"
+    "errorCode": "EM-005",
+  	"errorMessage": "BAD_REQUEST"
   }
 
   ```

@@ -1,14 +1,17 @@
 _id: req_5b80eec3468a461aab983c1e58243ef8
 type: Request
 parentId: fld_377a889e84744fad9aa37e60971a9815
-modified: 1684851507314
+modified: 1684882811458
 created: 1684747392889
 url: "{{ _.localUrl }}/api/{{ _.apiVersion }}/{{ _.route }}/activate/{% prompt
   'token', '', 'token', '', false, false %}"
 name: Activate User
 description: >
-  This endpoint is used to login a user in our webapplication with given
-  credentials and set a JWT Header.
+  This endpoint allows the activation of a user account using a token. When a
+  user signs up for an account, a unique activation token is generated and sent
+  to their email address. By providing this token through the designated API
+  endpoint, the user can successfully activate their account and gain access to
+  the platform's features and functionalities.
 
 
   ---
@@ -26,7 +29,7 @@ description: >
   ### URL
 
 
-  `baseUrl/user/login`
+  `baseUrl/api/v1/user/activate?token=<Token>`
 
 
   ---
@@ -39,21 +42,13 @@ description: >
 
   |------------|--------|-------------------|
 
+  | Token | Query | Activation token |
+
 
   ---
 
 
   ### Request Body
-
-
-  ```json
-
-  {
-  	"email": "someMail@domain.com",
-  	"password": "somePassword"
-  }
-
-  ```
 
 
   ---
@@ -68,10 +63,13 @@ description: >
   - Status Code: `200`
 
 
-  #### <span style="color:red">Wrong Credentials</span>
+  ---
 
 
-  - Status Code: `401`
+  #### <span style="color:red">Bad Request</span>
+
+
+  - Status Code: `400`
 
   - Content Type: `application/json`
 
@@ -82,16 +80,41 @@ description: >
   ```json
 
   {
-    "err": "some error message"
+    "errorCode": "EM-005",
+  	"errorMessage": "BAD_REQUEST"
   }
 
   ```
-method: PUT
+
+
+  ---
+
+
+  #### <span style="color:red">Upstream Error</span>
+
+
+  - Status Code: `500`
+
+  - Content Type: `application/json`
+
+
+  Example response:
+
+
+  ```json
+
+  {
+    "errorCode": "EM-001",
+  	"errorMessage": "UPSTREAM_ERROR"
+  }
+
+  ```
+method: POST
 body: {}
 parameters: []
 headers: []
 authentication: {}
-metaSortKey: -1684747532992.5
+metaSortKey: -1684747534517.9062
 isPrivate: false
 settingStoreCookies: true
 settingSendCookies: true

@@ -1,14 +1,16 @@
 _id: req_0144fc6c60c14a87b269655c58169b83
 type: Request
 parentId: fld_377a889e84744fad9aa37e60971a9815
-modified: 1684774128563
+modified: 1684883067016
 created: 1684747524857
 url: "{{ _.localUrl }}/api/{{ _.apiVersion }}/{{ _.route }}/{% prompt 'UserId',
   '', 'userId', 'userid', false, true %}"
 name: User Details
 description: >
-  This endpoint is used to login a user in our webapplication with given
-  credentials and set a JWT Header.
+  This endpoint allows the retrieval of user details based on their unique
+  identifier (ID). By providing the user ID through the designated API endpoint,
+  you can access comprehensive information about a specific user, which
+  currently includes their username and email.
 
 
   ---
@@ -17,7 +19,7 @@ description: >
   ### Method
 
 
-  HTTP Method: `POST`
+  HTTP Method: `GET`
 
 
   ---
@@ -26,7 +28,7 @@ description: >
   ### URL
 
 
-  `baseUrl/user/login`
+  `baseUrl/api/v1/user/<UserID>`
 
 
   ---
@@ -39,21 +41,13 @@ description: >
 
   |------------|--------|-------------------|
 
+  | UserID     | Path   | UserID for Details |
+
 
   ---
 
 
   ### Request Body
-
-
-  ```json
-
-  {
-  	"email": "someMail@domain.com",
-  	"password": "somePassword"
-  }
-
-  ```
 
 
   ---
@@ -68,10 +62,23 @@ description: >
   - Status Code: `200`
 
 
-  #### <span style="color:red">Wrong Credentials</span>
+  ```json
+
+  {
+  	"username": "chmielarski",
+  	"email": "chmielarski@gmail.com"
+  }
+
+  ```
 
 
-  - Status Code: `401`
+  ---
+
+
+  #### <span style="color:red">Bad Request</span>
+
+
+  - Status Code: `400`
 
   - Content Type: `application/json`
 
@@ -82,7 +89,55 @@ description: >
   ```json
 
   {
-    "err": "some error message"
+    "errorCode": "EM-005",
+  	"errorMessage": "BAD_REQUEST"
+  }
+
+  ```
+
+  ---
+
+
+  #### <span style="color:red">User not found</span>
+
+
+  - Status Code: `404`
+
+  - Content Type: `application/json`
+
+
+  Example response:
+
+
+  ```json
+
+  {
+    "errorCode": "EM-009",
+  	"errorMessage": "USER_NOT_FOUND"
+  }
+
+  ```
+
+
+  ---
+
+
+  #### <span style="color:red">Upstream Error</span>
+
+
+  - Status Code: `500`
+
+  - Content Type: `application/json`
+
+
+  Example response:
+
+
+  ```json
+
+  {
+    "errorCode": "EM-001",
+  	"errorMessage": "UPSTREAM_ERROR"
   }
 
   ```

@@ -1,14 +1,15 @@
 _id: req_b78308601a054a779a0b8541a7b79c03
 type: Request
 parentId: fld_377a889e84744fad9aa37e60971a9815
-modified: 1684778022097
+modified: 1684883084396
 created: 1684747557399
 url: "{{ _.localUrl }}/api/{{ _.apiVersion }}/{{ _.route }}/{% prompt 'UserId',
   '', 'userId', 'userid', false, true %}"
 name: Delete User
 description: >
-  This endpoint is used to login a user in our webapplication with given
-  credentials and set a JWT Header.
+  This endpoint is used to delete an user in our web application. The server
+  also does some follow-up work needed when deleting an user, e.g. handling open
+  transactions.
 
 
   ---
@@ -17,7 +18,7 @@ description: >
   ### Method
 
 
-  HTTP Method: `POST`
+  HTTP Method: `DELETE`
 
 
   ---
@@ -26,7 +27,7 @@ description: >
   ### URL
 
 
-  `baseUrl/user/login`
+  `baseUrl/api/v1/user/<UserID>`
 
 
   ---
@@ -39,21 +40,13 @@ description: >
 
   |------------|--------|-------------------|
 
+  | UserID | Path | UserID of User to delete |
+
 
   ---
 
 
   ### Request Body
-
-
-  ```json
-
-  {
-  	"email": "someMail@domain.com",
-  	"password": "somePassword"
-  }
-
-  ```
 
 
   ---
@@ -65,7 +58,10 @@ description: >
   #### <span style="color:green">Success</span>
 
 
-  - Status Code: `200`
+  - Status Code: `204`
+
+
+  ---
 
 
   #### <span style="color:red">Wrong Credentials</span>
