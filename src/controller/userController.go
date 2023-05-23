@@ -2,9 +2,11 @@ package controller
 
 import (
 	"context"
-	"errors"
+	"database/sql"
+	"fmt"
 	"log"
 
+	"github.com/Travel-Utilities-WWI21SEB/expense-management-service/src/expenseerror"
 	"github.com/Travel-Utilities-WWI21SEB/expense-management-service/src/model"
 	"github.com/Travel-Utilities-WWI21SEB/expense-management-service/src/utils"
 	"github.com/google/uuid"
@@ -16,9 +18,9 @@ type UserCtl interface {
 	LoginUser(ctx context.Context, loginData model.LoginRequest) (*model.UserResponse, *model.ExpenseServiceError)
 	UpdateUser(ctx context.Context) (*model.UserResponse, *model.ExpenseServiceError)
 	DeleteUser(ctx context.Context, userId *uuid.UUID) *model.ExpenseServiceError
-	ActivateUser(ctx context.Context) *model.ExpenseServiceError
-	GetUserDetails(ctx context.Context, userId *uuid.UUID) (*model.UserSchema, *model.ExpenseServiceError)
-	SuggestUsers(ctx context.Context, query string) (*model.UserSuggestions, *model.ExpenseServiceError)
+	ActivateUser(ctx context.Context, token *uuid.UUID) *model.ExpenseServiceError
+	GetUserDetails(ctx context.Context, userId *uuid.UUID) (*model.UserDetailsResponse, *model.ExpenseServiceError)
+	SuggestUsers(ctx context.Context, query string) (*model.UserSuggestResponse, *model.ExpenseServiceError)
 }
 
 // User Controller structure
@@ -28,7 +30,7 @@ type UserController struct {
 // RegisterUser creates a new user entry in the database
 func (uc *UserController) RegisterUser(ctx context.Context, registrationData model.RegistrationRequest) (*model.UserResponse, *model.ExpenseServiceError) {
 	if utils.ContainsEmptyString(registrationData.Username, registrationData.Email, registrationData.Password) {
-		return nil, &model.ExpenseServiceError{Err: errors.New("username, email or password is empty"), Status: 400}
+		return nil, expenseerror.EXPENSE_BAD_REQUEST
 	}
 
 	// Check if user already exists
@@ -36,11 +38,11 @@ func (uc *UserController) RegisterUser(ctx context.Context, registrationData mod
 	row, err := utils.ExecuteQuery(queryString, registrationData.Email, registrationData.Username)
 	if err != nil {
 		log.Printf("Error in userController.RegisterUser().ExecuteQuery(): %v", err.Error())
-		return nil, &model.ExpenseServiceError{Err: err, Status: 500}
+		return nil, expenseerror.EXPENSE_UPSTREAM_ERROR
 	}
 
 	if row.Next() {
-		return nil, &model.ExpenseServiceError{Err: errors.New("user already exists"), Status: 409}
+		return nil, expenseerror.EXPENSE_USER_EXISTS
 	}
 
 	// Create new user
@@ -48,7 +50,7 @@ func (uc *UserController) RegisterUser(ctx context.Context, registrationData mod
 	hashedPassword, err := utils.HashPassword(registrationData.Password)
 	if err != nil {
 		log.Printf("Error in userController.RegisterUser().HashPassword(): %v", err.Error())
-		return nil, &model.ExpenseServiceError{Err: err, Status: 500}
+		return nil, expenseerror.EXPENSE_UPSTREAM_ERROR
 	}
 
 	user := &model.UserSchema{
@@ -60,9 +62,9 @@ func (uc *UserController) RegisterUser(ctx context.Context, registrationData mod
 
 	// Insert user into database
 	queryString = "INSERT INTO \"user\" (id, username, email, password) VALUES ($1, $2, $3, $4)"
-	if err := utils.ExecuteStatement(queryString, user.UserID, user.UserName, user.Email, user.Password); err != nil {
+	if _, err := utils.ExecuteStatement(queryString, user.UserID, user.UserName, user.Email, user.Password); err != nil {
 		log.Printf("Error in userController.RegisterUser().ExecuteStatement(): %v", err.Error())
-		return nil, &model.ExpenseServiceError{Err: err, Status: 500}
+		return nil, expenseerror.EXPENSE_UPSTREAM_ERROR
 	}
 
 	return &model.UserResponse{
@@ -73,7 +75,7 @@ func (uc *UserController) RegisterUser(ctx context.Context, registrationData mod
 // LoginUser checks if the user exists and if the password is correct
 func (uc *UserController) LoginUser(ctx context.Context, loginData model.LoginRequest) (*model.UserResponse, *model.ExpenseServiceError) {
 	if utils.ContainsEmptyString(loginData.Email, loginData.Password) {
-		return nil, &model.ExpenseServiceError{Err: errors.New("email or password is empty"), Status: 400}
+		return nil, expenseerror.EXPENSE_BAD_REQUEST
 	}
 
 	queryString := "SELECT id, password FROM \"user\" WHERE email = $1"
@@ -83,11 +85,12 @@ func (uc *UserController) LoginUser(ctx context.Context, loginData model.LoginRe
 	var hashedPassword string
 
 	if err := row.Scan(&userId, &hashedPassword); err != nil {
-		return nil, &model.ExpenseServiceError{Err: err, Status: 500}
+		log.Printf("Error in userController.LoginUser().Scan(): %v", err.Error())
+		return nil, expenseerror.EXPENSE_USER_NOT_FOUND
 	}
 
 	if ok := utils.CheckPasswordHash(loginData.Password, hashedPassword); !ok {
-		return nil, &model.ExpenseServiceError{Err: errors.New("invalid password"), Status: 401}
+		return nil, expenseerror.EXPENSE_CREDENTIALS_INVALID
 	}
 
 	return &model.UserResponse{
@@ -98,71 +101,92 @@ func (uc *UserController) LoginUser(ctx context.Context, loginData model.LoginRe
 // UpdateUser updates the user entry in the database
 func (uc *UserController) UpdateUser(ctx context.Context) (*model.UserResponse, *model.ExpenseServiceError) {
 	// TO-DO
-	return nil, &model.ExpenseServiceError{Err: errors.New("not implemented"), Status: 501}
+	return nil, expenseerror.EXPENSE_UPSTREAM_ERROR
 }
 
 // DeleteUser deletes the user entry in the database
 func (uc *UserController) DeleteUser(ctx context.Context, userId *uuid.UUID) *model.ExpenseServiceError {
 	if utils.ContainsEmptyString(userId.String()) {
-		return &model.ExpenseServiceError{Err: errors.New("userId is empty"), Status: 400}
+		return expenseerror.EXPENSE_BAD_REQUEST
 	}
 
-	queryString := "DELETE FROM \"user\" WHERE user_id = $1"
-	if err := utils.ExecuteStatement(queryString, userId); err != nil {
-		return &model.ExpenseServiceError{Err: err, Status: 500}
+	queryString := "DELETE FROM \"user\" WHERE id = $1"
+	result, err := utils.ExecuteStatement(queryString, userId)
+	if err != nil {
+		log.Printf("Error in userController.DeleteUser().ExecuteStatement(): %v", err.Error())
+		return expenseerror.EXPENSE_UPSTREAM_ERROR
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		log.Printf("Error in userController.DeleteUser().RowsAffected(): %v", err.Error())
+		return expenseerror.EXPENSE_INTERNAL_ERROR
+	}
+
+	if rowsAffected == 0 {
+		return expenseerror.EXPENSE_USER_NOT_FOUND
 	}
 
 	return nil
 }
 
 // ActivateUser activates the user entry in the database
-func (uc *UserController) ActivateUser(ctx context.Context) *model.ExpenseServiceError {
+func (uc *UserController) ActivateUser(ctx context.Context, token *uuid.UUID) *model.ExpenseServiceError {
 	// TO-DO
-	return &model.ExpenseServiceError{Err: errors.New("not implemented"), Status: 501}
+	return expenseerror.EXPENSE_INTERNAL_ERROR
 }
 
 // GetUserDetails returns the user entry in the database
-func (uc *UserController) GetUserDetails(ctx context.Context, userId *uuid.UUID) (*model.UserSchema, *model.ExpenseServiceError) {
+func (uc *UserController) GetUserDetails(ctx context.Context, userId *uuid.UUID) (*model.UserDetailsResponse, *model.ExpenseServiceError) {
 	if utils.ContainsEmptyString(userId.String()) {
-		return nil, &model.ExpenseServiceError{Err: errors.New("userId is empty"), Status: 400}
+		return nil, expenseerror.EXPENSE_BAD_REQUEST
 	}
 
-	queryString := "SELECT id, username, email FROM \"user\" WHERE user_id = $1"
-	row, err := utils.ExecuteQuery(queryString, userId)
-	if err != nil {
-		return nil, &model.ExpenseServiceError{Err: err, Status: 500}
+	queryString := "SELECT username, email FROM \"user\" WHERE id = $1"
+	row := utils.ExecuteQueryRow(queryString, userId)
+
+	var userDetailsResponse model.UserDetailsResponse
+	if err := row.Scan(&userDetailsResponse.UserName, &userDetailsResponse.Email); err != nil {
+		if err == sql.ErrNoRows {
+			return nil, expenseerror.EXPENSE_USER_NOT_FOUND
+		}
+
+		log.Printf("Error in userController.GetUserDetails().Scan(): %v", err.Error())
+		return nil, expenseerror.EXPENSE_INTERNAL_ERROR
 	}
 
-	var user model.UserSchema
-	if err := row.Scan(&user.UserID, &user.UserName, &user.Email); err != nil {
-		return nil, &model.ExpenseServiceError{Err: err, Status: 500}
-	}
-
-	return &user, nil
+	return &userDetailsResponse, nil
 }
 
 // SuggestUsers returns the users which username contains the query string
-func (uc *UserController) SuggestUsers(ctx context.Context, query string) (*model.UserSuggestions, *model.ExpenseServiceError) {
+func (uc *UserController) SuggestUsers(ctx context.Context, query string) (*model.UserSuggestResponse, *model.ExpenseServiceError) {
 	if utils.ContainsEmptyString(query) {
-		return nil, &model.ExpenseServiceError{Err: errors.New("query is empty"), Status: 400}
+		return nil, expenseerror.EXPENSE_BAD_REQUEST
 	}
 
-	queryString := "SELECT id FROM \"user\" WHERE username LIKE $1"
-	rows, err := utils.ExecuteQuery(queryString, "%"+query+"%")
+	queryString := "SELECT id, username FROM \"user\" WHERE username LIKE $1"
+	rows, err := utils.ExecuteQuery(queryString, fmt.Sprintf("%v%%", query))
 	if err != nil {
-		return nil, &model.ExpenseServiceError{Err: err, Status: 500}
+		log.Printf("Error in userController.SuggestUsers().ExecuteQuery(): %v", err.Error())
+		return nil, expenseerror.EXPENSE_UPSTREAM_ERROR
 	}
 
-	var userIds []*uuid.UUID
+	var userSuggestResponse model.UserSuggestResponse
+
 	for rows.Next() {
 		var userId uuid.UUID
-		if err := rows.Scan(&userId); err != nil {
-			return nil, &model.ExpenseServiceError{Err: err, Status: 500}
+		var userName string
+
+		if err := rows.Scan(&userId, &userName); err != nil {
+			log.Printf("Error in userController.SuggestUsers().Scan(): %v", err.Error())
+			return nil, expenseerror.EXPENSE_INTERNAL_ERROR
 		}
-		userIds = append(userIds, &userId)
+
+		userSuggestResponse.UserSuggestions = append(userSuggestResponse.UserSuggestions, model.UserSuggestion{
+			UserID:   &userId,
+			Username: userName,
+		})
 	}
 
-	return &model.UserSuggestions{
-		UserIDs: userIds,
-	}, nil
+	return &userSuggestResponse, nil
 }

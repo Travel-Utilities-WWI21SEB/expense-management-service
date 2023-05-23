@@ -7,6 +7,7 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/Travel-Utilities-WWI21SEB/expense-management-service/src/controller"
+	"github.com/Travel-Utilities-WWI21SEB/expense-management-service/src/expenseerror"
 	"github.com/Travel-Utilities-WWI21SEB/expense-management-service/src/model"
 	"github.com/Travel-Utilities-WWI21SEB/expense-management-service/src/utils"
 )
@@ -39,17 +40,17 @@ func RegisterUserHandler(userCtl controller.UserCtl) gin.HandlerFunc {
 
 		var registrationData model.RegistrationRequest
 		if err := c.ShouldBindJSON(&registrationData); err != nil {
-			utils.HandleErrorAndAbort(c, "invalid request body", http.StatusBadRequest, err)
+			utils.HandleErrorAndAbort(c, *expenseerror.EXPENSE_BAD_REQUEST)
 			return
 		}
 
 		response, err := userCtl.RegisterUser(ctx, registrationData)
 		if err != nil {
-			utils.HandleErrorAndAbort(c, err.Err.Error(), err.Status, err.Err)
+			utils.HandleErrorAndAbort(c, *err)
 			return
 		}
 
-		c.JSON(http.StatusOK, response)
+		c.JSON(http.StatusCreated, response)
 	}
 }
 
@@ -59,13 +60,13 @@ func LoginUserHandler(userCtl controller.UserCtl) gin.HandlerFunc {
 
 		var loginData model.LoginRequest
 		if err := c.ShouldBindJSON(&loginData); err != nil {
-			utils.HandleErrorAndAbort(c, "invalid request body", http.StatusBadRequest, err)
+			utils.HandleErrorAndAbort(c, *expenseerror.EXPENSE_BAD_REQUEST)
 			return
 		}
 
 		response, err := userCtl.LoginUser(ctx, loginData)
 		if err != nil {
-			utils.HandleErrorAndAbort(c, err.Err.Error(), err.Status, err.Err)
+			utils.HandleErrorAndAbort(c, *err)
 			return
 		}
 
@@ -80,7 +81,7 @@ func UpdateUserHandler(userCtl controller.UserCtl) gin.HandlerFunc {
 
 		response, err := userCtl.UpdateUser(ctx)
 		if err != nil {
-			utils.HandleErrorAndAbort(c, err.Err.Error(), err.Status, err.Err)
+			utils.HandleErrorAndAbort(c, *err)
 			return
 		}
 
@@ -90,19 +91,19 @@ func UpdateUserHandler(userCtl controller.UserCtl) gin.HandlerFunc {
 
 func DeleteUserHandler(userCtl controller.UserCtl) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		// TO-DO
+		// TO-DO: Needs to be re-implemented after trip and cost routes are implemented
 		ctx := c.Request.Context()
 
 		userIdParam := c.Param("userId")
 		userId, err := uuid.Parse(userIdParam)
 		if err != nil {
-			utils.HandleErrorAndAbort(c, "invalid user id", http.StatusBadRequest, err)
+			utils.HandleErrorAndAbort(c, *expenseerror.EXPENSE_BAD_REQUEST)
 			return
 		}
 
 		serviceError := userCtl.DeleteUser(ctx, &userId)
-		if err != nil {
-			utils.HandleErrorAndAbort(c, serviceError.Err.Error(), serviceError.Status, serviceError.Err)
+		if serviceError != nil {
+			utils.HandleErrorAndAbort(c, *serviceError)
 			return
 		}
 
@@ -115,9 +116,16 @@ func ActivateUserHandler(userCtl controller.UserCtl) gin.HandlerFunc {
 		// TO-DO
 		ctx := c.Request.Context()
 
-		err := userCtl.ActivateUser(ctx)
+		tokenString := c.Query("token")
+		token, err := uuid.Parse(tokenString)
 		if err != nil {
-			utils.HandleErrorAndAbort(c, err.Err.Error(), err.Status, err.Err)
+			utils.HandleErrorAndAbort(c, *expenseerror.EXPENSE_BAD_REQUEST)
+			return
+		}
+
+		serviceError := userCtl.ActivateUser(ctx, &token)
+		if serviceError != nil {
+			utils.HandleErrorAndAbort(c, *serviceError)
 			return
 		}
 
@@ -129,15 +137,16 @@ func GetUserDetailsHandler(userCtl controller.UserCtl) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		ctx := c.Request.Context()
 
-		var userId *uuid.UUID
-		if err := c.ShouldBindUri(&userId); err != nil {
-			utils.HandleErrorAndAbort(c, "invalid user id", http.StatusBadRequest, err)
+		userIdParam := c.Param("userId")
+		userId, err := uuid.Parse(userIdParam)
+		if err != nil {
+			utils.HandleErrorAndAbort(c, *expenseerror.EXPENSE_BAD_REQUEST)
 			return
 		}
 
-		response, err := userCtl.GetUserDetails(ctx, userId)
-		if err != nil {
-			utils.HandleErrorAndAbort(c, err.Err.Error(), err.Status, err.Err)
+		response, serviceError := userCtl.GetUserDetails(ctx, &userId)
+		if serviceError != nil {
+			utils.HandleErrorAndAbort(c, *serviceError)
 			return
 		}
 
@@ -147,13 +156,12 @@ func GetUserDetailsHandler(userCtl controller.UserCtl) gin.HandlerFunc {
 
 func SuggestUsersHandler(userCtl controller.UserCtl) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		// TO-DO
 		ctx := c.Request.Context()
 
-		query := c.Param("q")
+		query := c.Query("q")
 		response, err := userCtl.SuggestUsers(ctx, query)
 		if err != nil {
-			utils.HandleErrorAndAbort(c, err.Err.Error(), err.Status, err.Err)
+			utils.HandleErrorAndAbort(c, *err)
 			return
 		}
 

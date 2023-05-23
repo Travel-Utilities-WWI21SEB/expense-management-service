@@ -16,9 +16,9 @@ func CloseDbConnection() {
 	connection.Close()
 }
 
-func ExecuteStatement(query string, args ...interface{}) error {
-	_, err := connection.Exec(query, args...)
-	return err
+func ExecuteStatement(query string, args ...interface{}) (sql.Result, error) {
+	result, err := connection.Exec(query, args...)
+	return result, err
 }
 
 func ExecuteQuery(query string, args ...interface{}) (*sql.Rows, error) {
