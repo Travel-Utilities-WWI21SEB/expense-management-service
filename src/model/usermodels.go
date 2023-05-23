@@ -19,6 +19,16 @@ type UserResponse struct {
 	UserID *uuid.UUID `json:"userId"`
 }
 
-type UserSuggestions struct {
-	UserIDs []*uuid.UUID `json:"userIds"`
+type UserDetailsResponse struct {
+	UserName string `json:"username"`
+	Email    string `json:"email"`
+}
+
+type UserSuggestResponse struct {
+	UserSuggestions []UserSuggestion `json:"userSuggestions"`
+}
+
+type UserSuggestion struct {
+	UserID   *uuid.UUID `json:"userId"`
+	Username string     `json:"username"`
 }

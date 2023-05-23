@@ -29,21 +29,21 @@ func createRouter() *gin.Engine {
 	// User Routes
 	apiv1.Handle(http.MethodPost, "/user/register", RegisterUserHandler(controllers.UserController))
 	apiv1.Handle(http.MethodPost, "/user/login", LoginUserHandler(controllers.UserController))
-	apiv1.Handle(http.MethodPut, "/user/:userId", UpdateUserHandler(controllers.UserController))
+	apiv1.Handle(http.MethodPost, "/user/activate", ActivateUserHandler(controllers.UserController))
+	apiv1.Handle(http.MethodGet, "/user/suggest", SuggestUsersHandler(controllers.UserController))
 	apiv1.Handle(http.MethodGet, "/user/:userId", GetUserDetailsHandler(controllers.UserController))
+	apiv1.Handle(http.MethodPatch, "/user/:userId", UpdateUserHandler(controllers.UserController))
 	apiv1.Handle(http.MethodDelete, "/user/:userId", DeleteUserHandler(controllers.UserController))
-	apiv1.Handle(http.MethodPut, "/user/activate/:token", ActivateUserHandler(controllers.UserController))
-	apiv1.Handle(http.MethodGet, "/user/suggest/:q", SuggestUsersHandler(controllers.UserController))
 
 	// Trip Routes
 	apiv1.Handle(http.MethodPost, "/trip/create", CreateTripEntryHandler(controllers.TripController))
-	apiv1.Handle(http.MethodPut, "/trip/:tripId", UpdateTripEntryHandler(controllers.TripController))
+	apiv1.Handle(http.MethodPatch, "/trip/:tripId", UpdateTripEntryHandler(controllers.TripController))
 	apiv1.Handle(http.MethodGet, "/trip/:tripId", GetTripDetailsHandler(controllers.TripController))
 	apiv1.Handle(http.MethodDelete, "/trip/:tripId", DeleteTripEntryHandler(controllers.TripController))
 
 	// Cost Routes
 	apiv1.Handle(http.MethodPost, "/cost/create", CreateCostEntryHandler(controllers.CostController))
-	apiv1.Handle(http.MethodPut, "/cost/:costId", UpdateCostEntryHandler(controllers.CostController))
+	apiv1.Handle(http.MethodPatch, "/cost/:costId", UpdateCostEntryHandler(controllers.CostController))
 	apiv1.Handle(http.MethodGet, "/cost/:costId", GetCostDetailsHandler(controllers.CostController))
 	apiv1.Handle(http.MethodDelete, "/cost/:costId", DeleteCostEntryHandler(controllers.CostController))
 
