@@ -1,0 +1,101 @@
+_id: req_b0fffa78d0d14c718ca946182f96ef0d
+type: Request
+parentId: fld_d83c1d0d5e75433c97b1979a5f600fb4
+modified: 1684760458038
+created: 1684747846830
+url: "{{ _.localUrl }}/{{ _.route }}/{% prompt 'TripId', '', 'TripId', 'tripid',
+  false, true %}"
+name: Trip Details
+description: >
+  This endpoint is used to login a user in our webapplication with given
+  credentials and set a JWT Header.
+
+
+  ---
+
+
+  ### Method
+
+
+  HTTP Method: `POST`
+
+
+  ---
+
+
+  ### URL
+
+
+  `baseUrl/user/login`
+
+
+  ---
+
+
+  ### Parameters
+
+
+  | Parameter  | Type   | Description       |
+
+  |------------|--------|-------------------|
+
+
+  ---
+
+
+  ### Request Body
+
+
+  ```json
+
+  {
+  	"email": "someMail@domain.com",
+  	"password": "somePassword"
+  }
+
+  ```
+
+
+  ---
+
+
+  ### Response
+
+
+  #### <span style="color:green">Success</span>
+
+
+  - Status Code: `200`
+
+
+  #### <span style="color:red">Wrong Credentials</span>
+
+
+  - Status Code: `401`
+
+  - Content Type: `application/json`
+
+
+  Example response:
+
+
+  ```json
+
+  {
+    "err": "some error message"
+  }
+
+  ```
+method: GET
+body: {}
+parameters: []
+headers: []
+authentication: {}
+metaSortKey: -1684747857668.5
+isPrivate: false
+settingStoreCookies: true
+settingSendCookies: true
+settingDisableRenderRequestBody: false
+settingEncodeUrl: true
+settingRebuildPath: true
+settingFollowRedirects: global

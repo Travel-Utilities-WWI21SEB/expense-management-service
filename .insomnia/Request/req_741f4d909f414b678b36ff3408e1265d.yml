@@ -1,0 +1,129 @@
+_id: req_741f4d909f414b678b36ff3408e1265d
+type: Request
+parentId: fld_377a889e84744fad9aa37e60971a9815
+modified: 1684856570723
+created: 1684746520798
+url: "{{ _.localUrl }}/api/{{ _.apiVersion }}/{{ _.route }}/register"
+name: Register
+description: |
+  This endpoint is used to register a new user in our webapplication.
+
+  ---
+
+  ### Method
+
+  HTTP Method: `POST`
+
+  ---
+
+  ### URL
+
+  `baseUrl/api/v1/user/register`
+
+  ---
+
+  ### Parameters
+
+  | Parameter  | Type   | Description       |
+  |------------|--------|-------------------|
+
+  ---
+
+  ### Request Body
+
+  ```json
+  {
+  	"username": "someUserName",
+  	"email": "someMail@domain.com",
+  	"password": "somePassword"
+  }
+  ```
+
+  ---
+
+  ### Response
+
+  #### <span style="color:green">Success Response</span>
+
+  - Status Code: `200`
+  - Content Type: `application/json`
+
+  Example response:
+
+  ```json
+  {
+    "userId": "ea64bfb9-9f0a-4803-8536-e0280e06a630"
+  }
+  ```
+
+  ---
+
+  #### <span style="color:red">Bad/Malfunctioned request</span>
+
+  - Status Code: `400`
+  - Content Type: `application/json`
+
+  Example response:
+
+  ```json
+  {
+  	"errorCode": "EM-005",
+  	"errorMessage": "BAD_REQUEST"
+  }
+  ```
+
+  ---
+
+
+  #### <span style="color:red">User already exists</span>
+
+  - Status Code: `409`
+  - Content Type: `application/json`
+
+  Example response:
+
+  ```json
+  {
+  	"errorCode": "EM-012",
+  	"errorMessage": "USER_EXISTS"
+  }
+  ```
+
+  ---
+
+
+  #### <span style="color:red">Upstream-Error</span>
+
+  - Status Code: `500`
+  - Content Type: `application/json`
+
+  Example response:
+
+  ```json
+  {
+  	"errorCode": "EM-001",
+  	"errorMessage": "UPSTREAM_ERROR"
+  }
+  ```
+method: POST
+body:
+  mimeType: application/json
+  text: >-
+    {
+    	"username": "{% prompt 'Username', '', 'testUser', 'username', _.username, true %}",
+    	"email": "{% prompt 'Email', _.email, 'testEmail', true, _.email, true %}",
+    	"password": "{% prompt 'Password', 'password', 'testPassword', true, true, true %}"
+    }
+parameters: []
+headers:
+  - name: Content-Type
+    value: application/json
+authentication: {}
+metaSortKey: -1684747537060.25
+isPrivate: false
+settingStoreCookies: true
+settingSendCookies: true
+settingDisableRenderRequestBody: false
+settingEncodeUrl: true
+settingRebuildPath: true
+settingFollowRedirects: global

@@ -1,0 +1,109 @@
+_id: req_d8b2c15d05c846c09c765ca7fbb5c157
+type: Request
+parentId: fld_eb05ed6abb0d45e2b9ef90c680d09136
+modified: 1684760767690
+created: 1684760183707
+url: "{{ _.localUrl }}/{{ _.route }}/create"
+name: Create Transaction
+description: >
+  This endpoint is used to login a user in our webapplication with given
+  credentials and set a JWT Header.
+
+
+  ---
+
+
+  ### Method
+
+
+  HTTP Method: `POST`
+
+
+  ---
+
+
+  ### URL
+
+
+  `baseUrl/user/login`
+
+
+  ---
+
+
+  ### Parameters
+
+
+  | Parameter  | Type   | Description       |
+
+  |------------|--------|-------------------|
+
+
+  ---
+
+
+  ### Request Body
+
+
+  ```json
+
+  {
+  	"email": "someMail@domain.com",
+  	"password": "somePassword"
+  }
+
+  ```
+
+
+  ---
+
+
+  ### Response
+
+
+  #### <span style="color:green">Success</span>
+
+
+  - Status Code: `200`
+
+
+  #### <span style="color:red">Wrong Credentials</span>
+
+
+  - Status Code: `401`
+
+  - Content Type: `application/json`
+
+
+  Example response:
+
+
+  ```json
+
+  {
+    "err": "some error message"
+  }
+
+  ```
+method: POST
+body:
+  mimeType: application/json
+  text: |-
+    {
+    	"senderId": "",
+    	"receiverId": "",
+    	"amount": ""
+    }
+parameters: []
+headers:
+  - name: Content-Type
+    value: application/json
+authentication: {}
+metaSortKey: -1684746500875
+isPrivate: false
+settingStoreCookies: true
+settingSendCookies: true
+settingDisableRenderRequestBody: false
+settingEncodeUrl: true
+settingRebuildPath: true
+settingFollowRedirects: global

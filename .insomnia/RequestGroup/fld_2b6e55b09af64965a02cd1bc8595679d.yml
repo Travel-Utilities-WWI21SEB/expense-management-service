@@ -1,0 +1,15 @@
+_id: fld_2b6e55b09af64965a02cd1bc8595679d
+type: RequestGroup
+parentId: fld_be8d98a0140c4e72bb747bce94c3cc3b
+modified: 1684754499012
+created: 1684753114191
+name: Cost Category
+description: ""
+environment:
+  route: trip
+  subRoute: costCategory
+environmentPropertyOrder:
+  "&":
+    - route
+    - subRoute
+metaSortKey: -1684753098801.5

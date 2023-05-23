@@ -1,0 +1,111 @@
+_id: req_6c2539922e6e4cdd88e511b2273d24ae
+type: Request
+parentId: fld_2b6e55b09af64965a02cd1bc8595679d
+modified: 1684760445707
+created: 1684752866103
+url: "{{ _.localUrl }}/{{ _.route }}/{% prompt 'TripId', '', 'TripId', 'tripid',
+  false, true %}/{{ _.subRoute }}"
+name: Create Cost Category
+description: >
+  This endpoint is used to login a user in our webapplication with given
+  credentials and set a JWT Header.
+
+
+  ---
+
+
+  ### Method
+
+
+  HTTP Method: `POST`
+
+
+  ---
+
+
+  ### URL
+
+
+  `baseUrl/user/login`
+
+
+  ---
+
+
+  ### Parameters
+
+
+  | Parameter  | Type   | Description       |
+
+  |------------|--------|-------------------|
+
+
+  ---
+
+
+  ### Request Body
+
+
+  ```json
+
+  {
+  	"email": "someMail@domain.com",
+  	"password": "somePassword"
+  }
+
+  ```
+
+
+  ---
+
+
+  ### Response
+
+
+  #### <span style="color:green">Success</span>
+
+
+  - Status Code: `200`
+
+
+  #### <span style="color:red">Wrong Credentials</span>
+
+
+  - Status Code: `401`
+
+  - Content Type: `application/json`
+
+
+  Example response:
+
+
+  ```json
+
+  {
+    "err": "some error message"
+  }
+
+  ```
+method: POST
+body:
+  mimeType: application/json
+  text: >-
+    {
+    	"name": "{% prompt 'Cost Category Name', 'costCategoryName', 'costCategoryName', 'costCategoryName', false, true %}",
+    	"description": "{% prompt 'Cost Category Description', 'costCategoryDescription', 'costCategoryDescription', 'costCategoryDescription', false, true %}",
+    	"icon": "{% prompt 'Cost Category Icon', 'costCategoryIcon', 'costCategoryIcon', 'costCategoryIcon', false, true %}",
+    	"color": "{% prompt 'Cost Category Color', 'costCategoryColor', 'costCategoryColor', 'costCategoryColor', false, true %}"
+    }
+parameters: []
+headers:
+  - name: Content-Type
+    value: application/json
+authentication: {}
+metaSortKey: -1684747855033.875
+isPrivate: false
+settingStoreCookies: true
+settingSendCookies: true
+settingDisableRenderRequestBody: false
+settingEncodeUrl: true
+settingRebuildPath: true
+settingFollowRedirects: global

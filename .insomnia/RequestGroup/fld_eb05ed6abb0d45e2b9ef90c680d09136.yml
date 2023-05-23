@@ -1,0 +1,13 @@
+_id: fld_eb05ed6abb0d45e2b9ef90c680d09136
+type: RequestGroup
+parentId: wrk_9005ef94d55f456f853b7aef2a0cdd44
+modified: 1684852045083
+created: 1684746500925
+name: Transaction [API v1]
+description: ""
+environment:
+  route: transaction
+environmentPropertyOrder:
+  "&":
+    - route
+metaSortKey: -1684746500925

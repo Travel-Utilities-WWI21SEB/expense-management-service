@@ -1,0 +1,103 @@
+_id: req_73a4197a0f28408d825b75ed1e13dde5
+type: Request
+parentId: fld_2b6e55b09af64965a02cd1bc8595679d
+modified: 1684760116662
+created: 1684753628959
+url: "{{ _.scheme }}{{ _.localUrl }}/{{ _.route }}/{% prompt 'TripId', '',
+  'TripId', 'tripid', false, true %}/{{ _.subRoute }}/{% prompt
+  'CostCategoryId', 'costCategoryId', 'costCategoryId', 'costCategoryId', false,
+  true %}"
+name: Cost Category Details
+description: >
+  This endpoint is used to login a user in our webapplication with given
+  credentials and set a JWT Header.
+
+
+  ---
+
+
+  ### Method
+
+
+  HTTP Method: `POST`
+
+
+  ---
+
+
+  ### URL
+
+
+  `baseUrl/user/login`
+
+
+  ---
+
+
+  ### Parameters
+
+
+  | Parameter  | Type   | Description       |
+
+  |------------|--------|-------------------|
+
+
+  ---
+
+
+  ### Request Body
+
+
+  ```json
+
+  {
+  	"email": "someMail@domain.com",
+  	"password": "somePassword"
+  }
+
+  ```
+
+
+  ---
+
+
+  ### Response
+
+
+  #### <span style="color:green">Success</span>
+
+
+  - Status Code: `200`
+
+
+  #### <span style="color:red">Wrong Credentials</span>
+
+
+  - Status Code: `401`
+
+  - Content Type: `application/json`
+
+
+  Example response:
+
+
+  ```json
+
+  {
+    "err": "some error message"
+  }
+
+  ```
+method: GET
+body: {}
+parameters: []
+headers: []
+authentication: {}
+metaSortKey: -1684747854933.875
+isPrivate: false
+settingStoreCookies: true
+settingSendCookies: true
+settingDisableRenderRequestBody: false
+settingEncodeUrl: true
+settingRebuildPath: true
+settingFollowRedirects: global

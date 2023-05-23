@@ -1,0 +1,108 @@
+_id: req_3185450b69244ed4ab184790c6e80ceb
+type: Request
+parentId: fld_377a889e84744fad9aa37e60971a9815
+modified: 1684846830034
+created: 1684746860492
+url: "{{ _.localUrl }}/api/{{ _.apiVersion }}/{{ _.route }}/login"
+name: Login
+description: >
+  This endpoint is used to login a user in our webapplication with given
+  credentials and set a JWT Header.
+
+
+  ---
+
+
+  ### Method
+
+
+  HTTP Method: `POST`
+
+
+  ---
+
+
+  ### URL
+
+
+  `baseUrl/user/login`
+
+
+  ---
+
+
+  ### Parameters
+
+
+  | Parameter  | Type   | Description       |
+
+  |------------|--------|-------------------|
+
+
+  ---
+
+
+  ### Request Body
+
+
+  ```json
+
+  {
+  	"email": "someMail@domain.com",
+  	"password": "somePassword"
+  }
+
+  ```
+
+
+  ---
+
+
+  ### Response
+
+
+  #### <span style="color:green">Success</span>
+
+
+  - Status Code: `200`
+
+
+  #### <span style="color:red">Wrong Credentials</span>
+
+
+  - Status Code: `401`
+
+  - Content Type: `application/json`
+
+
+  Example response:
+
+
+  ```json
+
+  {
+    "err": "some error message"
+  }
+
+  ```
+method: POST
+body:
+  mimeType: application/json
+  text: >-
+    {
+    	"email": "{% prompt 'Email', 'Email', 'testEmail', true, false, true %}",
+    	"password": "{% prompt 'Password', 'password', 'testPassword', 'password', true, true %}"
+    }
+parameters: []
+headers:
+  - name: Content-Type
+    value: application/json
+authentication: {}
+metaSortKey: -1684747535026.375
+isPrivate: false
+settingStoreCookies: true
+settingSendCookies: true
+settingDisableRenderRequestBody: false
+settingEncodeUrl: true
+settingRebuildPath: true
+settingFollowRedirects: global
