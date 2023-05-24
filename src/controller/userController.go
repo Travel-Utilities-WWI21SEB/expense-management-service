@@ -14,9 +14,9 @@ import (
 
 // Exposed interface to the handler-package
 type UserCtl interface {
-	RegisterUser(ctx context.Context, registrationData model.RegistrationRequest) (*model.UserResponse, *model.ExpenseServiceError)
-	LoginUser(ctx context.Context, loginData model.LoginRequest) (*model.UserResponse, *model.ExpenseServiceError)
-	UpdateUser(ctx context.Context) (*model.UserResponse, *model.ExpenseServiceError)
+	RegisterUser(ctx context.Context, registrationData model.RegistrationRequest) (*model.RegistrationResponse, *model.ExpenseServiceError)
+	LoginUser(ctx context.Context, loginData model.LoginRequest) (*model.LoginResponse, *model.ExpenseServiceError)
+	UpdateUser(ctx context.Context) (*model.UserDetailsResponse, *model.ExpenseServiceError)
 	DeleteUser(ctx context.Context, userId *uuid.UUID) *model.ExpenseServiceError
 	ActivateUser(ctx context.Context, token *uuid.UUID) *model.ExpenseServiceError
 	GetUserDetails(ctx context.Context, userId *uuid.UUID) (*model.UserDetailsResponse, *model.ExpenseServiceError)
@@ -28,7 +28,7 @@ type UserController struct {
 }
 
 // RegisterUser creates a new user entry in the database
-func (uc *UserController) RegisterUser(ctx context.Context, registrationData model.RegistrationRequest) (*model.UserResponse, *model.ExpenseServiceError) {
+func (uc *UserController) RegisterUser(ctx context.Context, registrationData model.RegistrationRequest) (*model.RegistrationResponse, *model.ExpenseServiceError) {
 	if utils.ContainsEmptyString(registrationData.Username, registrationData.Email, registrationData.Password) {
 		return nil, expenseerror.EXPENSE_BAD_REQUEST
 	}
@@ -67,13 +67,13 @@ func (uc *UserController) RegisterUser(ctx context.Context, registrationData mod
 		return nil, expenseerror.EXPENSE_UPSTREAM_ERROR
 	}
 
-	return &model.UserResponse{
+	return &model.RegistrationResponse{
 		UserID: user.UserID,
 	}, nil
 }
 
 // LoginUser checks if the user exists and if the password is correct
-func (uc *UserController) LoginUser(ctx context.Context, loginData model.LoginRequest) (*model.UserResponse, *model.ExpenseServiceError) {
+func (uc *UserController) LoginUser(ctx context.Context, loginData model.LoginRequest) (*model.LoginResponse, *model.ExpenseServiceError) {
 	if utils.ContainsEmptyString(loginData.Email, loginData.Password) {
 		return nil, expenseerror.EXPENSE_BAD_REQUEST
 	}
@@ -93,13 +93,20 @@ func (uc *UserController) LoginUser(ctx context.Context, loginData model.LoginRe
 		return nil, expenseerror.EXPENSE_CREDENTIALS_INVALID
 	}
 
-	return &model.UserResponse{
+	token, err := utils.GenerateToken(&userId)
+	if err != nil {
+		log.Printf("Error in userController.LoginUser().GenerateToken(): %v", err.Error())
+		return nil, expenseerror.EXPENSE_UPSTREAM_ERROR
+	}
+
+	return &model.LoginResponse{
 		UserID: &userId,
+		Token:  &token,
 	}, nil
 }
 
 // UpdateUser updates the user entry in the database
-func (uc *UserController) UpdateUser(ctx context.Context) (*model.UserResponse, *model.ExpenseServiceError) {
+func (uc *UserController) UpdateUser(ctx context.Context) (*model.UserDetailsResponse, *model.ExpenseServiceError) {
 	// TO-DO
 	return nil, expenseerror.EXPENSE_UPSTREAM_ERROR
 }
@@ -140,6 +147,18 @@ func (uc *UserController) ActivateUser(ctx context.Context, token *uuid.UUID) *m
 func (uc *UserController) GetUserDetails(ctx context.Context, userId *uuid.UUID) (*model.UserDetailsResponse, *model.ExpenseServiceError) {
 	if utils.ContainsEmptyString(userId.String()) {
 		return nil, expenseerror.EXPENSE_BAD_REQUEST
+	}
+
+	tokenUserId, ok := ctx.Value("userId").(*uuid.UUID)
+	if !ok {
+		log.Printf("Error in userController.GetUserDetails().ctx.Value(): %v", "userId not found")
+		return nil, expenseerror.EXPENSE_INTERNAL_ERROR
+	}
+
+	// Check if authenticated user is the same as the requested user
+	if tokenUserId.String() != userId.String() {
+		log.Printf("%v and %v are not equal", tokenUserId, userId)
+		return nil, expenseerror.EXPENSE_UNAUTHORIZED
 	}
 
 	queryString := "SELECT username, email FROM \"user\" WHERE id = $1"

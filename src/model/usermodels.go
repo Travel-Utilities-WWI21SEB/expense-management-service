@@ -10,13 +10,18 @@ type RegistrationRequest struct {
 	Password string `json:"password"`
 }
 
+type RegistrationResponse struct {
+	UserID *uuid.UUID `json:"userId"`
+}
+
 type LoginRequest struct {
 	Email    string `json:"email"`
 	Password string `json:"password"`
 }
 
-type UserResponse struct {
+type LoginResponse struct {
 	UserID *uuid.UUID `json:"userId"`
+	Token  *string    `json:"token"`
 }
 
 type UserDetailsResponse struct {
