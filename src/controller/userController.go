@@ -5,8 +5,10 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
+	"time"
 
 	"github.com/Travel-Utilities-WWI21SEB/expense-management-service/src/expenseerror"
+	"github.com/Travel-Utilities-WWI21SEB/expense-management-service/src/manager"
 	"github.com/Travel-Utilities-WWI21SEB/expense-management-service/src/model"
 	"github.com/Travel-Utilities-WWI21SEB/expense-management-service/src/utils"
 	"github.com/google/uuid"
@@ -25,7 +27,12 @@ type UserCtl interface {
 
 // User Controller structure
 type UserController struct {
+	MailMgr manager.MailMgr
 }
+
+const activationUrl = "https://expenseui.c930.net/activate?token=%s"
+const activationMailSubject = "Welcome to Costventures!"
+const confirmationMailSubject = "Your mail has been verified!"
 
 // RegisterUser creates a new user entry in the database
 func (uc *UserController) RegisterUser(ctx context.Context, registrationData model.RegistrationRequest) (*model.RegistrationResponse, *model.ExpenseServiceError) {
@@ -61,15 +68,40 @@ func (uc *UserController) RegisterUser(ctx context.Context, registrationData mod
 	}
 
 	// Insert user into database
-	queryString = "INSERT INTO \"user\" (id, username, email, password) VALUES ($1, $2, $3, $4)"
-	if _, err := utils.ExecuteStatement(queryString, user.UserID, user.UserName, user.Email, user.Password); err != nil {
+	queryString = "INSERT INTO \"user\" (id, username, email, password, activated) VALUES ($1, $2, $3, $4, $5)"
+	if _, err := utils.ExecuteStatement(queryString, user.UserID, user.UserName, user.Email, user.Password, false); err != nil {
 		log.Printf("Error in userController.RegisterUser().ExecuteStatement(): %v", err.Error())
 		return nil, expenseerror.EXPENSE_UPSTREAM_ERROR
 	}
 
-	return &model.RegistrationResponse{
-		UserID: user.UserID,
-	}, nil
+	// Generate activation token and send activation mail
+	activationToken := uuid.New()
+	now := time.Now()
+
+	queryString = "INSERT INTO activation_token (id, created_at, id_user) VALUES ($1, $2, $3)"
+	if _, err := utils.ExecuteStatement(queryString, activationToken, now, user.UserID); err != nil {
+		log.Printf("Error in userController.RegisterUser().ExecuteStatement(): %v", err.Error())
+		return nil, expenseerror.EXPENSE_UPSTREAM_ERROR
+	}
+
+	activationUrl := fmt.Sprintf(activationUrl, activationToken)
+	activationMail := &model.ActivationMail{
+		Username:      user.UserName,
+		ActivationUrl: activationUrl,
+		Subject:       activationMailSubject,
+		Recipients:    []string{user.Email},
+	}
+
+	response := &model.RegistrationResponse{
+		UserID: &userId,
+	}
+
+	if err := uc.MailMgr.SendActivationMail(ctx, *activationMail); err != nil {
+		log.Printf("Error in userController.RegisterUser().SendActivationMail(): %v", err.ErrorMessage)
+		return response, err
+	}
+
+	return response, nil
 }
 
 // LoginUser checks if the user exists and if the password is correct
@@ -93,9 +125,9 @@ func (uc *UserController) LoginUser(ctx context.Context, loginData model.LoginRe
 		return nil, expenseerror.EXPENSE_CREDENTIALS_INVALID
 	}
 
-	token, err := utils.GenerateToken(&userId)
+	token, err := utils.GenerateJWT(&userId)
 	if err != nil {
-		log.Printf("Error in userController.LoginUser().GenerateToken(): %v", err.Error())
+		log.Printf("Error in userController.LoginUser().GenerateJWT(): %v", err.Error())
 		return nil, expenseerror.EXPENSE_UPSTREAM_ERROR
 	}
 
@@ -139,8 +171,67 @@ func (uc *UserController) DeleteUser(ctx context.Context, userId *uuid.UUID) *mo
 
 // ActivateUser activates the user entry in the database
 func (uc *UserController) ActivateUser(ctx context.Context, token *uuid.UUID) *model.ExpenseServiceError {
-	// TO-DO
-	return expenseerror.EXPENSE_INTERNAL_ERROR
+	if utils.ContainsEmptyString(token.String()) {
+		return expenseerror.EXPENSE_BAD_REQUEST
+	}
+
+	queryString := "SELECT id_user, confirmed_at FROM activation_token WHERE id = $1"
+	row := utils.ExecuteQueryRow(queryString, token)
+
+	var userId *uuid.UUID
+	var confirmedAt *time.Time
+
+	if err := row.Scan(&userId, &confirmedAt); err != nil {
+		log.Printf("Error in userController.ActivateUser().Scan(): %v", err.Error())
+		return expenseerror.EXPENSE_USER_NOT_FOUND
+	}
+
+	if confirmedAt != nil {
+		return expenseerror.EXPENSE_MAIL_ALREADY_VERIFIED
+	}
+
+	// Select user from database
+	queryString = "SELECT username, email FROM \"user\" WHERE id = $1"
+	row = utils.ExecuteQueryRow(queryString, userId)
+
+	var username string
+	var email string
+
+	if err := row.Scan(&username, &email); err != nil {
+		log.Printf("Error in userController.ActivateUser().Scan(): %v", err.Error())
+		return expenseerror.EXPENSE_USER_NOT_FOUND
+	}
+
+	// Activate user in database and save confirmation time
+	queryString = "UPDATE \"user\" SET activated = $1 WHERE id = $2"
+	_, err := utils.ExecuteStatement(queryString, true, userId)
+	if err != nil {
+		log.Printf("Error in userController.ActivateUser().ExecuteStatement(): %v", err.Error())
+		return expenseerror.EXPENSE_UPSTREAM_ERROR
+	}
+
+	now := time.Now()
+
+	queryString = "UPDATE activation_token SET confirmed_at = $1 WHERE id = $2"
+	_, err = utils.ExecuteStatement(queryString, now, token)
+	if err != nil {
+		log.Printf("Error in userController.ActivateUser().ExecuteStatement(): %v", err.Error())
+		return expenseerror.EXPENSE_UPSTREAM_ERROR
+	}
+
+	// Send confirmation mail
+	confirmationMail := &model.ConfirmationMail{
+		Username:   username,
+		Subject:    confirmationMailSubject,
+		Recipients: []string{email},
+	}
+
+	if err := uc.MailMgr.SendConfirmationMail(ctx, *confirmationMail); err != nil {
+		log.Printf("Error in userController.ActivateUser().SendConfirmationMail(): %v", err.ErrorMessage)
+		return err
+	}
+
+	return nil
 }
 
 // GetUserDetails returns the user entry in the database

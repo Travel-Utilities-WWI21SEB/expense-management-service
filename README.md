@@ -4,7 +4,6 @@
 [![Continuous Delivery](https://github.com/Travel-Utilities-WWI21SEB/expense-management-service/actions/workflows/cd.yml/badge.svg?branch=main)](https://github.com/Travel-Utilities-WWI21SEB/expense-management-service/actions/workflows/cd.yml)
 [![CodeScene Code Health](https://codescene.io/projects/39275/status-badges/code-health?component-name=Expense-management-service)](https://codescene.io/projects/39275/architecture/biomarkers?component=Expense-management-service)
 
-
 Backend Service for the Expense Management Tool
 
 ## Developing
@@ -21,19 +20,26 @@ After installing the dependencies you need to populate a local `.env` file in th
 # The port that the application will be exposed on
 ENVIROMENT=DEV or PROD
 
-# For DEV-enviroment only
+# Secret key for generating JWT tokens
+JWT_SECRET="some super long and secure secret"
+
+# For dev database connection
 DEV_DB_HOST=localhost
 DEV_DB_PORT=5432
 DEV_DB_USER=admin
 DEV_DB_PASSWORD=password
 DEV_DB_NAME=travel_expenses-db
 
-# For PROD-enviroment only
+# For prod database connection
 PROD_DB_HOST=ask luca
 PROD_DB_PORT=ask luca
 PROD_DB_USER=ask luca
 PROD_DB_PASSWORD=ask luca
 PROD_DB_NAME=ask luca
+
+# Mail Server
+MAILGUN_API_KEY=ask kevin
+MAILGUN_DOMAIN=mail.costventures.works
 ```
 
 For the dev-enviroment you will also need a local postgres cluster running on port 5432 with the credentials as specified in the example above. The database itself should be setup with the expense_db.sql file in the root directory of this repository.
@@ -47,7 +53,7 @@ To run the application in a local container run the following command:
 ```bash
 bash ./scripts/start
 # exposed at localhost:8081
-````
+```
 
 To stop the container run the following command:
 

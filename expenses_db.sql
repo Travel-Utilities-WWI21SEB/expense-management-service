@@ -8,8 +8,8 @@
 -- These commands were put in this file only as a convenience.
 -- 
 -- object: "travel_expenses-db" | type: DATABASE --
-DROP DATABASE IF EXISTS "travel_expenses-db";
-CREATE DATABASE "travel_expenses-db";
+-- DROP DATABASE IF EXISTS "travel_expenses-db";
+CREATE SCHEMA "public";
 -- ddl-end --
 
 
@@ -20,6 +20,7 @@ CREATE TABLE public."user" (
 	username varchar,
 	email varchar,
 	password varchar,
+	activated boolean,
 	CONSTRAINT user_pk PRIMARY KEY (id)
 );
 -- ddl-end --
@@ -33,6 +34,24 @@ CREATE TABLE public.trip (
 	"end" date,
 	CONSTRAINT travel_pk PRIMARY KEY (id)
 );
+-- ddl-end --
+
+-- object: public.activation_token | type: TABLE --
+-- DROP TABLE IF EXISTS public.activation_token CASCADE;
+CREATE TABLE public.activation_token (
+	id uuid,
+	created_at timestamptz,
+	confirmed_at timestamptz,
+	id_user uuid NOT NULL,
+	CONSTRAINT activation_token_pk PRIMARY KEY (id)
+);
+-- ddl-end --
+
+-- object: user_fk | type: CONSTRAINT --
+-- ALTER TABLE public.activation_token DROP CONSTRAINT IF EXISTS user_fk CASCADE;
+ALTER TABLE public.activation_token ADD CONSTRAINT user_fk FOREIGN KEY (id_user)
+REFERENCES public."user" (id) MATCH FULL
+ON DELETE CASCADE;
 -- ddl-end --
 
 -- object: public.many_user_has_many_travel | type: TABLE --
@@ -51,14 +70,14 @@ CREATE TABLE public.many_user_has_many_travel (
 -- ALTER TABLE public.many_user_has_many_travel DROP CONSTRAINT IF EXISTS user_fk CASCADE;
 ALTER TABLE public.many_user_has_many_travel ADD CONSTRAINT user_fk FOREIGN KEY (id_user)
 REFERENCES public."user" (id) MATCH FULL
-ON DELETE CASCADE ON UPDATE CASCADE;
+ON UPDATE CASCADE;
 -- ddl-end --
 
 -- object: trip_fk | type: CONSTRAINT --
 -- ALTER TABLE public.many_user_has_many_travel DROP CONSTRAINT IF EXISTS trip_fk CASCADE;
 ALTER TABLE public.many_user_has_many_travel ADD CONSTRAINT trip_fk FOREIGN KEY (id_trip)
 REFERENCES public.trip (id) MATCH FULL
-ON DELETE CASCADE ON UPDATE CASCADE;
+ON UPDATE CASCADE;
 -- ddl-end --
 
 -- object: public.cost_category | type: TABLE --
@@ -150,5 +169,3 @@ ALTER TABLE public.transaction ADD CONSTRAINT creditor_fk FOREIGN KEY (receiver_
 REFERENCES public."user" (id) MATCH SIMPLE
 ON DELETE SET NULL ON UPDATE CASCADE;
 -- ddl-end --
-
-
