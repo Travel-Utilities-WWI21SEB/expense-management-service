@@ -46,6 +46,12 @@ func RegisterUserHandler(userCtl controller.UserCtl) gin.HandlerFunc {
 
 		response, err := userCtl.RegisterUser(ctx, registrationData)
 		if err != nil {
+			// Return partial response if user was created but mail was not sent
+			if err == expenseerror.EXPENSE_MAIL_NOT_SENT {
+				c.JSON(http.StatusPartialContent, response)
+				return
+			}
+
 			utils.HandleErrorAndAbort(c, *err)
 			return
 		}
@@ -94,7 +100,7 @@ func DeleteUserHandler(userCtl controller.UserCtl) gin.HandlerFunc {
 		// TO-DO: Needs to be re-implemented after trip and cost routes are implemented
 		ctx := c.Request.Context()
 
-		userIdParam := c.Param("userId")
+		userIdParam := c.Param(model.ExpenseParamKeyUserId)
 		userId, err := uuid.Parse(userIdParam)
 		if err != nil {
 			utils.HandleErrorAndAbort(c, *expenseerror.EXPENSE_BAD_REQUEST)
@@ -107,16 +113,15 @@ func DeleteUserHandler(userCtl controller.UserCtl) gin.HandlerFunc {
 			return
 		}
 
-		c.JSON(http.StatusOK, nil)
+		c.JSON(http.StatusNoContent, nil)
 	}
 }
 
 func ActivateUserHandler(userCtl controller.UserCtl) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		// TO-DO
 		ctx := c.Request.Context()
 
-		tokenString := c.Query("token")
+		tokenString := c.Query(model.ExpenseQueryKeyToken)
 		token, err := uuid.Parse(tokenString)
 		if err != nil {
 			utils.HandleErrorAndAbort(c, *expenseerror.EXPENSE_BAD_REQUEST)
@@ -125,11 +130,17 @@ func ActivateUserHandler(userCtl controller.UserCtl) gin.HandlerFunc {
 
 		serviceError := userCtl.ActivateUser(ctx, &token)
 		if serviceError != nil {
+			// Return partial response if user was created but mail was not sent
+			if serviceError == expenseerror.EXPENSE_MAIL_NOT_SENT {
+				c.JSON(http.StatusAccepted, gin.H{"message": "User successfully activated but activation mail was not sent"})
+				return
+			}
+
 			utils.HandleErrorAndAbort(c, *serviceError)
 			return
 		}
 
-		c.JSON(http.StatusOK, nil)
+		c.JSON(http.StatusOK, gin.H{"message": "User successfully activated"})
 	}
 }
 
@@ -137,7 +148,7 @@ func GetUserDetailsHandler(userCtl controller.UserCtl) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		ctx := c.Request.Context()
 
-		userIdParam := c.Param("userId")
+		userIdParam := c.Param(model.ExpenseParamKeyUserId)
 		userId, err := uuid.Parse(userIdParam)
 		if err != nil {
 			utils.HandleErrorAndAbort(c, *expenseerror.EXPENSE_BAD_REQUEST)
@@ -158,7 +169,7 @@ func SuggestUsersHandler(userCtl controller.UserCtl) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		ctx := c.Request.Context()
 
-		query := c.Query("q")
+		query := c.Query(model.ExpenseQueryKeyQueryString)
 		response, err := userCtl.SuggestUsers(ctx, query)
 		if err != nil {
 			utils.HandleErrorAndAbort(c, *err)

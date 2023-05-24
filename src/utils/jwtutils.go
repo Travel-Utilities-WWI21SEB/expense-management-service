@@ -15,7 +15,7 @@ const tokenLifespan = 15 * 60 // 15 minutes
 const leeway = 3 * 60         // 5 minutes
 const issuer = "travelUtilities-expenseApi"
 
-func GenerateToken(userId *uuid.UUID) (string, error) {
+func GenerateJWT(userId *uuid.UUID) (string, error) {
 	now := time.Now()
 
 	claims := &jwt.MapClaims{

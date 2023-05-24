@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/Travel-Utilities-WWI21SEB/expense-management-service/src/controller"
+	"github.com/Travel-Utilities-WWI21SEB/expense-management-service/src/manager"
 	"github.com/Travel-Utilities-WWI21SEB/expense-management-service/src/middleware"
 	"github.com/gin-gonic/gin"
 )
@@ -22,8 +23,19 @@ func createRouter() *gin.Engine {
 
 	securedApiv1.Use(middleware.JwtAuthMiddleware())
 
+	mgInstance := manager.InitializeMailgunClient()
+	if mgInstance == nil {
+		panic("Could not initialize Mailgun instance")
+	}
+
+	mailMgr := &manager.MailManager{
+		MailgunInstance: mgInstance,
+	}
+
 	controllers := Controllers{
-		UserController: &controller.UserController{},
+		UserController: &controller.UserController{
+			MailMgr: mailMgr,
+		},
 		TripController: &controller.TripController{},
 		CostController: &controller.CostController{},
 	}
