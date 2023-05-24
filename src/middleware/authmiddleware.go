@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/Travel-Utilities-WWI21SEB/expense-management-service/src/expenseerror"
+	"github.com/Travel-Utilities-WWI21SEB/expense-management-service/src/model"
 	"github.com/Travel-Utilities-WWI21SEB/expense-management-service/src/utils"
 	"github.com/gin-gonic/gin"
 )
@@ -31,7 +32,7 @@ func JwtAuthMiddleware() gin.HandlerFunc {
 		}
 
 		// Add userId to context
-		ctx := context.WithValue(c.Request.Context(), utils.ContextKeyUserID, id)
+		ctx := context.WithValue(c.Request.Context(), model.ExpenseContextKeyUserID, id)
 		c.Request = c.Request.WithContext(ctx)
 
 		c.Next()

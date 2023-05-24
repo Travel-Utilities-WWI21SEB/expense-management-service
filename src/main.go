@@ -13,16 +13,24 @@ import (
 )
 
 func main() {
-	// CREATE ROUTER
-	router := createRouter()
-
-	if err := godotenv.Load(); err != nil {
-		log.Printf("Error loading .env file: %v", err)
+	// LOAD ENVIRONMENT VARIABLES
+	log.Println("Loading environment variables...")
+	err := godotenv.Load()
+	if err != nil {
+		log.Printf("Error loading .env file:: %v", err)
 	}
+	log.Println("Environment variables loaded successfully")
+
+	// CREATE ROUTER
+	log.Println("Creating router...")
+	router := createRouter()
+	log.Println("Router created successfully")
 
 	// CONNECT TO DATABASE
+	log.Println("Connecting to database...")
 	db.ConnectToDB()
 	defer utils.CloseDbConnection()
+	log.Println("Connected to database successfully")
 
 	// CREATE CONTEXT
 	server := &http.Server{
@@ -36,6 +44,7 @@ func main() {
 
 	// RUN SERVER
 	go func() {
+		log.Println("Starting server on port 8080...")
 		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			log.Fatalf("Error starting or closing listener:: %v", err)
 			os.Exit(0)
