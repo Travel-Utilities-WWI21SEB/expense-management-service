@@ -1,4 +1,4 @@
-package db
+package manager
 
 import (
 	"database/sql"
@@ -10,7 +10,35 @@ import (
 	_ "github.com/lib/pq"
 )
 
-func ConnectToDB() {
+type DatabaseMgr interface {
+	ExecuteStatement(query string, args ...interface{}) (sql.Result, error)
+	ExecuteQuery(query string, args ...interface{}) (*sql.Rows, error)
+	ExecuteQueryRow(query string, args ...interface{}) *sql.Row
+}
+
+type DatabaseManager struct {
+	Connection *sql.DB
+}
+
+func (dm *DatabaseManager) ExecuteStatement(query string, args ...interface{}) (sql.Result, error) {
+	result, err := dm.Connection.Exec(query, args...)
+	return result, err
+}
+
+func (dm *DatabaseManager) ExecuteQuery(query string, args ...interface{}) (*sql.Rows, error) {
+	rows, err := dm.Connection.Query(query, args...)
+	if err != nil {
+		return nil, err
+	}
+	return rows, nil
+}
+
+func (dm *DatabaseManager) ExecuteQueryRow(query string, args ...interface{}) *sql.Row {
+	row := dm.Connection.QueryRow(query, args...)
+	return row
+}
+
+func InitializeDatabaseConnection() *sql.DB {
 	// Check if environment variables are set
 	var environment = os.Getenv("ENVIRONMENT")
 
@@ -40,5 +68,5 @@ func ConnectToDB() {
 		panic(err)
 	}
 
-	utils.InitializeDbConnection(db)
+	return db
 }
