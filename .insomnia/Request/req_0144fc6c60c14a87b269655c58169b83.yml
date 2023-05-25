@@ -1,7 +1,7 @@
 _id: req_0144fc6c60c14a87b269655c58169b83
 type: Request
 parentId: fld_377a889e84744fad9aa37e60971a9815
-modified: 1684883067016
+modified: 1685017319086
 created: 1684747524857
 url: "{{ _.localUrl }}/api/{{ _.apiVersion }}/{{ _.route }}/{% prompt 'UserId',
   '', 'userId', 'userid', false, true %}"
@@ -145,7 +145,10 @@ method: GET
 body: {}
 parameters: []
 headers: []
-authentication: {}
+authentication:
+  type: bearer
+  token: "{{ _.token }}"
+  prefix: Bearer
 metaSortKey: -1684747534009.4375
 isPrivate: false
 settingStoreCookies: true

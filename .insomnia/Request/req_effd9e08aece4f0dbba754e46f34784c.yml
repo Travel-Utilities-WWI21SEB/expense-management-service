@@ -1,7 +1,7 @@
 _id: req_effd9e08aece4f0dbba754e46f34784c
 type: Request
 parentId: fld_377a889e84744fad9aa37e60971a9815
-modified: 1684882974423
+modified: 1685020879812
 created: 1684747487640
 url: "{{ _.localUrl }}/{{ _.route }}/{% prompt 'UserId', '', 'userId', 'userid',
   false, true %}"
@@ -55,9 +55,10 @@ description: >
   ```json
 
   {
-  	"email": "someMail@domain.com",
-  	"username": "someUsername",
-  	"password": "somePassword"
+  	"email": "someMail@domain.com", // omitted if empty
+  	"username": "someUsername", // omitted if empty
+  	"oldPassword": "oldPassword", // omitted if empty
+  	"newPassword": "somePassword" // omitted if empty
   }
 
   ```
@@ -100,7 +101,55 @@ description: >
   }
 
   ```
-method: PUT
+
+
+  ---
+
+
+  #### <span style="color:red">User not found</span>
+
+
+  - Status Code: `404`
+
+  - Content Type: `application/json`
+
+
+  Example response:
+
+
+  ```json
+
+  {
+    "errorCode": "EM-009",
+  	"errorMessage": "USER_NOT_FOUND"
+  }
+
+  ```
+
+
+  ---
+
+
+  #### <span style="color:red">Upstream Error</span>
+
+
+  - Status Code: `500`
+
+  - Content Type: `application/json`
+
+
+  Example response:
+
+
+  ```json
+
+  {
+    "errorCode": "EM-001",
+  	"errorMessage": "UPSTREAM_ERROR"
+  }
+
+  ```
+method: PATCH
 body:
   mimeType: application/json
   text: >-
@@ -113,7 +162,10 @@ parameters: []
 headers:
   - name: Content-Type
     value: application/json
-authentication: {}
+authentication:
+  type: bearer
+  token: "{{ _.token }}"
+  prefix: Bearer
 metaSortKey: -1684747528924.75
 isPrivate: false
 settingStoreCookies: true
