@@ -1,6 +1,7 @@
 package main
 
 import (
+	"database/sql"
 	"net/http"
 
 	"github.com/Travel-Utilities-WWI21SEB/expense-management-service/src/controller"
@@ -16,13 +17,18 @@ type Controllers struct {
 	CostController controller.CostCtl
 }
 
-func createRouter() *gin.Engine {
+func createRouter(dbConnection *sql.DB) *gin.Engine {
 	router := gin.Default()
 	apiv1 := router.Group("/api/v1")
 	securedApiv1 := router.Group("/api/v1")
 
 	securedApiv1.Use(middleware.JwtAuthMiddleware())
 
+	databaseMgr := &manager.DatabaseManager{
+		Connection: dbConnection,
+	}
+
+	// Initialize Mailgun client
 	mgInstance := manager.InitializeMailgunClient()
 	if mgInstance == nil {
 		panic("Could not initialize Mailgun instance")
@@ -34,7 +40,8 @@ func createRouter() *gin.Engine {
 
 	controllers := Controllers{
 		UserController: &controller.UserController{
-			MailMgr: mailMgr,
+			MailMgr:     mailMgr,
+			DatabaseMgr: databaseMgr,
 		},
 		TripController: &controller.TripController{},
 		CostController: &controller.CostController{},

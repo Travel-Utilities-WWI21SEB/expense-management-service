@@ -27,7 +27,8 @@ type UserCtl interface {
 
 // User Controller structure
 type UserController struct {
-	MailMgr manager.MailMgr
+	MailMgr     manager.MailMgr
+	DatabaseMgr manager.DatabaseMgr
 }
 
 const activationUrl = "https://expenseui.c930.net/activate?token=%s"
@@ -42,7 +43,7 @@ func (uc *UserController) RegisterUser(ctx context.Context, registrationData mod
 
 	// Check if user already exists
 	queryString := "SELECT id FROM \"user\" WHERE email = $1 OR username = $2"
-	row, err := utils.ExecuteQuery(queryString, registrationData.Email, registrationData.Username)
+	row, err := uc.DatabaseMgr.ExecuteQuery(queryString, registrationData.Email, registrationData.Username)
 	if err != nil {
 		log.Printf("Error in userController.RegisterUser().ExecuteQuery(): %v", err.Error())
 		return nil, expenseerror.EXPENSE_UPSTREAM_ERROR
@@ -69,7 +70,7 @@ func (uc *UserController) RegisterUser(ctx context.Context, registrationData mod
 
 	// Insert user into database
 	queryString = "INSERT INTO \"user\" (id, username, email, password, activated) VALUES ($1, $2, $3, $4, $5)"
-	if _, err := utils.ExecuteStatement(queryString, user.UserID, user.UserName, user.Email, user.Password, false); err != nil {
+	if _, err := uc.DatabaseMgr.ExecuteStatement(queryString, user.UserID, user.UserName, user.Email, user.Password, false); err != nil {
 		log.Printf("Error in userController.RegisterUser().ExecuteStatement(): %v", err.Error())
 		return nil, expenseerror.EXPENSE_UPSTREAM_ERROR
 	}
@@ -79,7 +80,7 @@ func (uc *UserController) RegisterUser(ctx context.Context, registrationData mod
 	now := time.Now()
 
 	queryString = "INSERT INTO activation_token (id, created_at, id_user) VALUES ($1, $2, $3)"
-	if _, err := utils.ExecuteStatement(queryString, activationToken, now, user.UserID); err != nil {
+	if _, err := uc.DatabaseMgr.ExecuteStatement(queryString, activationToken, now, user.UserID); err != nil {
 		log.Printf("Error in userController.RegisterUser().ExecuteStatement(): %v", err.Error())
 		return nil, expenseerror.EXPENSE_UPSTREAM_ERROR
 	}
@@ -111,7 +112,7 @@ func (uc *UserController) LoginUser(ctx context.Context, loginData model.LoginRe
 	}
 
 	queryString := "SELECT id, password FROM \"user\" WHERE email = $1"
-	row := utils.ExecuteQueryRow(queryString, loginData.Email)
+	row := uc.DatabaseMgr.ExecuteQueryRow(queryString, loginData.Email)
 
 	var userId uuid.UUID
 	var hashedPassword string
@@ -150,7 +151,7 @@ func (uc *UserController) DeleteUser(ctx context.Context, userId *uuid.UUID) *mo
 	}
 
 	queryString := "DELETE FROM \"user\" WHERE id = $1"
-	result, err := utils.ExecuteStatement(queryString, userId)
+	result, err := uc.DatabaseMgr.ExecuteStatement(queryString, userId)
 	if err != nil {
 		log.Printf("Error in userController.DeleteUser().ExecuteStatement(): %v", err.Error())
 		return expenseerror.EXPENSE_UPSTREAM_ERROR
@@ -176,7 +177,7 @@ func (uc *UserController) ActivateUser(ctx context.Context, token *uuid.UUID) *m
 	}
 
 	queryString := "SELECT id_user, confirmed_at FROM activation_token WHERE id = $1"
-	row := utils.ExecuteQueryRow(queryString, token)
+	row := uc.DatabaseMgr.ExecuteQueryRow(queryString, token)
 
 	var userId *uuid.UUID
 	var confirmedAt *time.Time
@@ -192,7 +193,7 @@ func (uc *UserController) ActivateUser(ctx context.Context, token *uuid.UUID) *m
 
 	// Select user from database
 	queryString = "SELECT username, email FROM \"user\" WHERE id = $1"
-	row = utils.ExecuteQueryRow(queryString, userId)
+	row = uc.DatabaseMgr.ExecuteQueryRow(queryString, userId)
 
 	var username string
 	var email string
@@ -204,7 +205,7 @@ func (uc *UserController) ActivateUser(ctx context.Context, token *uuid.UUID) *m
 
 	// Activate user in database and save confirmation time
 	queryString = "UPDATE \"user\" SET activated = $1 WHERE id = $2"
-	_, err := utils.ExecuteStatement(queryString, true, userId)
+	_, err := uc.DatabaseMgr.ExecuteStatement(queryString, true, userId)
 	if err != nil {
 		log.Printf("Error in userController.ActivateUser().ExecuteStatement(): %v", err.Error())
 		return expenseerror.EXPENSE_UPSTREAM_ERROR
@@ -213,7 +214,7 @@ func (uc *UserController) ActivateUser(ctx context.Context, token *uuid.UUID) *m
 	now := time.Now()
 
 	queryString = "UPDATE activation_token SET confirmed_at = $1 WHERE id = $2"
-	_, err = utils.ExecuteStatement(queryString, now, token)
+	_, err = uc.DatabaseMgr.ExecuteStatement(queryString, now, token)
 	if err != nil {
 		log.Printf("Error in userController.ActivateUser().ExecuteStatement(): %v", err.Error())
 		return expenseerror.EXPENSE_UPSTREAM_ERROR
@@ -253,7 +254,7 @@ func (uc *UserController) GetUserDetails(ctx context.Context, userId *uuid.UUID)
 	}
 
 	queryString := "SELECT username, email FROM \"user\" WHERE id = $1"
-	row := utils.ExecuteQueryRow(queryString, userId)
+	row := uc.DatabaseMgr.ExecuteQueryRow(queryString, userId)
 
 	var userDetailsResponse model.UserDetailsResponse
 	if err := row.Scan(&userDetailsResponse.UserName, &userDetailsResponse.Email); err != nil {
@@ -275,7 +276,7 @@ func (uc *UserController) SuggestUsers(ctx context.Context, query string) (*mode
 	}
 
 	queryString := "SELECT id, username FROM \"user\" WHERE username LIKE $1"
-	rows, err := utils.ExecuteQuery(queryString, fmt.Sprintf("%v%%", query))
+	rows, err := uc.DatabaseMgr.ExecuteQuery(queryString, fmt.Sprintf("%v%%", query))
 	if err != nil {
 		log.Printf("Error in userController.SuggestUsers().ExecuteQuery(): %v", err.Error())
 		return nil, expenseerror.EXPENSE_UPSTREAM_ERROR

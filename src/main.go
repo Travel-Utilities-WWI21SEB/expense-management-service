@@ -7,8 +7,7 @@ import (
 	"os"
 	"os/signal"
 
-	"github.com/Travel-Utilities-WWI21SEB/expense-management-service/src/db"
-	"github.com/Travel-Utilities-WWI21SEB/expense-management-service/src/utils"
+	"github.com/Travel-Utilities-WWI21SEB/expense-management-service/src/manager"
 	"github.com/joho/godotenv"
 )
 
@@ -21,16 +20,15 @@ func main() {
 	}
 	log.Println("Environment variables loaded successfully")
 
+	// INITIALIZE DATABASE CONNECTION
+	log.Println("Initializing database connection...")
+	dbConnection := manager.InitializeDatabaseConnection()
+	defer dbConnection.Close()
+
 	// CREATE ROUTER
 	log.Println("Creating router...")
-	router := createRouter()
+	router := createRouter(dbConnection)
 	log.Println("Router created successfully")
-
-	// CONNECT TO DATABASE
-	log.Println("Connecting to database...")
-	db.ConnectToDB()
-	defer utils.CloseDbConnection()
-	log.Println("Connected to database successfully")
 
 	// CREATE CONTEXT
 	server := &http.Server{
