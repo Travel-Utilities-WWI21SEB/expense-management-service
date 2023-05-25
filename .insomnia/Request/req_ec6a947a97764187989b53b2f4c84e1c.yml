@@ -1,10 +1,10 @@
 _id: req_ec6a947a97764187989b53b2f4c84e1c
 type: Request
 parentId: fld_d83c1d0d5e75433c97b1979a5f600fb4
-modified: 1684760462435
+modified: 1685035741621
 created: 1684749711277
-url: "{{ _.localUrl }}/{{ _.route }}/{% prompt 'TripId', '', 'TripId', 'tripid',
-  false, true %}/invite"
+url: "{{ _.localUrl }}/api/{{ _.apiVersion }}/{{ _.route }}/{% prompt 'TripId',
+  '', 'TripId', 'tripid', false, true %}/invite"
 name: Invite to trip
 description: >
   This endpoint is used to login a user in our webapplication with given
@@ -98,7 +98,10 @@ parameters: []
 headers:
   - name: Content-Type
     value: application/json
-authentication: {}
+authentication:
+  type: bearer
+  token: "{{ _.token }}"
+  prefix: Bearer
 metaSortKey: -1684747857718.5
 isPrivate: false
 settingStoreCookies: true

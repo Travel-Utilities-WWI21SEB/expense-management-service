@@ -1,7 +1,7 @@
 _id: req_5571ed27fa2b41c2857c92cb3af5199d
 type: Request
 parentId: fld_377a889e84744fad9aa37e60971a9815
-modified: 1684882420573
+modified: 1685017335108
 created: 1684747608058
 url: "{{ _.localUrl }}/api/{{ _.apiVersion }}/{{ _.route }}/suggest"
 name: Suggest Users
@@ -164,7 +164,10 @@ parameters:
       true %}"
     description: QueryString to restrict suggested users
 headers: []
-authentication: {}
+authentication:
+  type: bearer
+  token: "{{ _.token }}"
+  prefix: Bearer
 metaSortKey: -1684747533500.9688
 isPrivate: false
 settingStoreCookies: true

@@ -1,7 +1,7 @@
 _id: req_e147f34b247c4c9a9dda73f10257b2de
 type: Request
 parentId: fld_7dbd01f829da460490b15b6ab7baa058
-modified: 1684760410167
+modified: 1684922707628
 created: 1684754630310
 url: "{{ _.localUrl }}/{{ _.route }}/{% prompt 'TripId', '', 'TripId', 'tripid',
   false, true %}/{{ _.subRoute }}/{% prompt 'DebtId', 'debtId', 'debtId',
@@ -87,7 +87,7 @@ description: >
   }
 
   ```
-method: PUT
+method: PATCH
 body: {}
 parameters: []
 headers: []
