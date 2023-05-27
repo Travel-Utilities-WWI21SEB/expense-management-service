@@ -18,7 +18,7 @@ After installing the dependencies you need to populate a local `.env` file in th
 
 ```bash
 # The port that the application will be exposed on
-ENVIROMENT=DEV or PROD
+ENVIRONMENT=DEV or PROD
 
 # Secret key for generating JWT tokens
 JWT_SECRET="some super long and secure secret"
