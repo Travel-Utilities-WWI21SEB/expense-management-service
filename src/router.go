@@ -61,10 +61,10 @@ func createRouter(dbConnection *sql.DB) *gin.Engine {
 	securedApiv1.Handle(http.MethodDelete, "/user/:userId", DeleteUserHandler(controllers.UserController))
 
 	// Trip Routes
-	securedApiv1.Handle(http.MethodPost, "/trip/create", CreateTripEntryHandler(controllers.TripController))
-	securedApiv1.Handle(http.MethodPatch, "/trip/:tripId", UpdateTripEntryHandler(controllers.TripController))
-	securedApiv1.Handle(http.MethodGet, "/trip/:tripId", GetTripDetailsHandler(controllers.TripController))
-	securedApiv1.Handle(http.MethodDelete, "/trip/:tripId", DeleteTripEntryHandler(controllers.TripController))
+	securedApiv1.Handle(http.MethodPost, "/trips", CreateTripEntryHandler(controllers.TripController))
+	securedApiv1.Handle(http.MethodPatch, "/trips/:tripId", UpdateTripEntryHandler(controllers.TripController))
+	securedApiv1.Handle(http.MethodGet, "/trips/:tripId", GetTripDetailsHandler(controllers.TripController))
+	securedApiv1.Handle(http.MethodDelete, "/trips/:tripId", DeleteTripEntryHandler(controllers.TripController))
 
 	// Cost Routes
 	securedApiv1.Handle(http.MethodPost, "/cost/create", CreateCostEntryHandler(controllers.CostController))
