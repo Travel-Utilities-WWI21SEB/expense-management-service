@@ -197,7 +197,7 @@ func CreateTripEntryHandler(tripCtl controller.TripCtl) gin.HandlerFunc {
 
 		response, err := tripCtl.CreateTripEntry(ctx, tripData)
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, err.Error())
+			utils.HandleErrorAndAbort(c, *err)
 			return
 		}
 

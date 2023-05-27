@@ -14,7 +14,7 @@ import (
 
 // Exposed interface to the handler-package
 type TripCtl interface {
-	CreateTripEntry(ctx context.Context, tripData model.TripRequest) (*model.TripResponse, error)
+	CreateTripEntry(ctx context.Context, tripData model.TripRequest) (*model.TripResponse, *model.ExpenseServiceError)
 	UpdateTripEntry(ctx context.Context, tripID *uuid.UUID) (*model.TripResponse, error)
 	GetTripDetails(ctx context.Context, tripID *uuid.UUID) (*model.TripResponse, error)
 	DeleteTripEntry(ctx context.Context, tripID *uuid.UUID) error
