@@ -30,11 +30,6 @@ func (tc *TripController) CreateTripEntry(ctx context.Context, tripData model.Tr
 		return nil, expenseerror.EXPENSE_BAD_REQUEST
 	}
 
-	// Check if the date format is correct
-	if !utils.IsDateFormatCorrect(tripData.StartDate, tripData.EndDate) {
-		return nil, expenseerror.EXPENSE_BAD_REQUEST
-	}
-
 	// Create new trip
 	tripID := uuid.New()
 	tripStartDate, err := time.Parse(time.DateOnly, tripData.StartDate)
