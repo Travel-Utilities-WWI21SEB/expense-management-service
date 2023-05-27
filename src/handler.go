@@ -184,12 +184,18 @@ func SuggestUsersHandler(userCtl controller.UserCtl) gin.HandlerFunc {
  * TRIP ROUTES
  ******************************************************************************************/
 
-func CreateTripEntryHandler(TripCtl controller.TripCtl) gin.HandlerFunc {
+func CreateTripEntryHandler(tripCtl controller.TripCtl) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		// TO-DO
 		ctx := c.Request.Context()
 
-		response, err := TripCtl.CreateTripEntry(ctx)
+		var tripData model.TripRequest
+		if err := c.ShouldBindJSON(&tripData); err != nil {
+			utils.HandleErrorAndAbort(c, *expenseerror.EXPENSE_BAD_REQUEST)
+			return
+		}
+
+		response, err := tripCtl.CreateTripEntry(ctx, tripData)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, err.Error())
 			return

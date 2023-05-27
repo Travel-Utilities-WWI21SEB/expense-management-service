@@ -43,7 +43,9 @@ func createRouter(dbConnection *sql.DB) *gin.Engine {
 			MailMgr:     mailMgr,
 			DatabaseMgr: databaseMgr,
 		},
-		TripController: &controller.TripController{},
+		TripController: &controller.TripController{
+			DatabaseMgr: databaseMgr,
+		},
 		CostController: &controller.CostController{},
 	}
 

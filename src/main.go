@@ -12,6 +12,7 @@ import (
 )
 
 func main() {
+	log.SetFlags(log.Lshortfile | log.LstdFlags)
 	// LOAD ENVIRONMENT VARIABLES
 	log.Println("Loading environment variables...")
 	err := godotenv.Load()

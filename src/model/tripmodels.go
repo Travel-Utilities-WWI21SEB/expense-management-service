@@ -4,6 +4,12 @@ import (
 	"github.com/google/uuid"
 )
 
+type TripRequest struct {
+	Location  string `json:"location"`
+	StartDate string `json:"startDate"`
+	EndDate   string `json:"endDate"`
+}
+
 type TripsResponse struct {
 	Trips []TripSchema `json:"trips"`
 }
