@@ -37,12 +37,12 @@ func (tc *TripController) CreateTripEntry(ctx context.Context, tripData model.Tr
 
 	// Create new trip
 	tripID := uuid.New()
-	tripStartDate, err := time.Parse("2006-01-02", tripData.StartDate)
+	tripStartDate, err := time.Parse(time.DateOnly, tripData.StartDate)
 	if err != nil {
 		return nil, expenseerror.EXPENSE_BAD_REQUEST
 	}
 
-	tripEndDate, err := time.Parse("2006-01-02", tripData.EndDate)
+	tripEndDate, err := time.Parse(time.DateOnly, tripData.EndDate)
 	if err != nil {
 		return nil, expenseerror.EXPENSE_BAD_REQUEST
 	}
@@ -72,7 +72,7 @@ func (tc *TripController) CreateTripEntry(ctx context.Context, tripData model.Tr
 	}
 
 	// Insert user-trip association into database
-	queryString = "INSERT INTO user_trip_association (id_user, id_trip, is_accepted, presence_start_date, presence_end_date) VALUES ($1, $2, $3)"
+	queryString = "INSERT INTO user_trip_association (id_user, id_trip, is_accepted, presence_start_date, presence_end_date) VALUES ($1, $2, $3, $4, $5)"
 	if _, err := tc.DatabaseMgr.ExecuteStatement(queryString, tokenUserId, trip.TripID, true, trip.StartDate, trip.EndDate); err != nil {
 		return nil, expenseerror.EXPENSE_UPSTREAM_ERROR
 	}
