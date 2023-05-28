@@ -28,6 +28,7 @@ type TripController struct {
 
 func (tc *TripController) CreateTripEntry(ctx context.Context, tripData model.TripRequest) (*model.TripCreationResponse, *model.ExpenseServiceError) {
 	if utils.ContainsEmptyString(tripData.Location, tripData.StartDate, tripData.EndDate) {
+		log.Printf("Error in creating trip: %v", errors.New("empty string in request"))
 		return nil, expenseerror.EXPENSE_BAD_REQUEST
 	}
 
@@ -35,11 +36,13 @@ func (tc *TripController) CreateTripEntry(ctx context.Context, tripData model.Tr
 	tripID := uuid.New()
 	tripStartDate, err := time.Parse(time.DateOnly, tripData.StartDate)
 	if err != nil {
+		log.Printf("Error in parsing trip start date: %v", err)
 		return nil, expenseerror.EXPENSE_BAD_REQUEST
 	}
 
 	tripEndDate, err := time.Parse(time.DateOnly, tripData.EndDate)
 	if err != nil {
+		log.Printf("Error in parsing trip end date: %v", err)
 		return nil, expenseerror.EXPENSE_BAD_REQUEST
 	}
 
@@ -66,13 +69,13 @@ func (tc *TripController) CreateTripEntry(ctx context.Context, tripData model.Tr
 
 	// error if user is not logged in
 	if tokenUserId == nil {
-		log.Printf("Error in tripController.CreateTripEntry.ctx.Value(): %v", errors.New("user not logged in"))
 		return nil, expenseerror.EXPENSE_BAD_REQUEST
 	}
 
 	// Insert user-trip association into database
 	queryString = "INSERT INTO user_trip_association (id_user, id_trip, is_accepted, presence_start_date, presence_end_date) VALUES ($1, $2, $3, $4, $5)"
 	if _, err := tc.DatabaseMgr.ExecuteStatement(queryString, tokenUserId, trip.TripID, true, trip.StartDate, trip.EndDate); err != nil {
+		log.Printf("Error in tripController.CreateTripEntry.DatabaseMgr.ExecuteStatement(): %v", err)
 		return nil, expenseerror.EXPENSE_UPSTREAM_ERROR
 	}
 
@@ -100,7 +103,6 @@ func (tc *TripController) GetTripDetails(ctx context.Context, tripID *uuid.UUID)
 		log.Printf("Error in tripController.GetTripDetails.ctx.Value(): %v", ok)
 		return nil, expenseerror.EXPENSE_INTERNAL_ERROR
 	}
-	log.Printf("tokenUserId: %v", tokenUserId)
 
 	//+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++//
 	// Check if trip exists                                                                          //
@@ -126,6 +128,7 @@ func (tc *TripController) GetTripDetails(ctx context.Context, tripID *uuid.UUID)
 
 	var associationCount int
 	if err := row.Scan(&associationCount); err != nil {
+		log.Printf("Error in tripController.GetTripDetails.rows.Scan(): %v", err)
 		return nil, expenseerror.EXPENSE_UPSTREAM_ERROR
 	}
 
@@ -141,6 +144,7 @@ func (tc *TripController) GetTripDetails(ctx context.Context, tripID *uuid.UUID)
 
 	var tripResponse model.TripResponse
 	if err := row.Scan(&tripResponse.TripID, &tripResponse.Location, &tripResponse.StartDate, &tripResponse.EndDate); err != nil {
+		log.Printf("Error in tripController.GetTripDetails.rows.Scan(): %v", err)
 		return nil, expenseerror.EXPENSE_UPSTREAM_ERROR
 	}
 
