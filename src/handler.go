@@ -218,6 +218,30 @@ func GetTripEntriesHandler(tripCtl controller.TripCtl) gin.HandlerFunc {
 	}
 }
 
+func GetTripDetailsHandler(TripCtl controller.TripCtl) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		ctx := c.Request.Context()
+
+		// Get the trip id from the context
+		tripIdParam := c.Param(model.ExpenseParamTripId)
+		// Convert the trip id (string) to uuid
+		tripId, err := uuid.Parse(tripIdParam)
+		if err != nil {
+			utils.HandleErrorAndAbort(c, *expenseerror.EXPENSE_BAD_REQUEST)
+			return
+		}
+
+		// Call the service to get the trip details
+		response, serviceError := TripCtl.GetTripDetails(ctx, &tripId)
+		if serviceError != nil {
+			utils.HandleErrorAndAbort(c, *expenseerror.EXPENSE_BAD_REQUEST)
+			return
+		}
+
+		c.JSON(http.StatusOK, response)
+	}
+}
+
 func UpdateTripEntryHandler(TripCtl controller.TripCtl) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		ctx := c.Request.Context()
@@ -237,30 +261,6 @@ func UpdateTripEntryHandler(TripCtl controller.TripCtl) gin.HandlerFunc {
 
 		response, serviceErr := TripCtl.UpdateTripEntry(ctx, &tripId, tripUpdateRequest)
 		if serviceErr != nil {
-			utils.HandleErrorAndAbort(c, *expenseerror.EXPENSE_BAD_REQUEST)
-			return
-		}
-
-		c.JSON(http.StatusOK, response)
-	}
-}
-
-func GetTripDetailsHandler(TripCtl controller.TripCtl) gin.HandlerFunc {
-	return func(c *gin.Context) {
-		ctx := c.Request.Context()
-
-		// Get the trip id from the context
-		tripIdParam := c.Param(model.ExpenseParamTripId)
-		// Convert the trip id (string) to uuid
-		tripId, err := uuid.Parse(tripIdParam)
-		if err != nil {
-			utils.HandleErrorAndAbort(c, *expenseerror.EXPENSE_BAD_REQUEST)
-			return
-		}
-
-		// Call the service to get the trip details
-		response, serviceError := TripCtl.GetTripDetails(ctx, &tripId)
-		if serviceError != nil {
 			utils.HandleErrorAndAbort(c, *expenseerror.EXPENSE_BAD_REQUEST)
 			return
 		}
