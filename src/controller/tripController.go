@@ -19,6 +19,7 @@ type TripCtl interface {
 	UpdateTripEntry(ctx context.Context, tripID *uuid.UUID, tripUpdateData model.TripUpdateRequest) (*model.TripResponse, *model.ExpenseServiceError)
 	GetTripDetails(ctx context.Context, tripID *uuid.UUID) (*model.TripResponse, *model.ExpenseServiceError)
 	DeleteTripEntry(ctx context.Context, tripID *uuid.UUID) error
+	GetTripEntries(ctx context.Context) ([]*model.TripResponse, *model.ExpenseServiceError)
 }
 
 // Trip Controller structure
@@ -85,6 +86,42 @@ func (tc *TripController) CreateTripEntry(ctx context.Context, tripData model.Tr
 	}
 
 	return response, nil
+}
+
+func (tc *TripController) GetTripEntries(ctx context.Context) ([]*model.TripResponse, *model.ExpenseServiceError) {
+	// Get user id from context
+	tokenUserId, ok := ctx.Value(model.ExpenseContextKeyUserID).(*uuid.UUID)
+	if !ok {
+		log.Printf("Error in tripController.GetTripEntries.ctx.Value(): %v", ok)
+		return nil, expenseerror.EXPENSE_INTERNAL_ERROR
+	}
+
+	// error if user is not logged in
+	if tokenUserId == nil {
+		return nil, expenseerror.EXPENSE_BAD_REQUEST
+	}
+
+	// Get trips from database
+	queryString := "SELECT trip.id, trip.location, trip.start_date, trip.end_date FROM trip " +
+		"INNER JOIN user_trip_association ON trip.id = user_trip_association.id_trip WHERE user_trip_association.id_user = $1"
+	rows, err := tc.DatabaseMgr.ExecuteQuery(queryString, tokenUserId)
+	if err != nil {
+		log.Printf("Error in tripController.GetTripEntries.DatabaseMgr.ExecuteQuery(): %v", err)
+		return nil, expenseerror.EXPENSE_UPSTREAM_ERROR
+	}
+
+	// Iterate over rows and create trip response
+	var tripResponses []*model.TripResponse
+	for rows.Next() {
+		var tripResponse model.TripResponse
+		if err := rows.Scan(&tripResponse.TripID, &tripResponse.Location, &tripResponse.StartDate, &tripResponse.EndDate); err != nil {
+			log.Printf("Error in tripController.GetTripEntries.rows.Scan(): %v", err)
+			return nil, expenseerror.EXPENSE_UPSTREAM_ERROR
+		}
+		tripResponses = append(tripResponses, &tripResponse)
+	}
+
+	return tripResponses, nil
 }
 
 func (tc *TripController) UpdateTripEntry(ctx context.Context, tripID *uuid.UUID, tripUpdateDate model.TripUpdateRequest) (*model.TripResponse, *model.ExpenseServiceError) {

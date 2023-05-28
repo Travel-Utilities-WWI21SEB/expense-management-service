@@ -204,6 +204,20 @@ func CreateTripEntryHandler(tripCtl controller.TripCtl) gin.HandlerFunc {
 	}
 }
 
+func GetTripEntriesHandler(tripCtl controller.TripCtl) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		ctx := c.Request.Context()
+
+		response, err := tripCtl.GetTripEntries(ctx)
+		if err != nil {
+			utils.HandleErrorAndAbort(c, *expenseerror.EXPENSE_BAD_REQUEST)
+			return
+		}
+
+		c.JSON(http.StatusOK, response)
+	}
+}
+
 func UpdateTripEntryHandler(TripCtl controller.TripCtl) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		ctx := c.Request.Context()
