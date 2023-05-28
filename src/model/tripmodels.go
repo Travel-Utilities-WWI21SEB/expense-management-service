@@ -15,5 +15,12 @@ type TripsResponse struct {
 }
 
 type TripResponse struct {
+	TripID    *uuid.UUID `json:"tripId"`
+	Location  string     `json:"location"`
+	StartDate string     `json:"startDate"`
+	EndDate   string     `json:"endDate"`
+}
+
+type TripCreationResponse struct {
 	TripID *uuid.UUID `json:"tripId"`
 }

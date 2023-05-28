@@ -186,7 +186,6 @@ func SuggestUsersHandler(userCtl controller.UserCtl) gin.HandlerFunc {
 
 func CreateTripEntryHandler(tripCtl controller.TripCtl) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		// TO-DO
 		ctx := c.Request.Context()
 
 		var tripData model.TripRequest
@@ -197,7 +196,7 @@ func CreateTripEntryHandler(tripCtl controller.TripCtl) gin.HandlerFunc {
 
 		response, err := tripCtl.CreateTripEntry(ctx, tripData)
 		if err != nil {
-			utils.HandleErrorAndAbort(c, *err)
+			utils.HandleErrorAndAbort(c, *expenseerror.EXPENSE_BAD_REQUEST)
 			return
 		}
 
@@ -222,12 +221,21 @@ func UpdateTripEntryHandler(TripCtl controller.TripCtl) gin.HandlerFunc {
 
 func GetTripDetailsHandler(TripCtl controller.TripCtl) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		// TO-DO
 		ctx := c.Request.Context()
 
-		response, err := TripCtl.GetTripDetails(ctx, nil)
+		// Get the trip id from the context
+		tripIdParam := c.Param(model.ExpenseParamTripId)
+		// Convert the trip id (string) to uuid
+		tripId, err := uuid.Parse(tripIdParam)
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, err.Error())
+			utils.HandleErrorAndAbort(c, *expenseerror.EXPENSE_BAD_REQUEST)
+			return
+		}
+
+		// Call the service to get the trip details
+		response, serviceError := TripCtl.GetTripDetails(ctx, &tripId)
+		if serviceError != nil {
+			utils.HandleErrorAndAbort(c, *expenseerror.EXPENSE_BAD_REQUEST)
 			return
 		}
 
