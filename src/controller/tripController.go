@@ -18,7 +18,7 @@ type TripCtl interface {
 	CreateTripEntry(ctx context.Context, tripData model.TripRequest) (*model.TripCreationResponse, *model.ExpenseServiceError)
 	UpdateTripEntry(ctx context.Context, tripID *uuid.UUID, tripUpdateData model.TripUpdateRequest) (*model.TripResponse, *model.ExpenseServiceError)
 	GetTripDetails(ctx context.Context, tripID *uuid.UUID) (*model.TripResponse, *model.ExpenseServiceError)
-	DeleteTripEntry(ctx context.Context, tripID *uuid.UUID) error
+	DeleteTripEntry(ctx context.Context, tripID *uuid.UUID) *model.ExpenseServiceError
 	GetTripEntries(ctx context.Context) ([]*model.TripResponse, *model.ExpenseServiceError)
 }
 
@@ -264,7 +264,49 @@ func (tc *TripController) GetTripDetails(ctx context.Context, tripID *uuid.UUID)
 	return &tripResponse, nil
 }
 
-func (tc *TripController) DeleteTripEntry(ctx context.Context, tripID *uuid.UUID) error {
-	// TO-DO
-	return errors.New("not implemented")
+func (tc *TripController) DeleteTripEntry(ctx context.Context, tripID *uuid.UUID) *model.ExpenseServiceError {
+	if utils.ContainsEmptyString(tripID.String()) {
+		return expenseerror.EXPENSE_INTERNAL_ERROR
+	}
+
+	// get user id from context
+	tokenUserId, ok := ctx.Value(model.ExpenseContextKeyUserID).(*uuid.UUID)
+	if !ok {
+		log.Printf("Error in tripController.DeleteTripEntry.ctx.Value(): %v", ok)
+		return expenseerror.EXPENSE_INTERNAL_ERROR
+	}
+
+	// check if trip exists
+	checkTripQueryString := "SELECT COUNT(*) FROM trip WHERE id = $1"
+	row := tc.DatabaseMgr.ExecuteQueryRow(checkTripQueryString, tripID)
+	var count int
+	if err := row.Scan(&count); err != nil {
+		log.Printf("Error in tripController.DeleteTripEntry.DatabaseMgr.ExecuteQueryRow(): %v", err)
+		return expenseerror.EXPENSE_UPSTREAM_ERROR
+	}
+
+	if count == 0 {
+		return expenseerror.EXPENSE_NOT_FOUND
+	}
+
+	// check if user is part of trip
+	checkUserTripQueryString := "SELECT COUNT(*) FROM user_trip_association WHERE id_trip = $1 AND id_user = $2"
+	row = tc.DatabaseMgr.ExecuteQueryRow(checkUserTripQueryString, tripID, tokenUserId)
+	if err := row.Scan(&count); err != nil {
+		log.Printf("Error in tripController.DeleteTripEntry.DatabaseMgr.ExecuteQueryRow(): %v", err)
+		return expenseerror.EXPENSE_UPSTREAM_ERROR
+	}
+
+	if count == 0 {
+		return expenseerror.EXPENSE_FORBIDDEN
+	}
+
+	// delete trip
+	deleteTripQueryString := "DELETE FROM trip WHERE id = $1"
+	if _, err := tc.DatabaseMgr.ExecuteStatement(deleteTripQueryString, tripID); err != nil {
+		log.Printf("Error in tripController.DeleteTripEntry.DatabaseMgr.ExecuteStatement(): %v", err)
+		return expenseerror.EXPENSE_UPSTREAM_ERROR
+	}
+
+	return nil
 }

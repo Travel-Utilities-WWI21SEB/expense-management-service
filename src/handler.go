@@ -271,16 +271,22 @@ func UpdateTripEntryHandler(TripCtl controller.TripCtl) gin.HandlerFunc {
 
 func DeleteTripEntryHandler(TripCtl controller.TripCtl) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		// TO-DO
 		ctx := c.Request.Context()
 
-		err := TripCtl.DeleteTripEntry(ctx, nil)
+		tripIdParam := c.Param(model.ExpenseParamTripId)
+		tripId, err := uuid.Parse(tripIdParam)
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, err.Error())
+			utils.HandleErrorAndAbort(c, *expenseerror.EXPENSE_BAD_REQUEST)
 			return
 		}
 
-		c.JSON(http.StatusOK, nil)
+		serviceErr := TripCtl.DeleteTripEntry(ctx, &tripId)
+		if serviceErr != nil {
+			utils.HandleErrorAndAbort(c, *expenseerror.EXPENSE_BAD_REQUEST)
+			return
+		}
+
+		c.JSON(http.StatusNoContent, nil)
 	}
 }
 
