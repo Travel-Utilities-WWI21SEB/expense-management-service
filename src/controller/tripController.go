@@ -88,8 +88,82 @@ func (tc *TripController) CreateTripEntry(ctx context.Context, tripData model.Tr
 }
 
 func (tc *TripController) UpdateTripEntry(ctx context.Context, tripID *uuid.UUID, tripUpdateDate model.TripUpdateRequest) (*model.TripResponse, *model.ExpenseServiceError) {
-	// TO-DO
-	return nil, expenseerror.EXPENSE_BAD_REQUEST
+	if utils.ContainsEmptyString(tripID.String()) {
+		return nil, expenseerror.EXPENSE_BAD_REQUEST
+	}
+
+	// Get authenticated user id from context
+	tokenUserId, ok := ctx.Value(model.ExpenseContextKeyUserID).(*uuid.UUID)
+	if !ok {
+		log.Printf("Error in tripController.UpdateTripEntry.ctx.Value(): %v", ok)
+		return nil, expenseerror.EXPENSE_INTERNAL_ERROR
+	}
+
+	// Check if trip exists
+	checkTripQueryString := "SELECT COUNT(*) FROM trip WHERE id = $1"
+	row := tc.DatabaseMgr.ExecuteQueryRow(checkTripQueryString, tripID)
+	var count int
+	if err := row.Scan(&count); err != nil {
+		log.Printf("Error in tripController.UpdateTripEntry.DatabaseMgr.ExecuteQueryRow(): %v", err)
+		return nil, expenseerror.EXPENSE_UPSTREAM_ERROR
+	}
+
+	if count == 0 {
+		return nil, expenseerror.EXPENSE_NOT_FOUND
+	}
+
+	// Check if user is associated with trip
+	checkUserTripQueryString := "SELECT COUNT(*) FROM user_trip_association WHERE id_user = $1 AND id_trip = $2"
+	row = tc.DatabaseMgr.ExecuteQueryRow(checkUserTripQueryString, tokenUserId, tripID)
+	if err := row.Scan(&count); err != nil {
+		log.Printf("Error in tripController.UpdateTripEntry.DatabaseMgr.ExecuteQueryRow(): %v", err)
+		return nil, expenseerror.EXPENSE_UPSTREAM_ERROR
+	}
+
+	if count == 0 {
+		return nil, expenseerror.EXPENSE_FORBIDDEN
+	}
+
+	// Get old trip data
+	getTripQueryString := "SELECT location, start_date, end_date FROM trip WHERE id = $1"
+	row = tc.DatabaseMgr.ExecuteQueryRow(getTripQueryString, tripID)
+	var location string
+	var startDate time.Time
+	var endDate time.Time
+	if err := row.Scan(&location, &startDate, &endDate); err != nil {
+		log.Printf("Error in tripController.UpdateTripEntry.DatabaseMgr.ExecuteQueryRow(): %v", err)
+		return nil, expenseerror.EXPENSE_UPSTREAM_ERROR
+	}
+
+	// Update trip data
+	if tripUpdateDate.Location != nil {
+		location = *tripUpdateDate.Location
+	}
+
+	if tripUpdateDate.StartDate != nil {
+		startDate, _ = time.Parse(time.DateOnly, *tripUpdateDate.StartDate)
+	}
+
+	if tripUpdateDate.EndDate != nil {
+		endDate, _ = time.Parse(time.DateOnly, *tripUpdateDate.EndDate)
+	}
+
+	// Update trip in database
+	updateTripQueryString := "UPDATE trip SET location = $1, start_date = $2, end_date = $3 WHERE id = $4"
+	if _, err := tc.DatabaseMgr.ExecuteStatement(updateTripQueryString, location, startDate, endDate, tripID); err != nil {
+		log.Printf("Error in tripController.UpdateTripEntry.DatabaseMgr.ExecuteStatement(): %v", err)
+		return nil, expenseerror.EXPENSE_UPSTREAM_ERROR
+	}
+
+	// Return trip response
+	response := &model.TripResponse{
+		TripID:    tripID,
+		Location:  location,
+		StartDate: startDate.String(),
+		EndDate:   endDate.String(),
+	}
+
+	return response, nil
 }
 
 func (tc *TripController) GetTripDetails(ctx context.Context, tripID *uuid.UUID) (*model.TripResponse, *model.ExpenseServiceError) {

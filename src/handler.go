@@ -206,12 +206,24 @@ func CreateTripEntryHandler(tripCtl controller.TripCtl) gin.HandlerFunc {
 
 func UpdateTripEntryHandler(TripCtl controller.TripCtl) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		// TO-DO
 		ctx := c.Request.Context()
 
-		response, err := TripCtl.UpdateTripEntry(ctx, nil)
+		tripIdParam := c.Param(model.ExpenseParamTripId)
+		tripId, err := uuid.Parse(tripIdParam)
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, err.Error())
+			utils.HandleErrorAndAbort(c, *expenseerror.EXPENSE_BAD_REQUEST)
+			return
+		}
+
+		var tripUpdateRequest model.TripUpdateRequest
+		if err := c.ShouldBindJSON(&tripUpdateRequest); err != nil {
+			utils.HandleErrorAndAbort(c, *expenseerror.EXPENSE_BAD_REQUEST)
+			return
+		}
+
+		response, serviceErr := TripCtl.UpdateTripEntry(ctx, &tripId, tripUpdateRequest)
+		if serviceErr != nil {
+			utils.HandleErrorAndAbort(c, *expenseerror.EXPENSE_BAD_REQUEST)
 			return
 		}
 
