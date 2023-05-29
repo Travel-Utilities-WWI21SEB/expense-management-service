@@ -12,7 +12,7 @@ type CostSchema struct {
 	CurrencyCode   string     `json:"currencyCode" db:"currency_code"`
 	CreationDate   *time.Time `json:"createdAt" db:"created_at"`
 	DeductionDate  *time.Time `json:"deductedAt" db:"deducted_at"`
-	EndDate        *time.Time `json:"endDate,omitempty" db:"end"`
+	EndDate        *time.Time `json:"endDate,omitempty" db:"end_date"`
 	CostCategoryID *uuid.UUID `json:"costCategoryId" db:"id_cost_category"`
 }
 
@@ -28,8 +28,8 @@ type CostCategorySchema struct {
 type TripSchema struct {
 	TripID    *uuid.UUID `json:"tripId" db:"id"`
 	Location  string     `json:"location" db:"location"`
-	StartDate *time.Time `json:"startDate" db:"start"`
-	EndDate   *time.Time `json:"endDate" db:"end"`
+	StartDate *time.Time `json:"startDate" db:"start_date"`
+	EndDate   *time.Time `json:"endDate" db:"end_date"`
 }
 
 type UserSchema struct {
@@ -49,8 +49,8 @@ type TripUserSchema struct {
 	UserID    *uuid.UUID `json:"id_user" db:"id_user"`
 	TripID    *uuid.UUID `json:"id_trip" db:"id_trip"`
 	Accepted  bool       `json:"accepted" db:"accepted"`
-	StartDate *time.Time `json:"startDate" db:"start"`
-	EndDate   *time.Time `json:"endDate" db:"end"`
+	StartDate *time.Time `json:"startDate" db:"attendance_start_date"`
+	EndDate   *time.Time `json:"endDate" db:"attendance_end_date"`
 }
 
 type Transaction struct {

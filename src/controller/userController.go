@@ -241,7 +241,7 @@ func (uc *UserController) GetUserDetails(ctx context.Context, userId *uuid.UUID)
 		return nil, expenseerror.EXPENSE_BAD_REQUEST
 	}
 
-	tokenUserId, ok := ctx.Value("userId").(*uuid.UUID)
+	tokenUserId, ok := ctx.Value(model.ExpenseContextKeyUserID).(*uuid.UUID)
 	if !ok {
 		log.Printf("Error in userController.GetUserDetails().ctx.Value(): %v", "userId not found")
 		return nil, expenseerror.EXPENSE_INTERNAL_ERROR
