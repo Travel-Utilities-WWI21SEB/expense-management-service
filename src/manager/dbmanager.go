@@ -21,12 +21,7 @@ type DatabaseManager struct {
 }
 
 func (dm *DatabaseManager) ExecuteStatement(query string, args ...interface{}) (sql.Result, error) {
-	// Prepare the statement (For Debugging purposes)
-	statement, err := dm.Connection.Prepare(query)
-	defer statement.Close()
-
-	// Execute the statement with the given arguments
-	result, err := statement.Exec(args...)
+	result, err := dm.Connection.Exec(query, args...)
 	return result, err
 }
 
