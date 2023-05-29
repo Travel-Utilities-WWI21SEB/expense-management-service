@@ -70,11 +70,6 @@ func (tc *TripController) CreateTripEntry(ctx context.Context, tripData model.Tr
 		return nil, expenseerror.EXPENSE_INTERNAL_ERROR
 	}
 
-	// error if user is not logged in
-	if tokenUserId == nil {
-		return nil, expenseerror.EXPENSE_BAD_REQUEST
-	}
-
 	// Insert user-trip association into database
 	queryString = "INSERT INTO user_trip_association (id_user, id_trip, is_accepted, presence_start_date, presence_end_date) VALUES ($1, $2, $3, $4, $5)"
 	if _, err := tc.DatabaseMgr.ExecuteStatement(queryString, tokenUserId, trip.TripID, true, trip.StartDate, trip.EndDate); err != nil {
@@ -96,11 +91,6 @@ func (tc *TripController) GetTripEntries(ctx context.Context) ([]*model.TripResp
 	if !ok {
 		log.Printf("Error in tripController.GetTripEntries.ctx.Value(): %v", ok)
 		return nil, expenseerror.EXPENSE_INTERNAL_ERROR
-	}
-
-	// error if user is not logged in
-	if tokenUserId == nil {
-		return nil, expenseerror.EXPENSE_BAD_REQUEST
 	}
 
 	// Get trips from database
