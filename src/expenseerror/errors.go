@@ -35,4 +35,6 @@ var (
 	EXPENSE_MAIL_NOT_SENT = &model.ExpenseServiceError{ErrorMessage: "MAIL_NOT_SENT", ErrorCode: "EM-014", Status: 500}
 	// EXPENSE_MAIL_ALREADY_VERIFIED is used to indicate that the mail was already verified
 	EXPENSE_MAIL_ALREADY_VERIFIED = &model.ExpenseServiceError{ErrorMessage: "MAIL_ALREADY_VERIFIED", ErrorCode: "EM-015", Status: 409}
+	// EXPENSE_ALREADY_ACCEPTED is used to indicate that the user was already accepted
+	EXPENSE_ALREADY_ACCEPTED = &model.ExpenseServiceError{ErrorMessage: "ALREADY_ACCEPTED", ErrorCode: "EM-016", Status: 409}
 )

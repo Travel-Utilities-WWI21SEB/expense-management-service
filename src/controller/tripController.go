@@ -286,7 +286,7 @@ func (tc *TripController) InviteUserToTrip(ctx context.Context, tripId *uuid.UUI
 	// Then insert into user_trip_association
 	// Then return trip details
 
-	if utils.ContainsEmptyString(tripId.String()) {
+	if utils.ContainsEmptyString(tripId.String(), inviteUserRequest.Username) {
 		return nil, expenseerror.EXPENSE_BAD_REQUEST
 	}
 
@@ -310,8 +310,8 @@ func (tc *TripController) InviteUserToTrip(ctx context.Context, tripId *uuid.UUI
 	}
 
 	// Get user id from inviteUserRequest
-	getUserIdQueryString := "SELECT id FROM \"user\" WHERE username = $1 OR email = $2 LIMIT 1" // TODO: Check if username and email are for the same user
-	row = tc.DatabaseMgr.ExecuteQueryRow(getUserIdQueryString, inviteUserRequest.Username, inviteUserRequest.Email)
+	getUserIdQueryString := "SELECT id FROM \"user\" WHERE username = $1"
+	row = tc.DatabaseMgr.ExecuteQueryRow(getUserIdQueryString, inviteUserRequest.Username)
 	var userId uuid.UUID
 	if err := row.Scan(&userId); err != nil {
 		if err == sql.ErrNoRows {
@@ -375,13 +375,23 @@ func (tc *TripController) AcceptTripInvite(ctx context.Context, tripId *uuid.UUI
 
 	// Update user_trip_association
 	updateUserTripQueryString := "UPDATE user_trip_association SET is_accepted = true WHERE id_trip = $1 AND id_user = $2"
-	if query, err := tc.DatabaseMgr.ExecuteStatement(updateUserTripQueryString, tripId, tokenUserId); err != nil {
-		// if affectedRows is 0, then user is already accepted or not invited to trip, error code is 409: Conflict
-		if affectedRows, _ := query.RowsAffected(); affectedRows == 0 {
-			return expenseerror.EXPENSE_CONFLICT
-		}
+	var result sql.Result
+	var err error
+	if result, err = tc.DatabaseMgr.ExecuteStatement(updateUserTripQueryString, tripId, tokenUserId); err != nil {
 		log.Printf("Error in tripController.AcceptTripInvite.DatabaseMgr.ExecuteStatement(): %v", err)
 		return expenseerror.EXPENSE_UPSTREAM_ERROR
+	}
+
+	//if affectedRows is 0, then user is already accepted or not invited to trip, error code is 409: Conflict
+	rowsAffected, err := result.RowsAffected()
+
+	if err != nil {
+		log.Printf("Error in tripController.AcceptTripInvite.RowsAffected(): %v", err)
+		return expenseerror.EXPENSE_INTERNAL_ERROR
+	}
+
+	if rowsAffected == 0 {
+		return expenseerror.EXPENSE_ALREADY_ACCEPTED
 	}
 
 	return nil
