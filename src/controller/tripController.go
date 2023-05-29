@@ -139,7 +139,7 @@ func (tc *TripController) UpdateTripEntry(ctx context.Context, tripID *uuid.UUID
 	}
 
 	if count == 0 {
-		return nil, expenseerror.EXPENSE_NOT_FOUND
+		return nil, expenseerror.EXPENSE_TRIP_NOT_FOUND
 	}
 
 	// Check if user is associated with trip
@@ -260,7 +260,7 @@ func (tc *TripController) DeleteTripEntry(ctx context.Context, tripID *uuid.UUID
 	}
 
 	if count == 0 {
-		return expenseerror.EXPENSE_NOT_FOUND
+		return expenseerror.EXPENSE_TRIP_NOT_FOUND
 	}
 
 	// check if user is part of trip
@@ -395,7 +395,7 @@ func (tc *TripController) AcceptTripInvite(ctx context.Context, tripId *uuid.UUI
 	}
 
 	if count == 0 {
-		return nil, expenseerror.EXPENSE_NOT_FOUND
+		return nil, expenseerror.EXPENSE_TRIP_NOT_FOUND
 	}
 
 	// Get authenticated user id from context
