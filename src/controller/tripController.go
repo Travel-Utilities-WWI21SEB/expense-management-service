@@ -7,6 +7,7 @@ import (
 	"github.com/Travel-Utilities-WWI21SEB/expense-management-service/src/expenseerror"
 	"github.com/Travel-Utilities-WWI21SEB/expense-management-service/src/manager"
 	"github.com/Travel-Utilities-WWI21SEB/expense-management-service/src/utils"
+	"github.com/lib/pq"
 	"log"
 	"time"
 
@@ -288,7 +289,7 @@ func (tc *TripController) DeleteTripEntry(ctx context.Context, tripID *uuid.UUID
 func (tc *TripController) InviteUserToTrip(ctx context.Context, tripId *uuid.UUID, inviteUserRequest model.InviteUserRequest) (*model.TripResponse, *model.ExpenseServiceError) {
 	// Checks:
 	// 1. Check if tripId is empty
-	// 2. Check if trip exists
+	// 2. Get trip details (Checks if trip exists)
 	// 3. Check if tokenUser is part of trip
 	// 4. Check if user to invite is already invited to trip
 	// Then insert into user_trip_association
@@ -298,17 +299,16 @@ func (tc *TripController) InviteUserToTrip(ctx context.Context, tripId *uuid.UUI
 		return nil, expenseerror.EXPENSE_BAD_REQUEST
 	}
 
-	// Check if trip exists
-	checkTripQueryString := "SELECT COUNT(*) FROM trip WHERE id = $1"
-	row := tc.DatabaseMgr.ExecuteQueryRow(checkTripQueryString, tripId)
-	var count int
-	if err := row.Scan(&count); err != nil {
+	// Get trip details
+	tripDetails := &model.TripResponse{}
+	getTripDetailsQueryString := "SELECT id, location, start_date, end_date FROM trip WHERE id = $1"
+	row := tc.DatabaseMgr.ExecuteQueryRow(getTripDetailsQueryString, tripId)
+	if err := row.Scan(&tripDetails.TripID, &tripDetails.Location, &tripDetails.StartDate, &tripDetails.EndDate); err != nil {
+		if err == sql.ErrNoRows {
+			return nil, expenseerror.EXPENSE_TRIP_NOT_FOUND
+		}
 		log.Printf("Error in tripController.InviteUserToTrip.DatabaseMgr.ExecuteQueryRow(): %v", err)
 		return nil, expenseerror.EXPENSE_UPSTREAM_ERROR
-	}
-
-	if count == 0 {
-		return nil, expenseerror.EXPENSE_NOT_FOUND
 	}
 
 	// Get authenticated user id from context
@@ -318,28 +318,20 @@ func (tc *TripController) InviteUserToTrip(ctx context.Context, tripId *uuid.UUI
 		return nil, expenseerror.EXPENSE_INTERNAL_ERROR
 	}
 
-	// Check if invited user exists
-	checkUserQueryString := "SELECT COUNT(*) FROM \"user\" WHERE username = $1 OR email = $2"
-	row = tc.DatabaseMgr.ExecuteQueryRow(checkUserQueryString, inviteUserRequest.Username, inviteUserRequest.Email)
-	if err := row.Scan(&count); err != nil {
-		log.Printf("Error in tripController.InviteUserToTrip.DatabaseMgr.ExecuteQueryRow(): %v", err)
-		return nil, expenseerror.EXPENSE_UPSTREAM_ERROR
-	}
-
-	if count == 0 {
-		return nil, expenseerror.EXPENSE_NOT_FOUND
-	}
-
 	// Get user id from inviteUserRequest
-	getUserIdQueryString := "SELECT id FROM \"user\" WHERE username = $1 OR email = $2"
+	getUserIdQueryString := "SELECT id FROM \"user\" WHERE username = $1 OR email = $2" // TODO: Check if username and email are for the same user
 	row = tc.DatabaseMgr.ExecuteQueryRow(getUserIdQueryString, inviteUserRequest.Username, inviteUserRequest.Email)
 	var userId uuid.UUID
 	if err := row.Scan(&userId); err != nil {
+		if err == sql.ErrNoRows {
+			return nil, expenseerror.EXPENSE_USER_NOT_FOUND
+		}
 		log.Printf("Error in tripController.InviteUserToTrip.DatabaseMgr.ExecuteQueryRow(): %v", err)
 		return nil, expenseerror.EXPENSE_UPSTREAM_ERROR
 	}
 
 	// Check if tokenUser is part of trip
+	var count int
 	checkUserTripQueryString := "SELECT COUNT(*) FROM user_trip_association WHERE id_trip = $1 AND id_user = $2"
 	row = tc.DatabaseMgr.ExecuteQueryRow(checkUserTripQueryString, tripId, tokenUserId)
 	if err := row.Scan(&count); err != nil {
@@ -351,29 +343,15 @@ func (tc *TripController) InviteUserToTrip(ctx context.Context, tripId *uuid.UUI
 		return nil, expenseerror.EXPENSE_FORBIDDEN
 	}
 
-	// Check if user to invite is already invited to trip
-	row = tc.DatabaseMgr.ExecuteQueryRow(checkUserTripQueryString, tripId, userId)
-	if err := row.Scan(&count); err != nil {
-		log.Printf("Error in tripController.InviteUserToTrip.DatabaseMgr.ExecuteQueryRow(): %v", err)
-		return nil, expenseerror.EXPENSE_UPSTREAM_ERROR
-	}
-
-	if count != 0 {
-		return nil, expenseerror.EXPENSE_BAD_REQUEST
-	}
-
-	// Get trip details
-	tripDetails := &model.TripResponse{}
-	getTripDetailsQueryString := "SELECT id, location, start_date, end_date FROM trip WHERE id = $1"
-	row = tc.DatabaseMgr.ExecuteQueryRow(getTripDetailsQueryString, tripId)
-	if err := row.Scan(&tripDetails.TripID, &tripDetails.Location, &tripDetails.StartDate, &tripDetails.EndDate); err != nil {
-		log.Printf("Error in tripController.InviteUserToTrip.DatabaseMgr.ExecuteQueryRow(): %v", err)
-		return nil, expenseerror.EXPENSE_UPSTREAM_ERROR
-	}
-
 	// Add user to trip
-	addUserToTripQueryString := "INSERT INTO user_trip_association (id_trip, id_user, is_accepted, presence_start_date, presence_end_date) VALUES ($1, $2, $3, $4, $5)"
-	if _, err := tc.DatabaseMgr.ExecuteStatement(addUserToTripQueryString, tripId, userId, false, tripDetails.StartDate, tripDetails.EndDate); err != nil {
+	addUserToTripQueryString := "INSERT INTO user_trip_association (id_trip, id_user, is_accepted) VALUES ($1, $2, $3)"
+	if _, err := tc.DatabaseMgr.ExecuteStatement(addUserToTripQueryString, tripId, userId, false); err != nil {
+		// if err is unique_violation, then user is already part of trip
+		if pqErr, ok := err.(*pq.Error); ok {
+			if pqErr.Code == "23505" {
+				return nil, expenseerror.EXPENSE_CONFLICT
+			}
+		}
 		log.Printf("Error in tripController.InviteUserToTrip.DatabaseMgr.ExecuteStatement(): %v", err)
 		return nil, expenseerror.EXPENSE_UPSTREAM_ERROR
 	}
