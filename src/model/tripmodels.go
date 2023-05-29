@@ -17,7 +17,7 @@ type TripUpdateRequest struct {
 }
 
 type InviteUserRequest struct {
-	Username string `json:"username"`
+	UserID *uuid.UUID `json:"uuid"`
 }
 
 type TripsResponse struct {
