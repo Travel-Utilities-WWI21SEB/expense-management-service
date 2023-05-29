@@ -23,16 +23,10 @@ type DatabaseManager struct {
 func (dm *DatabaseManager) ExecuteStatement(query string, args ...interface{}) (sql.Result, error) {
 	// Prepare the statement (For Debugging purposes)
 	statement, err := dm.Connection.Prepare(query)
-	if err != nil {
-		log.Printf("Error preparing statement: %v", err)
-	}
 	defer statement.Close()
 
 	// Execute the statement with the given arguments
 	result, err := statement.Exec(args...)
-	if err != nil {
-		log.Printf("Error executing statement: %v", err)
-	}
 	return result, err
 }
 
