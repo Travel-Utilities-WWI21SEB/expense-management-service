@@ -107,9 +107,9 @@ func DeleteUserHandler(userCtl controller.UserCtl) gin.HandlerFunc {
 			return
 		}
 
-		serviceError := userCtl.DeleteUser(ctx, &userId)
-		if serviceError != nil {
-			utils.HandleErrorAndAbort(c, *serviceError)
+		serviceErr := userCtl.DeleteUser(ctx, &userId)
+		if serviceErr != nil {
+			utils.HandleErrorAndAbort(c, *serviceErr)
 			return
 		}
 
@@ -128,15 +128,15 @@ func ActivateUserHandler(userCtl controller.UserCtl) gin.HandlerFunc {
 			return
 		}
 
-		serviceError := userCtl.ActivateUser(ctx, &token)
-		if serviceError != nil {
+		serviceErr := userCtl.ActivateUser(ctx, &token)
+		if serviceErr != nil {
 			// Return partial response if user was created but mail was not sent
-			if serviceError == expenseerror.EXPENSE_MAIL_NOT_SENT {
+			if serviceErr == expenseerror.EXPENSE_MAIL_NOT_SENT {
 				c.JSON(http.StatusAccepted, gin.H{"message": "User successfully activated but activation mail was not sent"})
 				return
 			}
 
-			utils.HandleErrorAndAbort(c, *serviceError)
+			utils.HandleErrorAndAbort(c, *serviceErr)
 			return
 		}
 
@@ -155,9 +155,9 @@ func GetUserDetailsHandler(userCtl controller.UserCtl) gin.HandlerFunc {
 			return
 		}
 
-		response, serviceError := userCtl.GetUserDetails(ctx, &userId)
-		if serviceError != nil {
-			utils.HandleErrorAndAbort(c, *serviceError)
+		response, serviceErr := userCtl.GetUserDetails(ctx, &userId)
+		if serviceErr != nil {
+			utils.HandleErrorAndAbort(c, *serviceErr)
 			return
 		}
 
@@ -232,8 +232,8 @@ func GetTripDetailsHandler(TripCtl controller.TripCtl) gin.HandlerFunc {
 		}
 
 		// Call the service to get the trip details
-		response, serviceError := TripCtl.GetTripDetails(ctx, &tripId)
-		if serviceError != nil {
+		response, serviceErr := TripCtl.GetTripDetails(ctx, &tripId)
+		if serviceErr != nil {
 			utils.HandleErrorAndAbort(c, *expenseerror.EXPENSE_BAD_REQUEST)
 			return
 		}
