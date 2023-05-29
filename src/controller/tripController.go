@@ -197,7 +197,7 @@ func (tc *TripController) UpdateTripEntry(ctx context.Context, tripID *uuid.UUID
 
 func (tc *TripController) GetTripDetails(ctx context.Context, tripID *uuid.UUID) (*model.TripResponse, *model.ExpenseServiceError) {
 	if utils.ContainsEmptyString(tripID.String()) {
-		return nil, expenseerror.EXPENSE_INTERNAL_ERROR
+		return nil, expenseerror.EXPENSE_BAD_REQUEST
 	}
 
 	// Get authenticated user id from context
@@ -258,7 +258,7 @@ func (tc *TripController) GetTripDetails(ctx context.Context, tripID *uuid.UUID)
 
 func (tc *TripController) DeleteTripEntry(ctx context.Context, tripID *uuid.UUID) *model.ExpenseServiceError {
 	if utils.ContainsEmptyString(tripID.String()) {
-		return expenseerror.EXPENSE_INTERNAL_ERROR
+		return expenseerror.EXPENSE_BAD_REQUEST
 	}
 
 	// get user id from context
@@ -313,7 +313,7 @@ func (tc *TripController) InviteUserToTrip(ctx context.Context, tripId *uuid.UUI
 	// Then return trip details
 
 	if utils.ContainsEmptyString(tripId.String()) {
-		return nil, expenseerror.EXPENSE_INTERNAL_ERROR
+		return nil, expenseerror.EXPENSE_BAD_REQUEST
 	}
 
 	// Check if trip exists
@@ -400,7 +400,7 @@ func (tc *TripController) InviteUserToTrip(ctx context.Context, tripId *uuid.UUI
 
 func (tc *TripController) AcceptTripInvite(ctx context.Context, tripId *uuid.UUID) (*model.TripResponse, *model.ExpenseServiceError) {
 	if utils.ContainsEmptyString(tripId.String()) {
-		return nil, expenseerror.EXPENSE_INTERNAL_ERROR
+		return nil, expenseerror.EXPENSE_BAD_REQUEST
 	}
 
 	// Check if trip exists
