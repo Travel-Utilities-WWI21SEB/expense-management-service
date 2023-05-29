@@ -194,8 +194,8 @@ func CreateTripEntryHandler(tripCtl controller.TripCtl) gin.HandlerFunc {
 			return
 		}
 
-		response, err := tripCtl.CreateTripEntry(ctx, tripData)
-		if err != nil {
+		response, serviceErr := tripCtl.CreateTripEntry(ctx, tripData)
+		if serviceErr != nil {
 			utils.HandleErrorAndAbort(c, *expenseerror.EXPENSE_BAD_REQUEST)
 			return
 		}
@@ -208,8 +208,8 @@ func GetTripEntriesHandler(tripCtl controller.TripCtl) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		ctx := c.Request.Context()
 
-		response, err := tripCtl.GetTripEntries(ctx)
-		if err != nil {
+		response, serviceErr := tripCtl.GetTripEntries(ctx)
+		if serviceErr != nil {
 			utils.HandleErrorAndAbort(c, *expenseerror.EXPENSE_BAD_REQUEST)
 			return
 		}
