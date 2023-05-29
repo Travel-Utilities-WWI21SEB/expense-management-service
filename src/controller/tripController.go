@@ -23,7 +23,7 @@ type TripCtl interface {
 	DeleteTripEntry(ctx context.Context, tripID *uuid.UUID) *model.ExpenseServiceError
 	GetTripEntries(ctx context.Context) ([]*model.TripResponse, *model.ExpenseServiceError)
 	InviteUserToTrip(ctx context.Context, tripId *uuid.UUID, inviteUserRequest model.InviteUserRequest) (*model.TripResponse, *model.ExpenseServiceError)
-	AcceptTripInvite(ctx context.Context, tripId *uuid.UUID) (*model.TripResponse, *model.ExpenseServiceError)
+	AcceptTripInvite(ctx context.Context, tripId *uuid.UUID) *model.ExpenseServiceError
 }
 
 // Trip Controller structure
@@ -358,9 +358,9 @@ func (tc *TripController) InviteUserToTrip(ctx context.Context, tripId *uuid.UUI
 	return tripDetails, nil
 }
 
-func (tc *TripController) AcceptTripInvite(ctx context.Context, tripId *uuid.UUID) (*model.TripResponse, *model.ExpenseServiceError) {
+func (tc *TripController) AcceptTripInvite(ctx context.Context, tripId *uuid.UUID) *model.ExpenseServiceError {
 	if utils.ContainsEmptyString(tripId.String()) {
-		return nil, expenseerror.EXPENSE_BAD_REQUEST
+		return expenseerror.EXPENSE_BAD_REQUEST
 	}
 
 	// Get trip details
@@ -369,17 +369,17 @@ func (tc *TripController) AcceptTripInvite(ctx context.Context, tripId *uuid.UUI
 	row := tc.DatabaseMgr.ExecuteQueryRow(getTripDetailsQueryString, tripId)
 	if err := row.Scan(&tripDetails.TripID, &tripDetails.Location, &tripDetails.StartDate, &tripDetails.EndDate); err != nil {
 		if sql.ErrNoRows == err {
-			return nil, expenseerror.EXPENSE_TRIP_NOT_FOUND
+			return expenseerror.EXPENSE_TRIP_NOT_FOUND
 		}
 		log.Printf("Error in tripController.AcceptTripInvite.DatabaseMgr.ExecuteQueryRow(): %v", err)
-		return nil, expenseerror.EXPENSE_UPSTREAM_ERROR
+		return expenseerror.EXPENSE_UPSTREAM_ERROR
 	}
 
 	// Get authenticated user id from context
 	tokenUserId, ok := ctx.Value(model.ExpenseContextKeyUserID).(*uuid.UUID)
 	if !ok {
 		log.Printf("Error in tripController.AcceptTripInvite.ctx.Value(): %v", ok)
-		return nil, expenseerror.EXPENSE_INTERNAL_ERROR
+		return expenseerror.EXPENSE_INTERNAL_ERROR
 	}
 
 	// Update user_trip_association
@@ -387,11 +387,11 @@ func (tc *TripController) AcceptTripInvite(ctx context.Context, tripId *uuid.UUI
 	if query, err := tc.DatabaseMgr.ExecuteStatement(updateUserTripQueryString, tripId, tokenUserId); err != nil {
 		// if affectedRows is 0, then user is already accepted or not invited to trip, error code is 409: Conflict
 		if affectedRows, _ := query.RowsAffected(); affectedRows == 0 {
-			return nil, expenseerror.EXPENSE_CONFLICT
+			return expenseerror.EXPENSE_CONFLICT
 		}
 		log.Printf("Error in tripController.AcceptTripInvite.DatabaseMgr.ExecuteStatement(): %v", err)
-		return nil, expenseerror.EXPENSE_UPSTREAM_ERROR
+		return expenseerror.EXPENSE_UPSTREAM_ERROR
 	}
 
-	return tripDetails, nil
+	return nil
 }

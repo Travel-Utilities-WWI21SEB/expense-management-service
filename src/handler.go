@@ -328,13 +328,13 @@ func AcceptTripInviteHandler(TripCtl controller.TripCtl) gin.HandlerFunc {
 			return
 		}
 
-		response, serviceErr := TripCtl.AcceptTripInvite(ctx, &tripId)
+		serviceErr := TripCtl.AcceptTripInvite(ctx, &tripId)
 		if serviceErr != nil {
 			utils.HandleErrorAndAbort(c, *serviceErr)
 			return
 		}
 
-		c.JSON(http.StatusOK, response)
+		c.JSON(http.StatusNoContent, nil)
 	}
 }
 
