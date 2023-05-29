@@ -317,6 +317,27 @@ func InviteUserToTripHandler(TripCtl controller.TripCtl) gin.HandlerFunc {
 	}
 }
 
+func AcceptTripInviteHandler(TripCtl controller.TripCtl) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		ctx := c.Request.Context()
+
+		tripIdParam := c.Param(model.ExpenseParamTripId)
+		tripId, err := uuid.Parse(tripIdParam)
+		if err != nil {
+			utils.HandleErrorAndAbort(c, *expenseerror.EXPENSE_BAD_REQUEST)
+			return
+		}
+
+		response, serviceErr := TripCtl.AcceptTripInvite(ctx, &tripId)
+		if serviceErr != nil {
+			utils.HandleErrorAndAbort(c, *expenseerror.EXPENSE_BAD_REQUEST)
+			return
+		}
+
+		c.JSON(http.StatusOK, response)
+	}
+}
+
 /******************************************************************************************
  * COST ROUTES
  ******************************************************************************************/
