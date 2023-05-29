@@ -196,7 +196,7 @@ func CreateTripEntryHandler(tripCtl controller.TripCtl) gin.HandlerFunc {
 
 		response, serviceErr := tripCtl.CreateTripEntry(ctx, tripData)
 		if serviceErr != nil {
-			utils.HandleErrorAndAbort(c, *expenseerror.EXPENSE_BAD_REQUEST)
+			utils.HandleErrorAndAbort(c, *serviceErr)
 			return
 		}
 
@@ -210,7 +210,7 @@ func GetTripEntriesHandler(tripCtl controller.TripCtl) gin.HandlerFunc {
 
 		response, serviceErr := tripCtl.GetTripEntries(ctx)
 		if serviceErr != nil {
-			utils.HandleErrorAndAbort(c, *expenseerror.EXPENSE_BAD_REQUEST)
+			utils.HandleErrorAndAbort(c, *serviceErr)
 			return
 		}
 
@@ -234,7 +234,7 @@ func GetTripDetailsHandler(TripCtl controller.TripCtl) gin.HandlerFunc {
 		// Call the service to get the trip details
 		response, serviceErr := TripCtl.GetTripDetails(ctx, &tripId)
 		if serviceErr != nil {
-			utils.HandleErrorAndAbort(c, *expenseerror.EXPENSE_BAD_REQUEST)
+			utils.HandleErrorAndAbort(c, *serviceErr)
 			return
 		}
 
@@ -261,7 +261,7 @@ func UpdateTripEntryHandler(TripCtl controller.TripCtl) gin.HandlerFunc {
 
 		response, serviceErr := TripCtl.UpdateTripEntry(ctx, &tripId, tripUpdateRequest)
 		if serviceErr != nil {
-			utils.HandleErrorAndAbort(c, *expenseerror.EXPENSE_BAD_REQUEST)
+			utils.HandleErrorAndAbort(c, *serviceErr)
 			return
 		}
 
@@ -282,7 +282,7 @@ func DeleteTripEntryHandler(TripCtl controller.TripCtl) gin.HandlerFunc {
 
 		serviceErr := TripCtl.DeleteTripEntry(ctx, &tripId)
 		if serviceErr != nil {
-			utils.HandleErrorAndAbort(c, *expenseerror.EXPENSE_BAD_REQUEST)
+			utils.HandleErrorAndAbort(c, *serviceErr)
 			return
 		}
 
@@ -309,7 +309,7 @@ func InviteUserToTripHandler(TripCtl controller.TripCtl) gin.HandlerFunc {
 
 		response, serviceErr := TripCtl.InviteUserToTrip(ctx, &tripId, inviteUserRequest)
 		if serviceErr != nil {
-			utils.HandleErrorAndAbort(c, *expenseerror.EXPENSE_BAD_REQUEST)
+			utils.HandleErrorAndAbort(c, *serviceErr)
 			return
 		}
 
@@ -330,7 +330,7 @@ func AcceptTripInviteHandler(TripCtl controller.TripCtl) gin.HandlerFunc {
 
 		response, serviceErr := TripCtl.AcceptTripInvite(ctx, &tripId)
 		if serviceErr != nil {
-			utils.HandleErrorAndAbort(c, *expenseerror.EXPENSE_BAD_REQUEST)
+			utils.HandleErrorAndAbort(c, *serviceErr)
 			return
 		}
 
