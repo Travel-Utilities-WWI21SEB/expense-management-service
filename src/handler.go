@@ -290,6 +290,33 @@ func DeleteTripEntryHandler(TripCtl controller.TripCtl) gin.HandlerFunc {
 	}
 }
 
+func InviteUserToTripHandler(TripCtl controller.TripCtl) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		ctx := c.Request.Context()
+
+		tripIdParam := c.Param(model.ExpenseParamTripId)
+		tripId, err := uuid.Parse(tripIdParam)
+		if err != nil {
+			utils.HandleErrorAndAbort(c, *expenseerror.EXPENSE_BAD_REQUEST)
+			return
+		}
+
+		var inviteUserRequest model.InviteUserRequest
+		if err := c.ShouldBindJSON(&inviteUserRequest); err != nil {
+			utils.HandleErrorAndAbort(c, *expenseerror.EXPENSE_BAD_REQUEST)
+			return
+		}
+
+		response, serviceErr := TripCtl.InviteUserToTrip(ctx, &tripId, inviteUserRequest)
+		if serviceErr != nil {
+			utils.HandleErrorAndAbort(c, *expenseerror.EXPENSE_BAD_REQUEST)
+			return
+		}
+
+		c.JSON(http.StatusOK, response)
+	}
+}
+
 /******************************************************************************************
  * COST ROUTES
  ******************************************************************************************/

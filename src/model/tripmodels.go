@@ -16,6 +16,11 @@ type TripUpdateRequest struct {
 	EndDate   *string `json:"endDate"`
 }
 
+type InviteUserRequest struct {
+	Username *string `json:"username"`
+	Email    *string `json:"email"`
+}
+
 type TripsResponse struct {
 	Trips []TripSchema `json:"trips"`
 }
