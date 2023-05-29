@@ -11,14 +11,14 @@ type TripRequest struct {
 }
 
 type TripUpdateRequest struct {
-	Location  *string `json:"location"`
-	StartDate *string `json:"startDate"`
-	EndDate   *string `json:"endDate"`
+	Location  string `json:"location"`
+	StartDate string `json:"startDate"`
+	EndDate   string `json:"endDate"`
 }
 
 type InviteUserRequest struct {
-	Username *string `json:"username"`
-	Email    *string `json:"email"`
+	Username string `json:"username"`
+	Email    string `json:"email"`
 }
 
 type TripsResponse struct {

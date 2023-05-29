@@ -167,16 +167,16 @@ func (tc *TripController) UpdateTripEntry(ctx context.Context, tripID *uuid.UUID
 	}
 
 	// Update trip data
-	if tripUpdateDate.Location != nil {
-		location = *tripUpdateDate.Location
+	if tripUpdateDate.Location != "" {
+		location = tripUpdateDate.Location
 	}
 
-	if tripUpdateDate.StartDate != nil {
-		startDate, _ = time.Parse(time.DateOnly, *tripUpdateDate.StartDate)
+	if tripUpdateDate.StartDate != "" {
+		startDate, _ = time.Parse(time.DateOnly, tripUpdateDate.StartDate)
 	}
 
-	if tripUpdateDate.EndDate != nil {
-		endDate, _ = time.Parse(time.DateOnly, *tripUpdateDate.EndDate)
+	if tripUpdateDate.EndDate != "" {
+		endDate, _ = time.Parse(time.DateOnly, tripUpdateDate.EndDate)
 	}
 
 	// Update trip in database
@@ -319,7 +319,7 @@ func (tc *TripController) InviteUserToTrip(ctx context.Context, tripId *uuid.UUI
 	}
 
 	// Get user id from inviteUserRequest
-	getUserIdQueryString := "SELECT id FROM \"user\" WHERE username = $1 OR email = $2" // TODO: Check if username and email are for the same user
+	getUserIdQueryString := "SELECT id FROM \"user\" WHERE username = $1 OR email = $2 LIMIT 1" // TODO: Check if username and email are for the same user
 	row = tc.DatabaseMgr.ExecuteQueryRow(getUserIdQueryString, inviteUserRequest.Username, inviteUserRequest.Email)
 	var userId uuid.UUID
 	if err := row.Scan(&userId); err != nil {
