@@ -207,25 +207,20 @@ func (tc *TripController) GetTripDetails(ctx context.Context, tripID *uuid.UUID)
 		return nil, expenseerror.EXPENSE_INTERNAL_ERROR
 	}
 
-	//+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++//
-	// Check if trip exists                                                                          //
-	//+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++//
-	checkTripQueryString := "SELECT COUNT(*) FROM trip WHERE id = $1"
-	row := tc.DatabaseMgr.ExecuteQueryRow(checkTripQueryString, tripID)
+	// Get trip details
+	queryString := "SELECT id, location, start_date, end_date FROM trip WHERE id = $1"
+	row := tc.DatabaseMgr.ExecuteQueryRow(queryString, tripID)
 
-	var tripCount int
-	if err := row.Scan(&tripCount); err != nil {
+	var tripResponse model.TripResponse
+	if err := row.Scan(&tripResponse.TripID, &tripResponse.Location, &tripResponse.StartDate, &tripResponse.EndDate); err != nil {
+		if err == sql.ErrNoRows {
+			return nil, expenseerror.EXPENSE_TRIP_NOT_FOUND
+		}
 		log.Printf("Error in tripController.GetTripDetails.rows.Scan(): %v", err)
 		return nil, expenseerror.EXPENSE_UPSTREAM_ERROR
 	}
-	if tripCount == 0 {
-		log.Printf("Error in tripController.GetTripDetails.tripCount: %v", tripCount)
-		return nil, expenseerror.EXPENSE_NOT_FOUND
-	}
 
-	//+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++//
-	// Check if user is part of trip (user-trip association)                                         //
-	//+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++//
+	// Check if user is part of trip (user-trip association)
 	checkQueryString := "SELECT COUNT(*) FROM user_trip_association WHERE id_trip = $1 AND id_user = $2"
 	row = tc.DatabaseMgr.ExecuteQueryRow(checkQueryString, tripID, tokenUserId)
 
@@ -238,20 +233,6 @@ func (tc *TripController) GetTripDetails(ctx context.Context, tripID *uuid.UUID)
 	if associationCount == 0 {
 		return nil, expenseerror.EXPENSE_FORBIDDEN
 	}
-
-	//+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++//
-	// Get trip details                                                                              //
-	//+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++//
-	queryString := "SELECT id, location, start_date, end_date FROM trip WHERE id = $1"
-	row = tc.DatabaseMgr.ExecuteQueryRow(queryString, tripID)
-
-	var tripResponse model.TripResponse
-	if err := row.Scan(&tripResponse.TripID, &tripResponse.Location, &tripResponse.StartDate, &tripResponse.EndDate); err != nil {
-		log.Printf("Error in tripController.GetTripDetails.rows.Scan(): %v", err)
-		return nil, expenseerror.EXPENSE_UPSTREAM_ERROR
-	}
-
-	log.Printf("tripResponse: %v", tripResponse)
 
 	return &tripResponse, nil
 }
