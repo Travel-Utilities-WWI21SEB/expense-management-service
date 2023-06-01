@@ -54,6 +54,7 @@ func createRouter(dbConnection *sql.DB) *gin.Engine {
 	// User Routes
 	apiv1.Handle(http.MethodPost, "/user/register", RegisterUserHandler(controllers.UserController))
 	apiv1.Handle(http.MethodPost, "/user/login", LoginUserHandler(controllers.UserController))
+	apiv1.Handle(http.MethodPost, "/refresh", RefreshTokenHandler(controllers.UserController))
 	apiv1.Handle(http.MethodPost, "/user/activate", ActivateUserHandler(controllers.UserController))
 	apiv1.Handle(http.MethodPost, "user/check-email", CheckEmailHandler(controllers.UserController))
 	apiv1.Handle(http.MethodPost, "user/check-username", CheckUsernameHandler(controllers.UserController))

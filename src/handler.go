@@ -80,6 +80,31 @@ func LoginUserHandler(userCtl controller.UserCtl) gin.HandlerFunc {
 	}
 }
 
+func RefreshTokenHandler(userCtl controller.UserCtl) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		var refreshTokenData *model.RefreshTokenRequest
+		if err := c.ShouldBindJSON(&refreshTokenData); err != nil {
+			utils.HandleErrorAndAbort(c, *expenseerror.EXPENSE_BAD_REQUEST)
+			return
+		}
+
+		id, err := utils.ValidateToken(refreshTokenData.RefreshToken)
+		if err != nil {
+			utils.HandleErrorAndAbort(c, *expenseerror.EXPENSE_UNAUTHORIZED)
+			return
+		}
+
+		// Generate new token and refresh token
+		response, serviceErr := userCtl.RefreshToken(c.Request.Context(), id)
+		if serviceErr != nil {
+			utils.HandleErrorAndAbort(c, *serviceErr)
+			return
+		}
+
+		c.JSON(http.StatusCreated, response)
+	}
+}
+
 func UpdateUserHandler(userCtl controller.UserCtl) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		// TO-DO

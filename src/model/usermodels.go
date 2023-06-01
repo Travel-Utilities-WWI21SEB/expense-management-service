@@ -20,8 +20,18 @@ type LoginRequest struct {
 }
 
 type LoginResponse struct {
-	UserID *uuid.UUID `json:"userId"`
-	Token  *string    `json:"token"`
+	UserID       *uuid.UUID `json:"userId"`
+	Token        string     `json:"token"`
+	RefreshToken string     `json:"refreshToken"`
+}
+
+type RefreshTokenRequest struct {
+	RefreshToken string `json:"refreshToken"`
+}
+
+type RefreshTokenResponse struct {
+	Token        string `json:"token"`
+	RefreshToken string `json:"refreshToken"`
 }
 
 type UserDetailsResponse struct {

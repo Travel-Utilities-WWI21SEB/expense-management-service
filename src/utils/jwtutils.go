@@ -11,11 +11,12 @@ import (
 
 var key = os.Getenv("JWT_SECRET")
 
-const tokenLifespan = 15 * 60 // 15 minutes
-const leeway = 3 * 60         // 5 minutes
+const tokenLifespan = 15 * 60                 // 15 minutes
+const refreshTokenLifeSpan = 3 * 24 * 60 * 60 // 3 days
+const leeway = 3 * 60                         // 5 minutes
 const issuer = "travelUtilities-expenseApi"
 
-func GenerateJWT(userId *uuid.UUID) (string, error) {
+func GenerateJWT(userId *uuid.UUID) (string, string, error) {
 	now := time.Now()
 
 	claims := &jwt.MapClaims{
@@ -25,8 +26,29 @@ func GenerateJWT(userId *uuid.UUID) (string, error) {
 		"sub": userId.String(),
 	}
 
+	refreshClaims := &jwt.MapClaims{
+		"exp": now.Add(time.Duration(refreshTokenLifeSpan) * time.Second).Unix(),
+		"iat": now.Unix(),
+		"iss": issuer,
+		"sub": userId.String(),
+	}
+
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	return token.SignedString([]byte(key))
+	refreshToken := jwt.NewWithClaims(jwt.SigningMethodHS256, refreshClaims)
+
+	signedToken, err := token.SignedString([]byte(key))
+	if err != nil {
+		log.Printf("Error in jwtutils.GenerateJWT().token.SignedString(): %v", err.Error())
+		return "", "", err
+	}
+
+	signedRefreshToken, err := refreshToken.SignedString([]byte(key))
+	if err != nil {
+		log.Printf("Error in jwtutils.GenerateJWT().refreshToken.SignedString(): %v", err.Error())
+		return "", "", err
+	}
+
+	return signedToken, signedRefreshToken, err
 }
 
 func ValidateToken(tokenString string) (*uuid.UUID, error) {
