@@ -180,6 +180,48 @@ func SuggestUsersHandler(userCtl controller.UserCtl) gin.HandlerFunc {
 	}
 }
 
+func CheckEmailHandler(userCtl controller.UserCtl) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		ctx := c.Request.Context()
+
+		// Extract email from body
+		var emailData *model.CheckEmailRequest
+		if err := c.ShouldBindJSON(&emailData); err != nil {
+			utils.HandleErrorAndAbort(c, *expenseerror.EXPENSE_BAD_REQUEST)
+			return
+		}
+
+		err := userCtl.CheckEmail(ctx, emailData.Email)
+		if err != nil {
+			utils.HandleErrorAndAbort(c, *err)
+			return
+		}
+
+		c.JSON(http.StatusOK, gin.H{"message": "Email is available"})
+	}
+}
+
+func CheckUsernameHandler(userCtl controller.UserCtl) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		ctx := c.Request.Context()
+
+		// Extract username from body
+		var usernameData *model.CheckUsernameRequest
+		if err := c.ShouldBindJSON(&usernameData); err != nil {
+			utils.HandleErrorAndAbort(c, *expenseerror.EXPENSE_BAD_REQUEST)
+			return
+		}
+
+		err := userCtl.CheckUsername(ctx, usernameData.Username)
+		if err != nil {
+			utils.HandleErrorAndAbort(c, *err)
+			return
+		}
+
+		c.JSON(http.StatusOK, gin.H{"message": "Username is available"})
+	}
+}
+
 /******************************************************************************************
  * TRIP ROUTES
  ******************************************************************************************/
