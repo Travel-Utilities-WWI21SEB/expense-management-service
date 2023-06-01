@@ -55,6 +55,8 @@ func createRouter(dbConnection *sql.DB) *gin.Engine {
 	apiv1.Handle(http.MethodPost, "/user/register", RegisterUserHandler(controllers.UserController))
 	apiv1.Handle(http.MethodPost, "/user/login", LoginUserHandler(controllers.UserController))
 	apiv1.Handle(http.MethodPost, "/user/activate", ActivateUserHandler(controllers.UserController))
+	apiv1.Handle(http.MethodPost, "user/check-email", CheckEmailHandler(controllers.UserController))
+	apiv1.Handle(http.MethodPost, "user/check-username", CheckUsernameHandler(controllers.UserController))
 	securedApiv1.Handle(http.MethodGet, "/user/suggest", SuggestUsersHandler(controllers.UserController))
 	securedApiv1.Handle(http.MethodGet, "/user/:userId", GetUserDetailsHandler(controllers.UserController))
 	securedApiv1.Handle(http.MethodPatch, "/user/:userId", UpdateUserHandler(controllers.UserController))

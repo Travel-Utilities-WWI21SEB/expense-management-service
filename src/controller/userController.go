@@ -23,6 +23,8 @@ type UserCtl interface {
 	ActivateUser(ctx context.Context, token *uuid.UUID) *model.ExpenseServiceError
 	GetUserDetails(ctx context.Context, userId *uuid.UUID) (*model.UserDetailsResponse, *model.ExpenseServiceError)
 	SuggestUsers(ctx context.Context, query string) (*model.UserSuggestResponse, *model.ExpenseServiceError)
+	CheckEmail(ctx context.Context, email string) *model.ExpenseServiceError
+	CheckUsername(ctx context.Context, password string) *model.ExpenseServiceError
 }
 
 // User Controller structure
@@ -300,4 +302,44 @@ func (uc *UserController) SuggestUsers(ctx context.Context, query string) (*mode
 	}
 
 	return &userSuggestResponse, nil
+}
+
+func (uc *UserController) CheckEmail(ctx context.Context, email string) *model.ExpenseServiceError {
+	if utils.ContainsEmptyString(email) {
+		return expenseerror.EXPENSE_BAD_REQUEST
+	}
+
+	queryString := "SELECT COUNT(*) FROM \"user\" WHERE email = $1"
+	var count int
+	row := uc.DatabaseMgr.ExecuteQueryRow(queryString, email)
+	if err := row.Scan(&count); err != nil {
+		log.Printf("Error in userController.checkEmail().Scan(): %v", err.Error())
+		return expenseerror.EXPENSE_UPSTREAM_ERROR
+	}
+
+	if count != 0 {
+		return expenseerror.EXPENSE_USER_EXISTS
+	}
+
+	return nil
+}
+
+func (uc *UserController) CheckUsername(ctx context.Context, username string) *model.ExpenseServiceError {
+	if utils.ContainsEmptyString(username) {
+		return expenseerror.EXPENSE_BAD_REQUEST
+	}
+
+	queryString := "SELECT COUNT(*) FROM \"user\" WHERE username = $1"
+	var count int
+	row := uc.DatabaseMgr.ExecuteQueryRow(queryString, username)
+	if err := row.Scan(&count); err != nil {
+		log.Printf("Error in userController.checkEmail().Scan(): %v", err.Error())
+		return expenseerror.EXPENSE_UPSTREAM_ERROR
+	}
+
+	if count != 0 {
+		return expenseerror.EXPENSE_USER_EXISTS
+	}
+
+	return nil
 }
