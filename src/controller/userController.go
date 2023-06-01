@@ -18,6 +18,7 @@ import (
 type UserCtl interface {
 	RegisterUser(ctx context.Context, registrationData model.RegistrationRequest) (*model.RegistrationResponse, *model.ExpenseServiceError)
 	LoginUser(ctx context.Context, loginData model.LoginRequest) (*model.LoginResponse, *model.ExpenseServiceError)
+	RefreshToken(ctx context.Context, userId *uuid.UUID) (*model.RefreshTokenResponse, *model.ExpenseServiceError)
 	UpdateUser(ctx context.Context) (*model.UserDetailsResponse, *model.ExpenseServiceError)
 	DeleteUser(ctx context.Context, userId *uuid.UUID) *model.ExpenseServiceError
 	ActivateUser(ctx context.Context, token *uuid.UUID) *model.ExpenseServiceError
@@ -128,15 +129,45 @@ func (uc *UserController) LoginUser(ctx context.Context, loginData model.LoginRe
 		return nil, expenseerror.EXPENSE_CREDENTIALS_INVALID
 	}
 
-	token, err := utils.GenerateJWT(&userId)
+	token, refreshToken, err := utils.GenerateJWT(&userId)
 	if err != nil {
 		log.Printf("Error in userController.LoginUser().GenerateJWT(): %v", err.Error())
 		return nil, expenseerror.EXPENSE_UPSTREAM_ERROR
 	}
 
 	return &model.LoginResponse{
-		UserID: &userId,
-		Token:  &token,
+		UserID:       &userId,
+		Token:        token,
+		RefreshToken: refreshToken,
+	}, nil
+}
+
+func (uc *UserController) RefreshToken(ctx context.Context, userId *uuid.UUID) (*model.RefreshTokenResponse, *model.ExpenseServiceError) {
+	if utils.ContainsEmptyString(userId.String()) {
+		return nil, expenseerror.EXPENSE_BAD_REQUEST
+	}
+
+	queryString := "SELECT COUNT(*) FROM \"user\" WHERE id = $1"
+	var count int
+	row := uc.DatabaseMgr.ExecuteQueryRow(queryString, userId)
+	if err := row.Scan(&count); err != nil {
+		log.Printf("Error in userController.RefreshToken().Scan(): %v", err.Error())
+		return nil, expenseerror.EXPENSE_UPSTREAM_ERROR
+	}
+
+	if count == 0 {
+		return nil, expenseerror.EXPENSE_USER_NOT_FOUND
+	}
+
+	token, refreshToken, err := utils.GenerateJWT(userId)
+	if err != nil {
+		log.Printf("Error in userController.RefreshToken().GenerateJWT(): %v", err.Error())
+		return nil, expenseerror.EXPENSE_UPSTREAM_ERROR
+	}
+
+	return &model.RefreshTokenResponse{
+		Token:        token,
+		RefreshToken: refreshToken,
 	}, nil
 }
 
