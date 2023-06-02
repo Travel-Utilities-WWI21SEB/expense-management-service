@@ -32,7 +32,7 @@ var (
 	// EXPENSE_USER_NOT_ACTIVATED is used to indicate that the user is not activated
 	EXPENSE_USER_NOT_ACTIVATED = &model.ExpenseServiceError{ErrorMessage: "USER_NOT_ACTIVE", ErrorCode: "EM-013", Status: 403}
 	// EXPENSE_MAIL_NOT_SENT is used to indicate that the mail could not be sent
-	EXPENSE_MAIL_NOT_SENT = &model.ExpenseServiceError{ErrorMessage: "MAIL_NOT_SENT", ErrorCode: "EM-014", Status: 500}
+	EXPENSE_MAIL_NOT_SENT = &model.ExpenseServiceError{ErrorMessage: "MAIL_NOT_SENT", ErrorCode: "EM-014", Status: 206}
 	// EXPENSE_MAIL_ALREADY_VERIFIED is used to indicate that the mail was already verified
 	EXPENSE_MAIL_ALREADY_VERIFIED = &model.ExpenseServiceError{ErrorMessage: "MAIL_ALREADY_VERIFIED", ErrorCode: "EM-015", Status: 409}
 	// EXPENSE_ALREADY_ACCEPTED is used to indicate that the user was already accepted

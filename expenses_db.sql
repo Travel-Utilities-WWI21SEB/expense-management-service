@@ -45,6 +45,7 @@ CREATE TABLE public.trip (
 -- DROP TABLE IF EXISTS public.activation_token CASCADE;
 CREATE TABLE public.activation_token (
 	id uuid NOT NULL,
+	token character varying,
 	created_at timestamp with time zone,
 	confirmed_at timestamp with time zone,
 	id_user uuid NOT NULL,

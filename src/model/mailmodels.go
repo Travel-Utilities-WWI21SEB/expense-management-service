@@ -1,10 +1,10 @@
 package model
 
 type ActivationMail struct {
-	Username      string   `json:"username"`
-	ActivationUrl string   `json:"activationUrl"`
-	Subject       string   `json:"subject"`
-	Recipients    []string `json:"recipients"`
+	Username        string   `json:"username"`
+	ActivationToken string   `json:"activationToken"`
+	Subject         string   `json:"subject"`
+	Recipients      []string `json:"recipients"`
 }
 
 type ConfirmationMail struct {
