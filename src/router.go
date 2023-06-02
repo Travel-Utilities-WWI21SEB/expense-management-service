@@ -56,12 +56,12 @@ func createRouter(dbConnection *sql.DB) *gin.Engine {
 	apiv1.Handle(http.MethodPost, "/user/login", LoginUserHandler(controllers.UserController))
 	apiv1.Handle(http.MethodPost, "/refresh", RefreshTokenHandler(controllers.UserController))
 	apiv1.Handle(http.MethodPost, "/user/activate", ActivateUserHandler(controllers.UserController))
-	apiv1.Handle(http.MethodPost, "user/check-email", CheckEmailHandler(controllers.UserController))
-	apiv1.Handle(http.MethodPost, "user/check-username", CheckUsernameHandler(controllers.UserController))
+	apiv1.Handle(http.MethodPost, "/user/check-email", CheckEmailHandler(controllers.UserController))
+	apiv1.Handle(http.MethodPost, "/user/check-username", CheckUsernameHandler(controllers.UserController))
 	securedApiv1.Handle(http.MethodGet, "/user/suggest", SuggestUsersHandler(controllers.UserController))
-	securedApiv1.Handle(http.MethodGet, "/user/:userId", GetUserDetailsHandler(controllers.UserController))
-	securedApiv1.Handle(http.MethodPatch, "/user/:userId", UpdateUserHandler(controllers.UserController))
-	securedApiv1.Handle(http.MethodDelete, "/user/:userId", DeleteUserHandler(controllers.UserController))
+	securedApiv1.Handle(http.MethodGet, "/user", GetUserDetailsHandler(controllers.UserController))
+	securedApiv1.Handle(http.MethodPatch, "/user", UpdateUserHandler(controllers.UserController))
+	securedApiv1.Handle(http.MethodDelete, "/user", DeleteUserHandler(controllers.UserController))
 
 	// Trip Routes
 	securedApiv1.Handle(http.MethodPost, "/trips", CreateTripEntryHandler(controllers.TripController))

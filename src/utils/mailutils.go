@@ -19,7 +19,7 @@ var h = hermes.Hermes{
 }
 
 // PrepareActivationMailBody prepares the body of the activation mail
-func PrepareActivationMailBody(activationLink string, username string) string {
+func PrepareActivationMailBody(inviteCode string, username string) string {
 	hermesMail := hermes.Email{
 		Body: hermes.Body{
 			Name: username,
@@ -28,12 +28,8 @@ func PrepareActivationMailBody(activationLink string, username string) string {
 			},
 			Actions: []hermes.Action{
 				{
-					Instructions: "To confirm your account, please click here:",
-					Button: hermes.Button{
-						Color: "#22BC66",
-						Text:  "Confirm your account",
-						Link:  activationLink,
-					},
+					Instructions: "Please copy your invite code:",
+					InviteCode:   inviteCode,
 				},
 			},
 			Outros: []string{

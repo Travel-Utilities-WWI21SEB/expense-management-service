@@ -24,7 +24,7 @@ const retryMailCount = 3
 const emailSender = "Costventures Team <team@mail.costventures.works>"
 
 func (mm *MailManager) SendActivationMail(ctx context.Context, mailData model.ActivationMail) *model.ExpenseServiceError {
-	mailBody := utils.PrepareActivationMailBody(mailData.ActivationUrl, mailData.Username)
+	mailBody := utils.PrepareActivationMailBody(mailData.ActivationToken, mailData.Username)
 
 	// try sending mail 3 times
 	for i := 0; i < retryMailCount; i++ {
