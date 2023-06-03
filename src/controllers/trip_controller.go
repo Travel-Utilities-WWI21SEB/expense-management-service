@@ -1,40 +1,41 @@
-package controller
+package controllers
 
 import (
 	"context"
 	"database/sql"
 	"errors"
-	"github.com/Travel-Utilities-WWI21SEB/expense-management-service/src/expenseerror"
-	"github.com/Travel-Utilities-WWI21SEB/expense-management-service/src/manager"
-	"github.com/Travel-Utilities-WWI21SEB/expense-management-service/src/utils"
-	"github.com/lib/pq"
 	"log"
 	"time"
 
-	"github.com/Travel-Utilities-WWI21SEB/expense-management-service/src/model"
+	"github.com/Travel-Utilities-WWI21SEB/expense-management-service/src/expense_errors"
+	"github.com/Travel-Utilities-WWI21SEB/expense-management-service/src/managers"
+	"github.com/Travel-Utilities-WWI21SEB/expense-management-service/src/utils"
+	"github.com/lib/pq"
+
+	"github.com/Travel-Utilities-WWI21SEB/expense-management-service/src/models"
 	"github.com/google/uuid"
 )
 
 // Exposed interface to the handler-package
 type TripCtl interface {
-	CreateTripEntry(ctx context.Context, tripData model.TripRequest) (*model.TripCreationResponse, *model.ExpenseServiceError)
-	UpdateTripEntry(ctx context.Context, tripID *uuid.UUID, tripUpdateData model.TripUpdateRequest) (*model.TripResponse, *model.ExpenseServiceError)
-	GetTripDetails(ctx context.Context, tripID *uuid.UUID) (*model.TripResponse, *model.ExpenseServiceError)
-	DeleteTripEntry(ctx context.Context, tripID *uuid.UUID) *model.ExpenseServiceError
-	GetTripEntries(ctx context.Context) ([]*model.TripResponse, *model.ExpenseServiceError)
-	InviteUserToTrip(ctx context.Context, tripId *uuid.UUID, inviteUserRequest model.InviteUserRequest) (*model.TripResponse, *model.ExpenseServiceError)
-	AcceptTripInvite(ctx context.Context, tripId *uuid.UUID) *model.ExpenseServiceError
+	CreateTripEntry(ctx context.Context, tripData models.TripRequest) (*models.TripCreationResponse, *models.ExpenseServiceError)
+	UpdateTripEntry(ctx context.Context, tripID *uuid.UUID, tripUpdateData models.TripUpdateRequest) (*models.TripResponse, *models.ExpenseServiceError)
+	GetTripDetails(ctx context.Context, tripID *uuid.UUID) (*models.TripResponse, *models.ExpenseServiceError)
+	DeleteTripEntry(ctx context.Context, tripID *uuid.UUID) *models.ExpenseServiceError
+	GetTripEntries(ctx context.Context) ([]*models.TripResponse, *models.ExpenseServiceError)
+	InviteUserToTrip(ctx context.Context, tripId *uuid.UUID, inviteUserRequest models.InviteUserRequest) (*models.TripResponse, *models.ExpenseServiceError)
+	AcceptTripInvite(ctx context.Context, tripId *uuid.UUID) *models.ExpenseServiceError
 }
 
 // Trip Controller structure
 type TripController struct {
-	DatabaseMgr manager.DatabaseMgr
+	DatabaseMgr managers.DatabaseMgr
 }
 
-func (tc *TripController) CreateTripEntry(ctx context.Context, tripData model.TripRequest) (*model.TripCreationResponse, *model.ExpenseServiceError) {
+func (tc *TripController) CreateTripEntry(ctx context.Context, tripData models.TripRequest) (*models.TripCreationResponse, *models.ExpenseServiceError) {
 	if utils.ContainsEmptyString(tripData.Location, tripData.StartDate, tripData.EndDate) {
 		log.Printf("Error in creating trip: %v", errors.New("empty string in request"))
-		return nil, expenseerror.EXPENSE_BAD_REQUEST
+		return nil, expense_errors.EXPENSE_BAD_REQUEST
 	}
 
 	// Create new trip
@@ -42,16 +43,16 @@ func (tc *TripController) CreateTripEntry(ctx context.Context, tripData model.Tr
 	tripStartDate, err := time.Parse(time.DateOnly, tripData.StartDate)
 	if err != nil {
 		log.Printf("Error in parsing trip start date: %v", err)
-		return nil, expenseerror.EXPENSE_BAD_REQUEST
+		return nil, expense_errors.EXPENSE_BAD_REQUEST
 	}
 
 	tripEndDate, err := time.Parse(time.DateOnly, tripData.EndDate)
 	if err != nil {
 		log.Printf("Error in parsing trip end date: %v", err)
-		return nil, expenseerror.EXPENSE_BAD_REQUEST
+		return nil, expense_errors.EXPENSE_BAD_REQUEST
 	}
 
-	trip := &model.TripSchema{
+	trip := &models.TripSchema{
 		TripID:    &tripID,
 		Location:  tripData.Location,
 		StartDate: &tripStartDate,
@@ -62,37 +63,37 @@ func (tc *TripController) CreateTripEntry(ctx context.Context, tripData model.Tr
 	queryString := "INSERT INTO trip (id, location, start_date, end_date) VALUES ($1, $2, $3, $4)"
 	if _, err := tc.DatabaseMgr.ExecuteStatement(queryString, trip.TripID, trip.Location, trip.StartDate, trip.EndDate); err != nil {
 		log.Printf("Error in tripController.CreateTripEntry.DatabaseMgr.ExecuteStatement(): %v", err)
-		return nil, expenseerror.EXPENSE_UPSTREAM_ERROR
+		return nil, expense_errors.EXPENSE_UPSTREAM_ERROR
 	}
 
 	// Get user id from context
-	tokenUserId, ok := ctx.Value(model.ExpenseContextKeyUserID).(*uuid.UUID)
+	tokenUserId, ok := ctx.Value(models.ExpenseContextKeyUserID).(*uuid.UUID)
 	if !ok {
 		log.Printf("Error in tripController.CreateTripEntry.ctx.Value(): %v", ok)
-		return nil, expenseerror.EXPENSE_INTERNAL_ERROR
+		return nil, expense_errors.EXPENSE_INTERNAL_ERROR
 	}
 
 	// Insert user-trip association into database
 	queryString = "INSERT INTO user_trip_association (id_user, id_trip, is_accepted, presence_start_date, presence_end_date) VALUES ($1, $2, $3, $4, $5)"
 	if _, err := tc.DatabaseMgr.ExecuteStatement(queryString, tokenUserId, trip.TripID, true, trip.StartDate, trip.EndDate); err != nil {
 		log.Printf("Error in tripController.CreateTripEntry.DatabaseMgr.ExecuteStatement(): %v", err)
-		return nil, expenseerror.EXPENSE_UPSTREAM_ERROR
+		return nil, expense_errors.EXPENSE_UPSTREAM_ERROR
 	}
 
 	// Return trip response
-	response := &model.TripCreationResponse{
+	response := &models.TripCreationResponse{
 		TripID: trip.TripID,
 	}
 
 	return response, nil
 }
 
-func (tc *TripController) GetTripEntries(ctx context.Context) ([]*model.TripResponse, *model.ExpenseServiceError) {
+func (tc *TripController) GetTripEntries(ctx context.Context) ([]*models.TripResponse, *models.ExpenseServiceError) {
 	// Get user id from context
-	tokenUserId, ok := ctx.Value(model.ExpenseContextKeyUserID).(*uuid.UUID)
+	tokenUserId, ok := ctx.Value(models.ExpenseContextKeyUserID).(*uuid.UUID)
 	if !ok {
 		log.Printf("Error in tripController.GetTripEntries.ctx.Value(): %v", ok)
-		return nil, expenseerror.EXPENSE_INTERNAL_ERROR
+		return nil, expense_errors.EXPENSE_INTERNAL_ERROR
 	}
 
 	// Get trips from database
@@ -101,16 +102,16 @@ func (tc *TripController) GetTripEntries(ctx context.Context) ([]*model.TripResp
 	rows, err := tc.DatabaseMgr.ExecuteQuery(queryString, tokenUserId)
 	if err != nil {
 		log.Printf("Error in tripController.GetTripEntries.DatabaseMgr.ExecuteQuery(): %v", err)
-		return nil, expenseerror.EXPENSE_UPSTREAM_ERROR
+		return nil, expense_errors.EXPENSE_UPSTREAM_ERROR
 	}
 
 	// Iterate over rows and create trip response
-	var tripResponses []*model.TripResponse
+	var tripResponses []*models.TripResponse
 	for rows.Next() {
-		var tripResponse model.TripResponse
+		var tripResponse models.TripResponse
 		if err := rows.Scan(&tripResponse.TripID, &tripResponse.Location, &tripResponse.StartDate, &tripResponse.EndDate); err != nil {
 			log.Printf("Error in tripController.GetTripEntries.rows.Scan(): %v", err)
-			return nil, expenseerror.EXPENSE_UPSTREAM_ERROR
+			return nil, expense_errors.EXPENSE_UPSTREAM_ERROR
 		}
 		tripResponses = append(tripResponses, &tripResponse)
 	}
@@ -118,16 +119,16 @@ func (tc *TripController) GetTripEntries(ctx context.Context) ([]*model.TripResp
 	return tripResponses, nil
 }
 
-func (tc *TripController) UpdateTripEntry(ctx context.Context, tripID *uuid.UUID, tripUpdateDate model.TripUpdateRequest) (*model.TripResponse, *model.ExpenseServiceError) {
+func (tc *TripController) UpdateTripEntry(ctx context.Context, tripID *uuid.UUID, tripUpdateDate models.TripUpdateRequest) (*models.TripResponse, *models.ExpenseServiceError) {
 	if utils.ContainsEmptyString(tripID.String()) {
-		return nil, expenseerror.EXPENSE_BAD_REQUEST
+		return nil, expense_errors.EXPENSE_BAD_REQUEST
 	}
 
 	// Get authenticated user id from context
-	tokenUserId, ok := ctx.Value(model.ExpenseContextKeyUserID).(*uuid.UUID)
+	tokenUserId, ok := ctx.Value(models.ExpenseContextKeyUserID).(*uuid.UUID)
 	if !ok {
 		log.Printf("Error in tripController.UpdateTripEntry.ctx.Value(): %v", ok)
-		return nil, expenseerror.EXPENSE_INTERNAL_ERROR
+		return nil, expense_errors.EXPENSE_INTERNAL_ERROR
 	}
 
 	// Get old trip data
@@ -138,10 +139,10 @@ func (tc *TripController) UpdateTripEntry(ctx context.Context, tripID *uuid.UUID
 	var endDate time.Time
 	if err := row.Scan(&location, &startDate, &endDate); err != nil {
 		if err == sql.ErrNoRows {
-			return nil, expenseerror.EXPENSE_TRIP_NOT_FOUND
+			return nil, expense_errors.EXPENSE_TRIP_NOT_FOUND
 		}
 		log.Printf("Error in tripController.UpdateTripEntry.DatabaseMgr.ExecuteQueryRow(): %v", err)
-		return nil, expenseerror.EXPENSE_UPSTREAM_ERROR
+		return nil, expense_errors.EXPENSE_UPSTREAM_ERROR
 	}
 
 	// Check if user is associated with trip
@@ -150,11 +151,11 @@ func (tc *TripController) UpdateTripEntry(ctx context.Context, tripID *uuid.UUID
 	row = tc.DatabaseMgr.ExecuteQueryRow(checkUserTripQueryString, tokenUserId, tripID)
 	if err := row.Scan(&count); err != nil {
 		log.Printf("Error in tripController.UpdateTripEntry.DatabaseMgr.ExecuteQueryRow(): %v", err)
-		return nil, expenseerror.EXPENSE_UPSTREAM_ERROR
+		return nil, expense_errors.EXPENSE_UPSTREAM_ERROR
 	}
 
 	if count == 0 {
-		return nil, expenseerror.EXPENSE_FORBIDDEN
+		return nil, expense_errors.EXPENSE_FORBIDDEN
 	}
 
 	// Update trip data
@@ -174,11 +175,11 @@ func (tc *TripController) UpdateTripEntry(ctx context.Context, tripID *uuid.UUID
 	updateTripQueryString := "UPDATE trip SET location = $1, start_date = $2, end_date = $3 WHERE id = $4"
 	if _, err := tc.DatabaseMgr.ExecuteStatement(updateTripQueryString, location, startDate, endDate, tripID); err != nil {
 		log.Printf("Error in tripController.UpdateTripEntry.DatabaseMgr.ExecuteStatement(): %v", err)
-		return nil, expenseerror.EXPENSE_UPSTREAM_ERROR
+		return nil, expense_errors.EXPENSE_UPSTREAM_ERROR
 	}
 
 	// Return trip response
-	response := &model.TripResponse{
+	response := &models.TripResponse{
 		TripID:    tripID,
 		Location:  location,
 		StartDate: startDate.String(),
@@ -188,29 +189,29 @@ func (tc *TripController) UpdateTripEntry(ctx context.Context, tripID *uuid.UUID
 	return response, nil
 }
 
-func (tc *TripController) GetTripDetails(ctx context.Context, tripID *uuid.UUID) (*model.TripResponse, *model.ExpenseServiceError) {
+func (tc *TripController) GetTripDetails(ctx context.Context, tripID *uuid.UUID) (*models.TripResponse, *models.ExpenseServiceError) {
 	if utils.ContainsEmptyString(tripID.String()) {
-		return nil, expenseerror.EXPENSE_BAD_REQUEST
+		return nil, expense_errors.EXPENSE_BAD_REQUEST
 	}
 
 	// Get authenticated user id from context
-	tokenUserId, ok := ctx.Value(model.ExpenseContextKeyUserID).(*uuid.UUID)
+	tokenUserId, ok := ctx.Value(models.ExpenseContextKeyUserID).(*uuid.UUID)
 	if !ok {
 		log.Printf("Error in tripController.GetTripDetails.ctx.Value(): %v", ok)
-		return nil, expenseerror.EXPENSE_INTERNAL_ERROR
+		return nil, expense_errors.EXPENSE_INTERNAL_ERROR
 	}
 
 	// Get trip details
 	queryString := "SELECT id, location, start_date, end_date FROM trip WHERE id = $1"
 	row := tc.DatabaseMgr.ExecuteQueryRow(queryString, tripID)
 
-	var tripResponse model.TripResponse
+	var tripResponse models.TripResponse
 	if err := row.Scan(&tripResponse.TripID, &tripResponse.Location, &tripResponse.StartDate, &tripResponse.EndDate); err != nil {
 		if err == sql.ErrNoRows {
-			return nil, expenseerror.EXPENSE_TRIP_NOT_FOUND
+			return nil, expense_errors.EXPENSE_TRIP_NOT_FOUND
 		}
 		log.Printf("Error in tripController.GetTripDetails.rows.Scan(): %v", err)
-		return nil, expenseerror.EXPENSE_UPSTREAM_ERROR
+		return nil, expense_errors.EXPENSE_UPSTREAM_ERROR
 	}
 
 	// Check if user is part of trip (user-trip association)
@@ -220,26 +221,26 @@ func (tc *TripController) GetTripDetails(ctx context.Context, tripID *uuid.UUID)
 	var associationCount int
 	if err := row.Scan(&associationCount); err != nil {
 		log.Printf("Error in tripController.GetTripDetails.rows.Scan(): %v", err)
-		return nil, expenseerror.EXPENSE_UPSTREAM_ERROR
+		return nil, expense_errors.EXPENSE_UPSTREAM_ERROR
 	}
 
 	if associationCount == 0 {
-		return nil, expenseerror.EXPENSE_FORBIDDEN
+		return nil, expense_errors.EXPENSE_FORBIDDEN
 	}
 
 	return &tripResponse, nil
 }
 
-func (tc *TripController) DeleteTripEntry(ctx context.Context, tripID *uuid.UUID) *model.ExpenseServiceError {
+func (tc *TripController) DeleteTripEntry(ctx context.Context, tripID *uuid.UUID) *models.ExpenseServiceError {
 	if utils.ContainsEmptyString(tripID.String()) {
-		return expenseerror.EXPENSE_BAD_REQUEST
+		return expense_errors.EXPENSE_BAD_REQUEST
 	}
 
 	// get user id from context
-	tokenUserId, ok := ctx.Value(model.ExpenseContextKeyUserID).(*uuid.UUID)
+	tokenUserId, ok := ctx.Value(models.ExpenseContextKeyUserID).(*uuid.UUID)
 	if !ok {
 		log.Printf("Error in tripController.DeleteTripEntry.ctx.Value(): %v", ok)
-		return expenseerror.EXPENSE_INTERNAL_ERROR
+		return expense_errors.EXPENSE_INTERNAL_ERROR
 	}
 
 	// check if trip exists
@@ -248,11 +249,11 @@ func (tc *TripController) DeleteTripEntry(ctx context.Context, tripID *uuid.UUID
 	var count int
 	if err := row.Scan(&count); err != nil {
 		log.Printf("Error in tripController.DeleteTripEntry.DatabaseMgr.ExecuteQueryRow(): %v", err)
-		return expenseerror.EXPENSE_UPSTREAM_ERROR
+		return expense_errors.EXPENSE_UPSTREAM_ERROR
 	}
 
 	if count == 0 {
-		return expenseerror.EXPENSE_TRIP_NOT_FOUND
+		return expense_errors.EXPENSE_TRIP_NOT_FOUND
 	}
 
 	// check if user is part of trip
@@ -260,24 +261,24 @@ func (tc *TripController) DeleteTripEntry(ctx context.Context, tripID *uuid.UUID
 	row = tc.DatabaseMgr.ExecuteQueryRow(checkUserTripQueryString, tripID, tokenUserId)
 	if err := row.Scan(&count); err != nil {
 		log.Printf("Error in tripController.DeleteTripEntry.DatabaseMgr.ExecuteQueryRow(): %v", err)
-		return expenseerror.EXPENSE_UPSTREAM_ERROR
+		return expense_errors.EXPENSE_UPSTREAM_ERROR
 	}
 
 	if count == 0 {
-		return expenseerror.EXPENSE_FORBIDDEN
+		return expense_errors.EXPENSE_FORBIDDEN
 	}
 
 	// delete trip
 	deleteTripQueryString := "DELETE FROM trip WHERE id = $1"
 	if _, err := tc.DatabaseMgr.ExecuteStatement(deleteTripQueryString, tripID); err != nil {
 		log.Printf("Error in tripController.DeleteTripEntry.DatabaseMgr.ExecuteStatement(): %v", err)
-		return expenseerror.EXPENSE_UPSTREAM_ERROR
+		return expense_errors.EXPENSE_UPSTREAM_ERROR
 	}
 
 	return nil
 }
 
-func (tc *TripController) InviteUserToTrip(ctx context.Context, tripId *uuid.UUID, inviteUserRequest model.InviteUserRequest) (*model.TripResponse, *model.ExpenseServiceError) {
+func (tc *TripController) InviteUserToTrip(ctx context.Context, tripId *uuid.UUID, inviteUserRequest models.InviteUserRequest) (*models.TripResponse, *models.ExpenseServiceError) {
 	// Checks:
 	// 1. Check if tripId is empty
 	// 2. Get trip details (Checks if trip exists)
@@ -287,26 +288,26 @@ func (tc *TripController) InviteUserToTrip(ctx context.Context, tripId *uuid.UUI
 	// Then return trip details
 
 	if utils.ContainsEmptyString(tripId.String()) {
-		return nil, expenseerror.EXPENSE_BAD_REQUEST
+		return nil, expense_errors.EXPENSE_BAD_REQUEST
 	}
 
 	// Get trip details
-	tripDetails := &model.TripResponse{}
+	tripDetails := &models.TripResponse{}
 	getTripDetailsQueryString := "SELECT id, location, start_date, end_date FROM trip WHERE id = $1"
 	row := tc.DatabaseMgr.ExecuteQueryRow(getTripDetailsQueryString, tripId)
 	if err := row.Scan(&tripDetails.TripID, &tripDetails.Location, &tripDetails.StartDate, &tripDetails.EndDate); err != nil {
 		if err == sql.ErrNoRows {
-			return nil, expenseerror.EXPENSE_TRIP_NOT_FOUND
+			return nil, expense_errors.EXPENSE_TRIP_NOT_FOUND
 		}
 		log.Printf("Error in tripController.InviteUserToTrip.DatabaseMgr.ExecuteQueryRow(): %v", err)
-		return nil, expenseerror.EXPENSE_UPSTREAM_ERROR
+		return nil, expense_errors.EXPENSE_UPSTREAM_ERROR
 	}
 
 	// Get authenticated user id from context
-	tokenUserId, ok := ctx.Value(model.ExpenseContextKeyUserID).(*uuid.UUID)
+	tokenUserId, ok := ctx.Value(models.ExpenseContextKeyUserID).(*uuid.UUID)
 	if !ok {
 		log.Printf("Error in tripController.InviteUserToTrip.ctx.Value(): %v", ok)
-		return nil, expenseerror.EXPENSE_INTERNAL_ERROR
+		return nil, expense_errors.EXPENSE_INTERNAL_ERROR
 	}
 
 	// Get user id from inviteUserRequest
@@ -315,11 +316,11 @@ func (tc *TripController) InviteUserToTrip(ctx context.Context, tripId *uuid.UUI
 	row = tc.DatabaseMgr.ExecuteQueryRow(getUserIdQueryString, inviteUserRequest.UserID)
 	if err := row.Scan(&count); err != nil {
 		log.Printf("Error in tripController.InviteUserToTrip.DatabaseMgr.ExecuteQueryRow(): %v", err)
-		return nil, expenseerror.EXPENSE_UPSTREAM_ERROR
+		return nil, expense_errors.EXPENSE_UPSTREAM_ERROR
 	}
 
 	if count == 0 {
-		return nil, expenseerror.EXPENSE_USER_NOT_FOUND
+		return nil, expense_errors.EXPENSE_USER_NOT_FOUND
 	}
 
 	// Check if tokenUser is part of trip
@@ -327,11 +328,11 @@ func (tc *TripController) InviteUserToTrip(ctx context.Context, tripId *uuid.UUI
 	row = tc.DatabaseMgr.ExecuteQueryRow(checkUserTripQueryString, tripId, tokenUserId)
 	if err := row.Scan(&count); err != nil {
 		log.Printf("Error in tripController.InviteUserToTrip.DatabaseMgr.ExecuteQueryRow(): %v", err)
-		return nil, expenseerror.EXPENSE_UPSTREAM_ERROR
+		return nil, expense_errors.EXPENSE_UPSTREAM_ERROR
 	}
 
 	if count == 0 {
-		return nil, expenseerror.EXPENSE_FORBIDDEN
+		return nil, expense_errors.EXPENSE_FORBIDDEN
 	}
 
 	// Add user to trip
@@ -339,36 +340,36 @@ func (tc *TripController) InviteUserToTrip(ctx context.Context, tripId *uuid.UUI
 	if _, err := tc.DatabaseMgr.ExecuteStatement(addUserToTripQueryString, tripId, inviteUserRequest.UserID, false); err != nil {
 		// if err is unique_violation, then user is already part of trip
 		if pqErr, ok := err.(*pq.Error); ok && pqErr.Code == "23505" {
-			return nil, expenseerror.EXPENSE_CONFLICT
+			return nil, expense_errors.EXPENSE_CONFLICT
 		}
 		log.Printf("Error in tripController.InviteUserToTrip.DatabaseMgr.ExecuteStatement(): %v", err)
-		return nil, expenseerror.EXPENSE_UPSTREAM_ERROR
+		return nil, expense_errors.EXPENSE_UPSTREAM_ERROR
 	}
 	return tripDetails, nil
 }
 
-func (tc *TripController) AcceptTripInvite(ctx context.Context, tripId *uuid.UUID) *model.ExpenseServiceError {
+func (tc *TripController) AcceptTripInvite(ctx context.Context, tripId *uuid.UUID) *models.ExpenseServiceError {
 	if utils.ContainsEmptyString(tripId.String()) {
-		return expenseerror.EXPENSE_BAD_REQUEST
+		return expense_errors.EXPENSE_BAD_REQUEST
 	}
 
 	// Get trip details
-	tripDetails := &model.TripResponse{}
+	tripDetails := &models.TripResponse{}
 	getTripDetailsQueryString := "SELECT id, location, start_date, end_date FROM trip WHERE id = $1"
 	row := tc.DatabaseMgr.ExecuteQueryRow(getTripDetailsQueryString, tripId)
 	if err := row.Scan(&tripDetails.TripID, &tripDetails.Location, &tripDetails.StartDate, &tripDetails.EndDate); err != nil {
 		if sql.ErrNoRows == err {
-			return expenseerror.EXPENSE_TRIP_NOT_FOUND
+			return expense_errors.EXPENSE_TRIP_NOT_FOUND
 		}
 		log.Printf("Error in tripController.AcceptTripInvite.DatabaseMgr.ExecuteQueryRow(): %v", err)
-		return expenseerror.EXPENSE_UPSTREAM_ERROR
+		return expense_errors.EXPENSE_UPSTREAM_ERROR
 	}
 
 	// Get authenticated user id from context
-	tokenUserId, ok := ctx.Value(model.ExpenseContextKeyUserID).(*uuid.UUID)
+	tokenUserId, ok := ctx.Value(models.ExpenseContextKeyUserID).(*uuid.UUID)
 	if !ok {
 		log.Printf("Error in tripController.AcceptTripInvite.ctx.Value(): %v", ok)
-		return expenseerror.EXPENSE_INTERNAL_ERROR
+		return expense_errors.EXPENSE_INTERNAL_ERROR
 	}
 
 	// Update user_trip_association
@@ -376,18 +377,18 @@ func (tc *TripController) AcceptTripInvite(ctx context.Context, tripId *uuid.UUI
 	result, err := tc.DatabaseMgr.ExecuteStatement(updateUserTripQueryString, tripId, tokenUserId)
 	if err != nil {
 		log.Printf("Error in tripController.AcceptTripInvite.DatabaseMgr.ExecuteStatement(): %v", err)
-		return expenseerror.EXPENSE_UPSTREAM_ERROR
+		return expense_errors.EXPENSE_UPSTREAM_ERROR
 	}
 
 	//if affectedRows is 0, then user is already accepted or not invited to trip, error code is 409: Conflict
 	rowsAffected, err := result.RowsAffected()
 	if err != nil {
 		log.Printf("Error in tripController.AcceptTripInvite.RowsAffected(): %v", err)
-		return expenseerror.EXPENSE_INTERNAL_ERROR
+		return expense_errors.EXPENSE_INTERNAL_ERROR
 	}
 
 	if rowsAffected == 0 {
-		return expenseerror.EXPENSE_ALREADY_ACCEPTED
+		return expense_errors.EXPENSE_ALREADY_ACCEPTED
 	}
 
 	return nil

@@ -1,4 +1,4 @@
-package model
+package models
 
 const (
 	// ParamKeyUserId is the key for the id in the params

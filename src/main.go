@@ -7,7 +7,7 @@ import (
 	"os"
 	"os/signal"
 
-	"github.com/Travel-Utilities-WWI21SEB/expense-management-service/src/manager"
+	"github.com/Travel-Utilities-WWI21SEB/expense-management-service/src/managers"
 	"github.com/joho/godotenv"
 )
 
@@ -23,7 +23,7 @@ func main() {
 
 	// INITIALIZE DATABASE CONNECTION
 	log.Println("Initializing database connection...")
-	dbConnection := manager.InitializeDatabaseConnection()
+	dbConnection := managers.InitializeDatabaseConnection()
 	defer dbConnection.Close()
 
 	// CREATE ROUTER

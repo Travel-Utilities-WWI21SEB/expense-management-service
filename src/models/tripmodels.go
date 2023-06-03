@@ -1,4 +1,4 @@
-package model
+package models
 
 import (
 	"github.com/google/uuid"
@@ -33,4 +33,9 @@ type TripResponse struct {
 
 type TripCreationResponse struct {
 	TripID *uuid.UUID `json:"tripId"`
+}
+
+type TripUserPresenceUpdateRequest struct {
+	StartDate string `json:"startDate"`
+	EndDate   string `json:"endDate"`
 }

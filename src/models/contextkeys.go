@@ -1,4 +1,4 @@
-package model
+package models
 
 // ExpenseContextKey is the type for the context keys
 type ExpenseContextKey string

@@ -83,7 +83,7 @@ CREATE TABLE public.cost_category (
 CREATE TABLE public.cost (
 	id uuid NOT NULL,
 	amount numeric,
-	created_at timestamp with time zone,
+	description character v	rying,created_at timestamp wiath time zone,
 	deducted_at date,
 	end_date date,
 	id_cost_category uuid NOT NULL,

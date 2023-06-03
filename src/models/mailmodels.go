@@ -1,4 +1,4 @@
-package model
+package models
 
 type ActivationMail struct {
 	Username        string   `json:"username"`

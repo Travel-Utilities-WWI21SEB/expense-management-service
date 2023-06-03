@@ -1,4 +1,4 @@
-package controller
+package controllers
 
 import (
 	"context"
@@ -7,40 +7,40 @@ import (
 	"log"
 	"time"
 
-	"github.com/Travel-Utilities-WWI21SEB/expense-management-service/src/expenseerror"
-	"github.com/Travel-Utilities-WWI21SEB/expense-management-service/src/manager"
-	"github.com/Travel-Utilities-WWI21SEB/expense-management-service/src/model"
+	"github.com/Travel-Utilities-WWI21SEB/expense-management-service/src/expense_errors"
+	"github.com/Travel-Utilities-WWI21SEB/expense-management-service/src/managers"
+	"github.com/Travel-Utilities-WWI21SEB/expense-management-service/src/models"
 	"github.com/Travel-Utilities-WWI21SEB/expense-management-service/src/utils"
 	"github.com/google/uuid"
 )
 
 // Exposed interface to the handler-package
 type UserCtl interface {
-	RegisterUser(ctx context.Context, registrationData model.RegistrationRequest) *model.ExpenseServiceError
-	LoginUser(ctx context.Context, loginData model.LoginRequest) (*model.LoginResponse, *model.ExpenseServiceError)
-	RefreshToken(ctx context.Context, userId *uuid.UUID) (*model.RefreshTokenResponse, *model.ExpenseServiceError)
-	ActivateUser(ctx context.Context, token string) (*model.ActivationResponse, *model.ExpenseServiceError)
-	UpdateUser(ctx context.Context) (*model.UserDetailsResponse, *model.ExpenseServiceError)
-	DeleteUser(ctx context.Context) *model.ExpenseServiceError
-	GetUserDetails(ctx context.Context) (*model.UserDetailsResponse, *model.ExpenseServiceError)
-	SuggestUsers(ctx context.Context, query string) (*model.UserSuggestResponse, *model.ExpenseServiceError)
-	CheckEmail(ctx context.Context, email string) *model.ExpenseServiceError
-	CheckUsername(ctx context.Context, username string) *model.ExpenseServiceError
+	RegisterUser(ctx context.Context, registrationData models.RegistrationRequest) *models.ExpenseServiceError
+	LoginUser(ctx context.Context, loginData models.LoginRequest) (*models.LoginResponse, *models.ExpenseServiceError)
+	RefreshToken(ctx context.Context, userId *uuid.UUID) (*models.RefreshTokenResponse, *models.ExpenseServiceError)
+	ActivateUser(ctx context.Context, token string) (*models.ActivationResponse, *models.ExpenseServiceError)
+	UpdateUser(ctx context.Context) (*models.UserDetailsResponse, *models.ExpenseServiceError)
+	DeleteUser(ctx context.Context) *models.ExpenseServiceError
+	GetUserDetails(ctx context.Context) (*models.UserDetailsResponse, *models.ExpenseServiceError)
+	SuggestUsers(ctx context.Context, query string) (*models.UserSuggestResponse, *models.ExpenseServiceError)
+	CheckEmail(ctx context.Context, email string) *models.ExpenseServiceError
+	CheckUsername(ctx context.Context, username string) *models.ExpenseServiceError
 }
 
 // User Controller structure
 type UserController struct {
-	MailMgr     manager.MailMgr
-	DatabaseMgr manager.DatabaseMgr
+	MailMgr     managers.MailMgr
+	DatabaseMgr managers.DatabaseMgr
 }
 
 const activationMailSubject = "Welcome to Costventures!"
 const confirmationMailSubject = "Your mail has been verified!"
 
 // RegisterUser creates a new user entry in the database
-func (uc *UserController) RegisterUser(ctx context.Context, registrationData model.RegistrationRequest) *model.ExpenseServiceError {
+func (uc *UserController) RegisterUser(ctx context.Context, registrationData models.RegistrationRequest) *models.ExpenseServiceError {
 	if utils.ContainsEmptyString(registrationData.Username, registrationData.Email, registrationData.Password) {
-		return expenseerror.EXPENSE_BAD_REQUEST
+		return expense_errors.EXPENSE_BAD_REQUEST
 	}
 
 	// Check if user already exists
@@ -48,11 +48,11 @@ func (uc *UserController) RegisterUser(ctx context.Context, registrationData mod
 	row, err := uc.DatabaseMgr.ExecuteQuery(queryString, registrationData.Email, registrationData.Username)
 	if err != nil {
 		log.Printf("Error in userController.RegisterUser().ExecuteQuery(): %v", err.Error())
-		return expenseerror.EXPENSE_UPSTREAM_ERROR
+		return expense_errors.EXPENSE_UPSTREAM_ERROR
 	}
 
 	if row.Next() {
-		return expenseerror.EXPENSE_USER_EXISTS
+		return expense_errors.EXPENSE_USER_EXISTS
 	}
 
 	// Create new user
@@ -60,10 +60,10 @@ func (uc *UserController) RegisterUser(ctx context.Context, registrationData mod
 	hashedPassword, err := utils.HashPassword(registrationData.Password)
 	if err != nil {
 		log.Printf("Error in userController.RegisterUser().HashPassword(): %v", err.Error())
-		return expenseerror.EXPENSE_UPSTREAM_ERROR
+		return expense_errors.EXPENSE_UPSTREAM_ERROR
 	}
 
-	user := &model.UserSchema{
+	user := &models.UserSchema{
 		UserID:   &userId,
 		UserName: registrationData.Username,
 		Email:    registrationData.Email,
@@ -74,7 +74,7 @@ func (uc *UserController) RegisterUser(ctx context.Context, registrationData mod
 	queryString = "INSERT INTO \"user\" (id, username, email, password, activated) VALUES ($1, $2, $3, $4, $5)"
 	if _, err := uc.DatabaseMgr.ExecuteStatement(queryString, user.UserID, user.UserName, user.Email, user.Password, false); err != nil {
 		log.Printf("Error in userController.RegisterUser().ExecuteStatement(): %v", err.Error())
-		return expenseerror.EXPENSE_UPSTREAM_ERROR
+		return expense_errors.EXPENSE_UPSTREAM_ERROR
 	}
 
 	// Generate activation token and send activation mail
@@ -90,7 +90,7 @@ func (uc *UserController) RegisterUser(ctx context.Context, registrationData mod
 		var count int
 		if err := row.Scan(&count); err != nil {
 			log.Printf("Error in userController.RegisterUser().Scan(): %v", err.Error())
-			return expenseerror.EXPENSE_UPSTREAM_ERROR
+			return expense_errors.EXPENSE_UPSTREAM_ERROR
 		}
 
 		if count == 0 {
@@ -102,10 +102,10 @@ func (uc *UserController) RegisterUser(ctx context.Context, registrationData mod
 	queryString = "INSERT INTO activation_token (id, token, created_at, id_user) VALUES ($1, $2, $3, $4)"
 	if _, err := uc.DatabaseMgr.ExecuteStatement(queryString, tokenId, activationToken, now, user.UserID); err != nil {
 		log.Printf("Error in userController.RegisterUser().ExecuteStatement(): %v", err.Error())
-		return expenseerror.EXPENSE_UPSTREAM_ERROR
+		return expense_errors.EXPENSE_UPSTREAM_ERROR
 	}
 
-	activationMail := &model.ActivationMail{
+	activationMail := &models.ActivationMail{
 		Username:        user.UserName,
 		ActivationToken: activationToken,
 		Subject:         activationMailSubject,
@@ -121,9 +121,9 @@ func (uc *UserController) RegisterUser(ctx context.Context, registrationData mod
 }
 
 // LoginUser checks if the user exists and if the password is correct
-func (uc *UserController) LoginUser(ctx context.Context, loginData model.LoginRequest) (*model.LoginResponse, *model.ExpenseServiceError) {
+func (uc *UserController) LoginUser(ctx context.Context, loginData models.LoginRequest) (*models.LoginResponse, *models.ExpenseServiceError) {
 	if utils.ContainsEmptyString(loginData.Email, loginData.Password) {
-		return nil, expenseerror.EXPENSE_BAD_REQUEST
+		return nil, expense_errors.EXPENSE_BAD_REQUEST
 	}
 
 	queryString := "SELECT id, password, activated FROM \"user\" WHERE email = $1"
@@ -135,33 +135,33 @@ func (uc *UserController) LoginUser(ctx context.Context, loginData model.LoginRe
 
 	if err := row.Scan(&userId, &hashedPassword, &activated); err != nil {
 		log.Printf("Error in userController.LoginUser().Scan(): %v", err.Error())
-		return nil, expenseerror.EXPENSE_USER_NOT_FOUND
+		return nil, expense_errors.EXPENSE_USER_NOT_FOUND
 	}
 
 	if ok := utils.CheckPasswordHash(loginData.Password, hashedPassword); !ok {
-		return nil, expenseerror.EXPENSE_CREDENTIALS_INVALID
+		return nil, expense_errors.EXPENSE_CREDENTIALS_INVALID
 	}
 
 	if !activated {
-		return nil, expenseerror.EXPENSE_USER_NOT_ACTIVATED
+		return nil, expense_errors.EXPENSE_USER_NOT_ACTIVATED
 	}
 
 	token, refreshToken, err := utils.GenerateJWT(&userId)
 	if err != nil {
 		log.Printf("Error in userController.LoginUser().GenerateJWT(): %v", err.Error())
-		return nil, expenseerror.EXPENSE_UPSTREAM_ERROR
+		return nil, expense_errors.EXPENSE_UPSTREAM_ERROR
 	}
 
-	return &model.LoginResponse{
+	return &models.LoginResponse{
 		UserID:       &userId,
 		Token:        token,
 		RefreshToken: refreshToken,
 	}, nil
 }
 
-func (uc *UserController) RefreshToken(ctx context.Context, userId *uuid.UUID) (*model.RefreshTokenResponse, *model.ExpenseServiceError) {
+func (uc *UserController) RefreshToken(ctx context.Context, userId *uuid.UUID) (*models.RefreshTokenResponse, *models.ExpenseServiceError) {
 	if utils.ContainsEmptyString(userId.String()) {
-		return nil, expenseerror.EXPENSE_BAD_REQUEST
+		return nil, expense_errors.EXPENSE_BAD_REQUEST
 	}
 
 	queryString := "SELECT COUNT(*) FROM \"user\" WHERE id = $1"
@@ -169,60 +169,60 @@ func (uc *UserController) RefreshToken(ctx context.Context, userId *uuid.UUID) (
 	row := uc.DatabaseMgr.ExecuteQueryRow(queryString, userId)
 	if err := row.Scan(&count); err != nil {
 		log.Printf("Error in userController.RefreshToken().Scan(): %v", err.Error())
-		return nil, expenseerror.EXPENSE_UPSTREAM_ERROR
+		return nil, expense_errors.EXPENSE_UPSTREAM_ERROR
 	}
 
 	if count == 0 {
-		return nil, expenseerror.EXPENSE_USER_NOT_FOUND
+		return nil, expense_errors.EXPENSE_USER_NOT_FOUND
 	}
 
 	token, refreshToken, err := utils.GenerateJWT(userId)
 	if err != nil {
 		log.Printf("Error in userController.RefreshToken().GenerateJWT(): %v", err.Error())
-		return nil, expenseerror.EXPENSE_UPSTREAM_ERROR
+		return nil, expense_errors.EXPENSE_UPSTREAM_ERROR
 	}
 
-	return &model.RefreshTokenResponse{
+	return &models.RefreshTokenResponse{
 		Token:        token,
 		RefreshToken: refreshToken,
 	}, nil
 }
 
 // UpdateUser updates the user entry in the database
-func (uc *UserController) UpdateUser(ctx context.Context) (*model.UserDetailsResponse, *model.ExpenseServiceError) {
+func (uc *UserController) UpdateUser(ctx context.Context) (*models.UserDetailsResponse, *models.ExpenseServiceError) {
 	// TO-DO
-	return nil, expenseerror.EXPENSE_UPSTREAM_ERROR
+	return nil, expense_errors.EXPENSE_UPSTREAM_ERROR
 }
 
 // DeleteUser deletes the user entry in the database
-func (uc *UserController) DeleteUser(ctx context.Context) *model.ExpenseServiceError {
-	userId, ok := ctx.Value(model.ExpenseContextKeyUserID).(*uuid.UUID)
+func (uc *UserController) DeleteUser(ctx context.Context) *models.ExpenseServiceError {
+	userId, ok := ctx.Value(models.ExpenseContextKeyUserID).(*uuid.UUID)
 	if !ok {
-		return expenseerror.EXPENSE_BAD_REQUEST
+		return expense_errors.EXPENSE_BAD_REQUEST
 	}
 
 	queryString := "DELETE FROM \"user\" WHERE id = $1"
 	result, err := uc.DatabaseMgr.ExecuteStatement(queryString, userId)
 	if err != nil {
 		log.Printf("Error in userController.DeleteUser().ExecuteStatement(): %v", err.Error())
-		return expenseerror.EXPENSE_UPSTREAM_ERROR
+		return expense_errors.EXPENSE_UPSTREAM_ERROR
 	}
 
 	rowsAffected, err := result.RowsAffected()
 	if err != nil {
 		log.Printf("Error in userController.DeleteUser().RowsAffected(): %v", err.Error())
-		return expenseerror.EXPENSE_INTERNAL_ERROR
+		return expense_errors.EXPENSE_INTERNAL_ERROR
 	}
 
 	if rowsAffected == 0 {
-		return expenseerror.EXPENSE_USER_NOT_FOUND
+		return expense_errors.EXPENSE_USER_NOT_FOUND
 	}
 
 	return nil
 }
 
 // ActivateUser activates the user entry in the database
-func (uc *UserController) ActivateUser(ctx context.Context, token string) (*model.ActivationResponse, *model.ExpenseServiceError) {
+func (uc *UserController) ActivateUser(ctx context.Context, token string) (*models.ActivationResponse, *models.ExpenseServiceError) {
 	queryString := "SELECT id, id_user, confirmed_at FROM activation_token WHERE token = $1"
 	row := uc.DatabaseMgr.ExecuteQueryRow(queryString, token)
 
@@ -231,11 +231,11 @@ func (uc *UserController) ActivateUser(ctx context.Context, token string) (*mode
 	var confirmedAt *time.Time
 	if err := row.Scan(&tokenId, &userId, &confirmedAt); err != nil {
 		log.Printf("Error in userController.ActivateUser().Scan(): %v", err.Error())
-		return nil, expenseerror.EXPENSE_INVALID_ACTIVATION_TOKEN
+		return nil, expense_errors.EXPENSE_INVALID_ACTIVATION_TOKEN
 	}
 
 	if confirmedAt != nil {
-		return nil, expenseerror.EXPENSE_MAIL_ALREADY_VERIFIED
+		return nil, expense_errors.EXPENSE_MAIL_ALREADY_VERIFIED
 	}
 
 	// Select user from database
@@ -247,7 +247,7 @@ func (uc *UserController) ActivateUser(ctx context.Context, token string) (*mode
 
 	if err := row.Scan(&username, &email); err != nil {
 		log.Printf("Error in userController.ActivateUser().Scan(): %v", err.Error())
-		return nil, expenseerror.EXPENSE_USER_NOT_FOUND
+		return nil, expense_errors.EXPENSE_USER_NOT_FOUND
 	}
 
 	// Activate user in database and save confirmation time
@@ -255,7 +255,7 @@ func (uc *UserController) ActivateUser(ctx context.Context, token string) (*mode
 	_, err := uc.DatabaseMgr.ExecuteStatement(queryString, true, userId)
 	if err != nil {
 		log.Printf("Error in userController.ActivateUser().ExecuteStatement(): %v", err.Error())
-		return nil, expenseerror.EXPENSE_UPSTREAM_ERROR
+		return nil, expense_errors.EXPENSE_UPSTREAM_ERROR
 	}
 
 	now := time.Now()
@@ -264,18 +264,18 @@ func (uc *UserController) ActivateUser(ctx context.Context, token string) (*mode
 	_, err = uc.DatabaseMgr.ExecuteStatement(queryString, now, tokenId)
 	if err != nil {
 		log.Printf("Error in userController.ActivateUser().ExecuteStatement(): %v", err.Error())
-		return nil, expenseerror.EXPENSE_UPSTREAM_ERROR
+		return nil, expense_errors.EXPENSE_UPSTREAM_ERROR
 	}
 
 	// Generate JWT
 	jwtToken, refreshToken, err := utils.GenerateJWT(userId)
 	if err != nil {
 		log.Printf("Error in userController.ActivateUser().GenerateJWT(): %v", err.Error())
-		return nil, expenseerror.EXPENSE_UPSTREAM_ERROR
+		return nil, expense_errors.EXPENSE_UPSTREAM_ERROR
 	}
 
 	// Send confirmation mail
-	confirmationMail := &model.ConfirmationMail{
+	confirmationMail := &models.ConfirmationMail{
 		Username:   username,
 		Subject:    confirmationMailSubject,
 		Recipients: []string{email},
@@ -286,49 +286,49 @@ func (uc *UserController) ActivateUser(ctx context.Context, token string) (*mode
 		return nil, err
 	}
 
-	return &model.ActivationResponse{
+	return &models.ActivationResponse{
 		Token:        jwtToken,
 		RefreshToken: refreshToken,
 	}, nil
 }
 
 // GetUserDetails returns the user entry in the database
-func (uc *UserController) GetUserDetails(ctx context.Context) (*model.UserDetailsResponse, *model.ExpenseServiceError) {
-	userId, ok := ctx.Value(model.ExpenseContextKeyUserID).(*uuid.UUID)
+func (uc *UserController) GetUserDetails(ctx context.Context) (*models.UserDetailsResponse, *models.ExpenseServiceError) {
+	userId, ok := ctx.Value(models.ExpenseContextKeyUserID).(*uuid.UUID)
 	if !ok {
-		return nil, expenseerror.EXPENSE_BAD_REQUEST
+		return nil, expense_errors.EXPENSE_BAD_REQUEST
 	}
 
 	queryString := "SELECT username, email FROM \"user\" WHERE id = $1"
 	row := uc.DatabaseMgr.ExecuteQueryRow(queryString, userId)
 
-	var userDetailsResponse model.UserDetailsResponse
+	var userDetailsResponse models.UserDetailsResponse
 	if err := row.Scan(&userDetailsResponse.UserName, &userDetailsResponse.Email); err != nil {
 		if err == sql.ErrNoRows {
-			return nil, expenseerror.EXPENSE_USER_NOT_FOUND
+			return nil, expense_errors.EXPENSE_USER_NOT_FOUND
 		}
 
 		log.Printf("Error in userController.GetUserDetails().Scan(): %v", err.Error())
-		return nil, expenseerror.EXPENSE_INTERNAL_ERROR
+		return nil, expense_errors.EXPENSE_INTERNAL_ERROR
 	}
 
 	return &userDetailsResponse, nil
 }
 
 // SuggestUsers returns the users which username contains the query string
-func (uc *UserController) SuggestUsers(ctx context.Context, query string) (*model.UserSuggestResponse, *model.ExpenseServiceError) {
+func (uc *UserController) SuggestUsers(ctx context.Context, query string) (*models.UserSuggestResponse, *models.ExpenseServiceError) {
 	if utils.ContainsEmptyString(query) {
-		return nil, expenseerror.EXPENSE_BAD_REQUEST
+		return nil, expense_errors.EXPENSE_BAD_REQUEST
 	}
 
 	queryString := "SELECT id, username FROM \"user\" WHERE username LIKE $1"
 	rows, err := uc.DatabaseMgr.ExecuteQuery(queryString, fmt.Sprintf("%v%%", query))
 	if err != nil {
 		log.Printf("Error in userController.SuggestUsers().ExecuteQuery(): %v", err.Error())
-		return nil, expenseerror.EXPENSE_UPSTREAM_ERROR
+		return nil, expense_errors.EXPENSE_UPSTREAM_ERROR
 	}
 
-	var userSuggestResponse model.UserSuggestResponse
+	var userSuggestResponse models.UserSuggestResponse
 
 	for rows.Next() {
 		var userId uuid.UUID
@@ -336,10 +336,10 @@ func (uc *UserController) SuggestUsers(ctx context.Context, query string) (*mode
 
 		if err := rows.Scan(&userId, &userName); err != nil {
 			log.Printf("Error in userController.SuggestUsers().Scan(): %v", err.Error())
-			return nil, expenseerror.EXPENSE_INTERNAL_ERROR
+			return nil, expense_errors.EXPENSE_INTERNAL_ERROR
 		}
 
-		userSuggestResponse.UserSuggestions = append(userSuggestResponse.UserSuggestions, model.UserSuggestion{
+		userSuggestResponse.UserSuggestions = append(userSuggestResponse.UserSuggestions, models.UserSuggestion{
 			UserID:   &userId,
 			Username: userName,
 		})
@@ -348,9 +348,9 @@ func (uc *UserController) SuggestUsers(ctx context.Context, query string) (*mode
 	return &userSuggestResponse, nil
 }
 
-func (uc *UserController) CheckEmail(ctx context.Context, email string) *model.ExpenseServiceError {
+func (uc *UserController) CheckEmail(ctx context.Context, email string) *models.ExpenseServiceError {
 	if utils.ContainsEmptyString(email) {
-		return expenseerror.EXPENSE_BAD_REQUEST
+		return expense_errors.EXPENSE_BAD_REQUEST
 	}
 
 	queryString := "SELECT COUNT(*) FROM \"user\" WHERE email = $1"
@@ -358,19 +358,19 @@ func (uc *UserController) CheckEmail(ctx context.Context, email string) *model.E
 	row := uc.DatabaseMgr.ExecuteQueryRow(queryString, email)
 	if err := row.Scan(&count); err != nil {
 		log.Printf("Error in userController.checkEmail().Scan(): %v", err.Error())
-		return expenseerror.EXPENSE_UPSTREAM_ERROR
+		return expense_errors.EXPENSE_UPSTREAM_ERROR
 	}
 
 	if count != 0 {
-		return expenseerror.EXPENSE_EMAIL_EXISTS
+		return expense_errors.EXPENSE_EMAIL_EXISTS
 	}
 
 	return nil
 }
 
-func (uc *UserController) CheckUsername(ctx context.Context, username string) *model.ExpenseServiceError {
+func (uc *UserController) CheckUsername(ctx context.Context, username string) *models.ExpenseServiceError {
 	if utils.ContainsEmptyString(username) {
-		return expenseerror.EXPENSE_BAD_REQUEST
+		return expense_errors.EXPENSE_BAD_REQUEST
 	}
 
 	queryString := "SELECT COUNT(*) FROM \"user\" WHERE username = $1"
@@ -378,11 +378,11 @@ func (uc *UserController) CheckUsername(ctx context.Context, username string) *m
 	row := uc.DatabaseMgr.ExecuteQueryRow(queryString, username)
 	if err := row.Scan(&count); err != nil {
 		log.Printf("Error in userController.checkEmail().Scan(): %v", err.Error())
-		return expenseerror.EXPENSE_UPSTREAM_ERROR
+		return expense_errors.EXPENSE_UPSTREAM_ERROR
 	}
 
 	if count != 0 {
-		return expenseerror.EXPENSE_USERNAME_EXISTS
+		return expense_errors.EXPENSE_USERNAME_EXISTS
 	}
 
 	return nil

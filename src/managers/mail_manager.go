@@ -1,19 +1,19 @@
-package manager
+package managers
 
 import (
 	"context"
 	"log"
 	"os"
 
-	"github.com/Travel-Utilities-WWI21SEB/expense-management-service/src/expenseerror"
-	"github.com/Travel-Utilities-WWI21SEB/expense-management-service/src/model"
+	"github.com/Travel-Utilities-WWI21SEB/expense-management-service/src/expense_errors"
+	"github.com/Travel-Utilities-WWI21SEB/expense-management-service/src/models"
 	"github.com/Travel-Utilities-WWI21SEB/expense-management-service/src/utils"
 	"github.com/mailgun/mailgun-go/v4"
 )
 
 type MailMgr interface {
-	SendActivationMail(ctx context.Context, mailData model.ActivationMail) *model.ExpenseServiceError
-	SendConfirmationMail(ctx context.Context, mailData model.ConfirmationMail) *model.ExpenseServiceError
+	SendActivationMail(ctx context.Context, mailData models.ActivationMail) *models.ExpenseServiceError
+	SendConfirmationMail(ctx context.Context, mailData models.ConfirmationMail) *models.ExpenseServiceError
 }
 
 type MailManager struct {
@@ -23,7 +23,7 @@ type MailManager struct {
 const retryMailCount = 3
 const emailSender = "Costventures Team <team@mail.costventures.works>"
 
-func (mm *MailManager) SendActivationMail(ctx context.Context, mailData model.ActivationMail) *model.ExpenseServiceError {
+func (mm *MailManager) SendActivationMail(ctx context.Context, mailData models.ActivationMail) *models.ExpenseServiceError {
 	mailBody := utils.PrepareActivationMailBody(mailData.ActivationToken, mailData.Username)
 
 	// try sending mail 3 times
@@ -35,14 +35,14 @@ func (mm *MailManager) SendActivationMail(ctx context.Context, mailData model.Ac
 
 		if i == retryMailCount-1 {
 			log.Printf("Error in MailManager.SendActivationMail().SendMail(): %v", err.Error())
-			return expenseerror.EXPENSE_MAIL_NOT_SENT
+			return expense_errors.EXPENSE_MAIL_NOT_SENT
 		}
 	}
 
 	return nil
 }
 
-func (mm *MailManager) SendConfirmationMail(ctx context.Context, mailData model.ConfirmationMail) *model.ExpenseServiceError {
+func (mm *MailManager) SendConfirmationMail(ctx context.Context, mailData models.ConfirmationMail) *models.ExpenseServiceError {
 	mailBody := utils.PrepareConfirmationMailBody(mailData.Username)
 
 	// try sending mail 3 times
@@ -54,7 +54,7 @@ func (mm *MailManager) SendConfirmationMail(ctx context.Context, mailData model.
 
 		if i == retryMailCount-1 {
 			log.Printf("Error in MailManager.SendConfirmationMail().SendMail(): %v", err.Error())
-			return expenseerror.EXPENSE_MAIL_NOT_SENT
+			return expense_errors.EXPENSE_MAIL_NOT_SENT
 		}
 	}
 
