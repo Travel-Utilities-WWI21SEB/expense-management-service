@@ -135,13 +135,13 @@ func ActivateUserHandler(userCtl controller.UserCtl) gin.HandlerFunc {
 
 		token := c.Query(model.ExpenseQueryKeyToken)
 
-		serviceErr := userCtl.ActivateUser(ctx, token)
+		response, serviceErr := userCtl.ActivateUser(ctx, token)
 		if serviceErr != nil {
 			utils.HandleErrorAndAbort(c, *serviceErr)
 			return
 		}
 
-		c.JSON(http.StatusOK, gin.H{"message": "User successfully activated"})
+		c.JSON(http.StatusOK, response)
 	}
 }
 

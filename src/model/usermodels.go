@@ -30,6 +30,11 @@ type RefreshTokenResponse struct {
 	RefreshToken string `json:"refreshToken"`
 }
 
+type ActivationResponse struct {
+	Token        string `json:"token"`
+	RefreshToken string `json:"refreshToken"`
+}
+
 type UserDetailsResponse struct {
 	UserName string `json:"username"`
 	Email    string `json:"email"`

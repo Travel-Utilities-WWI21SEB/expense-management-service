@@ -19,7 +19,7 @@ type UserCtl interface {
 	RegisterUser(ctx context.Context, registrationData model.RegistrationRequest) *model.ExpenseServiceError
 	LoginUser(ctx context.Context, loginData model.LoginRequest) (*model.LoginResponse, *model.ExpenseServiceError)
 	RefreshToken(ctx context.Context, userId *uuid.UUID) (*model.RefreshTokenResponse, *model.ExpenseServiceError)
-	ActivateUser(ctx context.Context, token string) *model.ExpenseServiceError
+	ActivateUser(ctx context.Context, token string) (*model.ActivationResponse, *model.ExpenseServiceError)
 	UpdateUser(ctx context.Context) (*model.UserDetailsResponse, *model.ExpenseServiceError)
 	DeleteUser(ctx context.Context) *model.ExpenseServiceError
 	GetUserDetails(ctx context.Context) (*model.UserDetailsResponse, *model.ExpenseServiceError)
@@ -222,7 +222,7 @@ func (uc *UserController) DeleteUser(ctx context.Context) *model.ExpenseServiceE
 }
 
 // ActivateUser activates the user entry in the database
-func (uc *UserController) ActivateUser(ctx context.Context, token string) *model.ExpenseServiceError {
+func (uc *UserController) ActivateUser(ctx context.Context, token string) (*model.ActivationResponse, *model.ExpenseServiceError) {
 	queryString := "SELECT id, id_user, confirmed_at FROM activation_token WHERE token = $1"
 	row := uc.DatabaseMgr.ExecuteQueryRow(queryString, token)
 
@@ -231,11 +231,11 @@ func (uc *UserController) ActivateUser(ctx context.Context, token string) *model
 	var confirmedAt *time.Time
 	if err := row.Scan(&tokenId, &userId, &confirmedAt); err != nil {
 		log.Printf("Error in userController.ActivateUser().Scan(): %v", err.Error())
-		return expenseerror.EXPENSE_USER_NOT_FOUND
+		return nil, expenseerror.EXPENSE_INVALID_ACTIVATION_TOKEN
 	}
 
 	if confirmedAt != nil {
-		return expenseerror.EXPENSE_MAIL_ALREADY_VERIFIED
+		return nil, expenseerror.EXPENSE_MAIL_ALREADY_VERIFIED
 	}
 
 	// Select user from database
@@ -247,7 +247,7 @@ func (uc *UserController) ActivateUser(ctx context.Context, token string) *model
 
 	if err := row.Scan(&username, &email); err != nil {
 		log.Printf("Error in userController.ActivateUser().Scan(): %v", err.Error())
-		return expenseerror.EXPENSE_USER_NOT_FOUND
+		return nil, expenseerror.EXPENSE_USER_NOT_FOUND
 	}
 
 	// Activate user in database and save confirmation time
@@ -255,7 +255,7 @@ func (uc *UserController) ActivateUser(ctx context.Context, token string) *model
 	_, err := uc.DatabaseMgr.ExecuteStatement(queryString, true, userId)
 	if err != nil {
 		log.Printf("Error in userController.ActivateUser().ExecuteStatement(): %v", err.Error())
-		return expenseerror.EXPENSE_UPSTREAM_ERROR
+		return nil, expenseerror.EXPENSE_UPSTREAM_ERROR
 	}
 
 	now := time.Now()
@@ -264,7 +264,14 @@ func (uc *UserController) ActivateUser(ctx context.Context, token string) *model
 	_, err = uc.DatabaseMgr.ExecuteStatement(queryString, now, tokenId)
 	if err != nil {
 		log.Printf("Error in userController.ActivateUser().ExecuteStatement(): %v", err.Error())
-		return expenseerror.EXPENSE_UPSTREAM_ERROR
+		return nil, expenseerror.EXPENSE_UPSTREAM_ERROR
+	}
+
+	// Generate JWT
+	jwtToken, refreshToken, err := utils.GenerateJWT(userId)
+	if err != nil {
+		log.Printf("Error in userController.ActivateUser().GenerateJWT(): %v", err.Error())
+		return nil, expenseerror.EXPENSE_UPSTREAM_ERROR
 	}
 
 	// Send confirmation mail
@@ -276,10 +283,13 @@ func (uc *UserController) ActivateUser(ctx context.Context, token string) *model
 
 	if err := uc.MailMgr.SendConfirmationMail(ctx, *confirmationMail); err != nil {
 		log.Printf("Error in userController.ActivateUser().SendConfirmationMail(): %v", err.ErrorMessage)
-		return err
+		return nil, err
 	}
 
-	return nil
+	return &model.ActivationResponse{
+		Token:        jwtToken,
+		RefreshToken: refreshToken,
+	}, nil
 }
 
 // GetUserDetails returns the user entry in the database
@@ -352,7 +362,7 @@ func (uc *UserController) CheckEmail(ctx context.Context, email string) *model.E
 	}
 
 	if count != 0 {
-		return expenseerror.EXPENSE_USER_EXISTS
+		return expenseerror.EXPENSE_EMAIL_EXISTS
 	}
 
 	return nil
@@ -372,7 +382,7 @@ func (uc *UserController) CheckUsername(ctx context.Context, username string) *m
 	}
 
 	if count != 0 {
-		return expenseerror.EXPENSE_USER_EXISTS
+		return expenseerror.EXPENSE_USERNAME_EXISTS
 	}
 
 	return nil
