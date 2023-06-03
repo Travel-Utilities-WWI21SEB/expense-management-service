@@ -37,4 +37,10 @@ var (
 	EXPENSE_MAIL_ALREADY_VERIFIED = &model.ExpenseServiceError{ErrorMessage: "MAIL_ALREADY_VERIFIED", ErrorCode: "EM-015", Status: 409}
 	// EXPENSE_ALREADY_ACCEPTED is used to indicate that the user was already accepted
 	EXPENSE_ALREADY_ACCEPTED = &model.ExpenseServiceError{ErrorMessage: "ALREADY_ACCEPTED", ErrorCode: "EM-016", Status: 409}
+	// EXPENSE_EMAIL_EXISTS is used to indicate that the email already exists
+	EXPENSE_EMAIL_EXISTS = &model.ExpenseServiceError{ErrorMessage: "EMAIL_EXISTS", ErrorCode: "EM-017", Status: 409}
+	// EXPENSE_USERNAME_EXISTS is used to indicate that the username already exists
+	EXPENSE_USERNAME_EXISTS = &model.ExpenseServiceError{ErrorMessage: "USERNAME_EXISTS", ErrorCode: "EM-018", Status: 409}
+	// EXPENSE_INVALID_ACTIVATION_TOKEN is used to indicate that the activation token is invalid
+	EXPENSE_INVALID_ACTIVATION_TOKEN = &model.ExpenseServiceError{ErrorMessage: "INVALID_ACTIVATION_TOKEN", ErrorCode: "EM-019", Status: 400}
 )
