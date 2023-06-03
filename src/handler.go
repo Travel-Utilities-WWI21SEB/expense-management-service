@@ -50,7 +50,7 @@ func RegisterUserHandler(userCtl controller.UserCtl) gin.HandlerFunc {
 			return
 		}
 
-		c.JSON(http.StatusCreated, gin.H{"message": "User successfully registered"})
+		c.AbortWithStatus(http.StatusCreated)
 	}
 }
 
@@ -191,7 +191,7 @@ func CheckEmailHandler(userCtl controller.UserCtl) gin.HandlerFunc {
 			return
 		}
 
-		c.JSON(http.StatusOK, gin.H{"message": "Email is available"})
+		c.AbortWithStatus(http.StatusOK)
 	}
 }
 
@@ -212,7 +212,7 @@ func CheckUsernameHandler(userCtl controller.UserCtl) gin.HandlerFunc {
 			return
 		}
 
-		c.JSON(http.StatusOK, gin.H{"message": "Username is available"})
+		c.AbortWithStatus(http.StatusOK)
 	}
 }
 
