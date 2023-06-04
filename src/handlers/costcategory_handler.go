@@ -13,7 +13,6 @@ import (
 
 func CreateCostCategoryEntryHandler(costCategoryCtl controllers.CostCategoryCtl) gin.HandlerFunc {
 	return func(c *gin.Context) {
-
 		// Get tripId from path
 		tripId := uuid.MustParse(c.Param(models.ExpenseParamKeyTripId))
 
@@ -38,12 +37,7 @@ func CreateCostCategoryEntryHandler(costCategoryCtl controllers.CostCategoryCtl)
 func UpdateCostCategoryEntryHandler(costCategoryCtl controllers.CostCategoryCtl) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		// Get costCategoryId from path
-		costCategoryIdParam := c.Param("costCategoryId")
-		costCategoryId, err := uuid.Parse(costCategoryIdParam)
-		if err != nil {
-			utils.HandleErrorAndAbort(c, *expense_errors.EXPENSE_BAD_REQUEST)
-			return
-		}
+		costCategoryId := uuid.MustParse(c.Param("costCategoryId"))
 
 		// Get cost category entry from request body
 		var costCategoryData models.CostCategoryPatchRequest
@@ -54,7 +48,7 @@ func UpdateCostCategoryEntryHandler(costCategoryCtl controllers.CostCategoryCtl)
 
 		// Update cost category entry
 		response, serviceErr := costCategoryCtl.PatchCostCategory(&costCategoryId, costCategoryData)
-		if err != nil {
+		if serviceErr != nil {
 			utils.HandleErrorAndAbort(c, *serviceErr)
 			return
 		}
@@ -66,16 +60,11 @@ func UpdateCostCategoryEntryHandler(costCategoryCtl controllers.CostCategoryCtl)
 func GetCostCategoryDetailsHandler(costCategoryCtl controllers.CostCategoryCtl) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		// Get costCategoryId from path
-		costCategoryIdParam := c.Param("costCategoryId")
-		costCategoryId, err := uuid.Parse(costCategoryIdParam)
-		if err != nil {
-			utils.HandleErrorAndAbort(c, *expense_errors.EXPENSE_BAD_REQUEST)
-			return
-		}
+		costCategoryId := uuid.MustParse(c.Param("costCategoryId"))
 
 		// Get cost category entry
 		response, serviceErr := costCategoryCtl.GetCostCategoryDetails(&costCategoryId)
-		if err != nil {
+		if serviceErr != nil {
 			utils.HandleErrorAndAbort(c, *serviceErr)
 			return
 		}
@@ -87,12 +76,7 @@ func GetCostCategoryDetailsHandler(costCategoryCtl controllers.CostCategoryCtl) 
 func DeleteCostCategoryEntryHandler(costCategoryCtl controllers.CostCategoryCtl) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		// Get costCategoryId from path
-		costCategoryIdParam := c.Param("costCategoryId")
-		costCategoryId, err := uuid.Parse(costCategoryIdParam)
-		if err != nil {
-			utils.HandleErrorAndAbort(c, *expense_errors.EXPENSE_BAD_REQUEST)
-			return
-		}
+		costCategoryId := uuid.MustParse(c.Param("costCategoryId"))
 
 		// Delete cost category entry
 		serviceErr := costCategoryCtl.DeleteCostCategory(&costCategoryId)

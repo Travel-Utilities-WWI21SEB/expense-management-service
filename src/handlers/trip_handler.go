@@ -50,14 +50,8 @@ func GetTripDetailsHandler(TripCtl controllers.TripCtl) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		ctx := c.Request.Context()
 
-		// Get the trip id from the context
-		tripIdParam := c.Param(models.ExpenseParamKeyTripId)
-		// Convert the trip id (string) to uuid
-		tripId, err := uuid.Parse(tripIdParam)
-		if err != nil {
-			utils.HandleErrorAndAbort(c, *expense_errors.EXPENSE_BAD_REQUEST)
-			return
-		}
+		// Get the tripId from the path
+		tripId := uuid.MustParse(c.Param(models.ExpenseParamKeyTripId))
 
 		// Call the service to get the trip details
 		response, serviceErr := TripCtl.GetTripDetails(ctx, &tripId)
@@ -74,12 +68,8 @@ func UpdateTripEntryHandler(TripCtl controllers.TripCtl) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		ctx := c.Request.Context()
 
-		tripIdParam := c.Param(models.ExpenseParamKeyTripId)
-		tripId, err := uuid.Parse(tripIdParam)
-		if err != nil {
-			utils.HandleErrorAndAbort(c, *expense_errors.EXPENSE_BAD_REQUEST)
-			return
-		}
+		// Get the tripId from the path
+		tripId := uuid.MustParse(c.Param(models.ExpenseParamKeyTripId))
 
 		var tripUpdateRequest models.TripUpdateRequest
 		if err := c.ShouldBindJSON(&tripUpdateRequest); err != nil {
@@ -101,12 +91,8 @@ func DeleteTripEntryHandler(TripCtl controllers.TripCtl) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		ctx := c.Request.Context()
 
-		tripIdParam := c.Param(models.ExpenseParamKeyTripId)
-		tripId, err := uuid.Parse(tripIdParam)
-		if err != nil {
-			utils.HandleErrorAndAbort(c, *expense_errors.EXPENSE_BAD_REQUEST)
-			return
-		}
+		// Get the tripId from the path
+		tripId := uuid.MustParse(c.Param(models.ExpenseParamKeyTripId))
 
 		serviceErr := TripCtl.DeleteTripEntry(ctx, &tripId)
 		if serviceErr != nil {
@@ -122,12 +108,8 @@ func InviteUserToTripHandler(TripCtl controllers.TripCtl) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		ctx := c.Request.Context()
 
-		tripIdParam := c.Param(models.ExpenseParamKeyTripId)
-		tripId, err := uuid.Parse(tripIdParam)
-		if err != nil {
-			utils.HandleErrorAndAbort(c, *expense_errors.EXPENSE_BAD_REQUEST)
-			return
-		}
+		// Get the tripId from the path
+		tripId := uuid.MustParse(c.Param(models.ExpenseParamKeyTripId))
 
 		var inviteUserRequest models.InviteUserRequest
 		if err := c.ShouldBindJSON(&inviteUserRequest); err != nil {
@@ -149,12 +131,8 @@ func AcceptTripInviteHandler(TripCtl controllers.TripCtl) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		ctx := c.Request.Context()
 
-		tripIdParam := c.Param(models.ExpenseParamKeyTripId)
-		tripId, err := uuid.Parse(tripIdParam)
-		if err != nil {
-			utils.HandleErrorAndAbort(c, *expense_errors.EXPENSE_BAD_REQUEST)
-			return
-		}
+		// Get the tripId from the path
+		tripId := uuid.MustParse(c.Param(models.ExpenseParamKeyTripId))
 
 		serviceErr := TripCtl.AcceptTripInvite(ctx, &tripId)
 		if serviceErr != nil {

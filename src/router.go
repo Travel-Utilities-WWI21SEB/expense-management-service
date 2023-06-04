@@ -81,10 +81,10 @@ func createRouter(dbConnection *sql.DB) *gin.Engine {
 	// Trip Routes
 	securedApiv1.Handle(http.MethodPost, "/trips", handlers.CreateTripEntryHandler(controllers.TripController))
 	securedApiv1.Handle(http.MethodGet, "/trips", handlers.GetTripEntriesHandler(controllers.TripController))
-	securedTripApiv1.Handle(http.MethodGet, "/trips/:tripId", handlers.GetTripDetailsHandler(controllers.TripController))
-	securedTripApiv1.Handle(http.MethodPatch, "/trips/:tripId", handlers.UpdateTripEntryHandler(controllers.TripController))
-	securedTripApiv1.Handle(http.MethodDelete, "/trips/:tripId", handlers.DeleteTripEntryHandler(controllers.TripController))
-	securedTripApiv1.Handle(http.MethodPost, "/trips/:tripId/invite", handlers.InviteUserToTripHandler(controllers.TripController))
+	securedTripApiv1.Handle(http.MethodGet, "", handlers.GetTripDetailsHandler(controllers.TripController))
+	securedTripApiv1.Handle(http.MethodPatch, "", handlers.UpdateTripEntryHandler(controllers.TripController))
+	securedTripApiv1.Handle(http.MethodDelete, "", handlers.DeleteTripEntryHandler(controllers.TripController))
+	securedTripApiv1.Handle(http.MethodPost, "/invite", handlers.InviteUserToTripHandler(controllers.TripController))
 	securedApiv1.Handle(http.MethodPost, "/trips/:tripId/accept", handlers.AcceptTripInviteHandler(controllers.TripController))
 
 	// Cost Category Routes

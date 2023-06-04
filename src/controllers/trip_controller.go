@@ -120,17 +120,6 @@ func (tc *TripController) GetTripEntries(ctx context.Context) ([]*models.TripRes
 }
 
 func (tc *TripController) UpdateTripEntry(ctx context.Context, tripID *uuid.UUID, tripUpdateDate models.TripUpdateRequest) (*models.TripResponse, *models.ExpenseServiceError) {
-	if utils.ContainsEmptyString(tripID.String()) {
-		return nil, expense_errors.EXPENSE_BAD_REQUEST
-	}
-
-	// Get authenticated user id from context
-	tokenUserId, ok := ctx.Value(models.ExpenseContextKeyUserID).(*uuid.UUID)
-	if !ok {
-		log.Printf("Error in tripController.UpdateTripEntry.ctx.Value(): %v", ok)
-		return nil, expense_errors.EXPENSE_INTERNAL_ERROR
-	}
-
 	// Get old trip data
 	getTripQueryString := "SELECT location, start_date, end_date FROM trip WHERE id = $1"
 	row := tc.DatabaseMgr.ExecuteQueryRow(getTripQueryString, tripID)
@@ -143,19 +132,6 @@ func (tc *TripController) UpdateTripEntry(ctx context.Context, tripID *uuid.UUID
 		}
 		log.Printf("Error in tripController.UpdateTripEntry.DatabaseMgr.ExecuteQueryRow(): %v", err)
 		return nil, expense_errors.EXPENSE_UPSTREAM_ERROR
-	}
-
-	// Check if user is associated with trip
-	var count int
-	checkUserTripQueryString := "SELECT COUNT(*) FROM user_trip_association WHERE id_user = $1 AND id_trip = $2"
-	row = tc.DatabaseMgr.ExecuteQueryRow(checkUserTripQueryString, tokenUserId, tripID)
-	if err := row.Scan(&count); err != nil {
-		log.Printf("Error in tripController.UpdateTripEntry.DatabaseMgr.ExecuteQueryRow(): %v", err)
-		return nil, expense_errors.EXPENSE_UPSTREAM_ERROR
-	}
-
-	if count == 0 {
-		return nil, expense_errors.EXPENSE_FORBIDDEN
 	}
 
 	// Update trip data
@@ -190,87 +166,23 @@ func (tc *TripController) UpdateTripEntry(ctx context.Context, tripID *uuid.UUID
 }
 
 func (tc *TripController) GetTripDetails(ctx context.Context, tripID *uuid.UUID) (*models.TripResponse, *models.ExpenseServiceError) {
-	if utils.ContainsEmptyString(tripID.String()) {
-		return nil, expense_errors.EXPENSE_BAD_REQUEST
-	}
-
-	// Get authenticated user id from context
-	tokenUserId, ok := ctx.Value(models.ExpenseContextKeyUserID).(*uuid.UUID)
-	if !ok {
-		log.Printf("Error in tripController.GetTripDetails.ctx.Value(): %v", ok)
-		return nil, expense_errors.EXPENSE_INTERNAL_ERROR
-	}
-
 	// Get trip details
 	queryString := "SELECT id, location, start_date, end_date FROM trip WHERE id = $1"
 	row := tc.DatabaseMgr.ExecuteQueryRow(queryString, tripID)
 
 	var tripResponse models.TripResponse
 	if err := row.Scan(&tripResponse.TripID, &tripResponse.Location, &tripResponse.StartDate, &tripResponse.EndDate); err != nil {
-		if err == sql.ErrNoRows {
-			return nil, expense_errors.EXPENSE_TRIP_NOT_FOUND
-		}
 		log.Printf("Error in tripController.GetTripDetails.rows.Scan(): %v", err)
 		return nil, expense_errors.EXPENSE_UPSTREAM_ERROR
-	}
-
-	// Check if user is part of trip (user-trip association)
-	checkQueryString := "SELECT COUNT(*) FROM user_trip_association WHERE id_trip = $1 AND id_user = $2"
-	row = tc.DatabaseMgr.ExecuteQueryRow(checkQueryString, tripID, tokenUserId)
-
-	var associationCount int
-	if err := row.Scan(&associationCount); err != nil {
-		log.Printf("Error in tripController.GetTripDetails.rows.Scan(): %v", err)
-		return nil, expense_errors.EXPENSE_UPSTREAM_ERROR
-	}
-
-	if associationCount == 0 {
-		return nil, expense_errors.EXPENSE_FORBIDDEN
 	}
 
 	return &tripResponse, nil
 }
 
 func (tc *TripController) DeleteTripEntry(ctx context.Context, tripID *uuid.UUID) *models.ExpenseServiceError {
-	if utils.ContainsEmptyString(tripID.String()) {
-		return expense_errors.EXPENSE_BAD_REQUEST
-	}
-
-	// get user id from context
-	tokenUserId, ok := ctx.Value(models.ExpenseContextKeyUserID).(*uuid.UUID)
-	if !ok {
-		log.Printf("Error in tripController.DeleteTripEntry.ctx.Value(): %v", ok)
-		return expense_errors.EXPENSE_INTERNAL_ERROR
-	}
-
-	// check if trip exists
-	checkTripQueryString := "SELECT COUNT(*) FROM trip WHERE id = $1"
-	row := tc.DatabaseMgr.ExecuteQueryRow(checkTripQueryString, tripID)
-	var count int
-	if err := row.Scan(&count); err != nil {
-		log.Printf("Error in tripController.DeleteTripEntry.DatabaseMgr.ExecuteQueryRow(): %v", err)
-		return expense_errors.EXPENSE_UPSTREAM_ERROR
-	}
-
-	if count == 0 {
-		return expense_errors.EXPENSE_TRIP_NOT_FOUND
-	}
-
-	// check if user is part of trip
-	checkUserTripQueryString := "SELECT COUNT(*) FROM user_trip_association WHERE id_trip = $1 AND id_user = $2"
-	row = tc.DatabaseMgr.ExecuteQueryRow(checkUserTripQueryString, tripID, tokenUserId)
-	if err := row.Scan(&count); err != nil {
-		log.Printf("Error in tripController.DeleteTripEntry.DatabaseMgr.ExecuteQueryRow(): %v", err)
-		return expense_errors.EXPENSE_UPSTREAM_ERROR
-	}
-
-	if count == 0 {
-		return expense_errors.EXPENSE_FORBIDDEN
-	}
-
 	// delete trip
-	deleteTripQueryString := "DELETE FROM trip WHERE id = $1"
-	if _, err := tc.DatabaseMgr.ExecuteStatement(deleteTripQueryString, tripID); err != nil {
+	deleteString := "DELETE FROM trip WHERE id = $1"
+	if _, err := tc.DatabaseMgr.ExecuteStatement(deleteString, tripID); err != nil {
 		log.Printf("Error in tripController.DeleteTripEntry.DatabaseMgr.ExecuteStatement(): %v", err)
 		return expense_errors.EXPENSE_UPSTREAM_ERROR
 	}
@@ -279,60 +191,13 @@ func (tc *TripController) DeleteTripEntry(ctx context.Context, tripID *uuid.UUID
 }
 
 func (tc *TripController) InviteUserToTrip(ctx context.Context, tripId *uuid.UUID, inviteUserRequest models.InviteUserRequest) (*models.TripResponse, *models.ExpenseServiceError) {
-	// Checks:
-	// 1. Check if tripId is empty
-	// 2. Get trip details (Checks if trip exists)
-	// 3. Check if tokenUser is part of trip
-	// 4. Check if user to invite is already invited to trip
-	// Then insert into user_trip_association
-	// Then return trip details
-
-	if utils.ContainsEmptyString(tripId.String()) {
-		return nil, expense_errors.EXPENSE_BAD_REQUEST
-	}
-
 	// Get trip details
 	tripDetails := &models.TripResponse{}
 	getTripDetailsQueryString := "SELECT id, location, start_date, end_date FROM trip WHERE id = $1"
 	row := tc.DatabaseMgr.ExecuteQueryRow(getTripDetailsQueryString, tripId)
 	if err := row.Scan(&tripDetails.TripID, &tripDetails.Location, &tripDetails.StartDate, &tripDetails.EndDate); err != nil {
-		if err == sql.ErrNoRows {
-			return nil, expense_errors.EXPENSE_TRIP_NOT_FOUND
-		}
 		log.Printf("Error in tripController.InviteUserToTrip.DatabaseMgr.ExecuteQueryRow(): %v", err)
 		return nil, expense_errors.EXPENSE_UPSTREAM_ERROR
-	}
-
-	// Get authenticated user id from context
-	tokenUserId, ok := ctx.Value(models.ExpenseContextKeyUserID).(*uuid.UUID)
-	if !ok {
-		log.Printf("Error in tripController.InviteUserToTrip.ctx.Value(): %v", ok)
-		return nil, expense_errors.EXPENSE_INTERNAL_ERROR
-	}
-
-	// Get user id from inviteUserRequest
-	var count int
-	getUserIdQueryString := "SELECT COUNT(*) FROM \"user\" WHERE id = $1"
-	row = tc.DatabaseMgr.ExecuteQueryRow(getUserIdQueryString, inviteUserRequest.UserID)
-	if err := row.Scan(&count); err != nil {
-		log.Printf("Error in tripController.InviteUserToTrip.DatabaseMgr.ExecuteQueryRow(): %v", err)
-		return nil, expense_errors.EXPENSE_UPSTREAM_ERROR
-	}
-
-	if count == 0 {
-		return nil, expense_errors.EXPENSE_USER_NOT_FOUND
-	}
-
-	// Check if tokenUser is part of trip
-	checkUserTripQueryString := "SELECT COUNT(*) FROM user_trip_association WHERE id_trip = $1 AND id_user = $2"
-	row = tc.DatabaseMgr.ExecuteQueryRow(checkUserTripQueryString, tripId, tokenUserId)
-	if err := row.Scan(&count); err != nil {
-		log.Printf("Error in tripController.InviteUserToTrip.DatabaseMgr.ExecuteQueryRow(): %v", err)
-		return nil, expense_errors.EXPENSE_UPSTREAM_ERROR
-	}
-
-	if count == 0 {
-		return nil, expense_errors.EXPENSE_FORBIDDEN
 	}
 
 	// Add user to trip
@@ -342,9 +207,16 @@ func (tc *TripController) InviteUserToTrip(ctx context.Context, tripId *uuid.UUI
 		if pqErr, ok := err.(*pq.Error); ok && pqErr.Code == "23505" {
 			return nil, expense_errors.EXPENSE_CONFLICT
 		}
+
+		// if err is foreign_key_violation, then user does not exist
+		if pqErr, ok := err.(*pq.Error); ok && pqErr.Code == "23503" {
+			return nil, expense_errors.EXPENSE_USER_NOT_FOUND
+		}
+
 		log.Printf("Error in tripController.InviteUserToTrip.DatabaseMgr.ExecuteStatement(): %v", err)
 		return nil, expense_errors.EXPENSE_UPSTREAM_ERROR
 	}
+
 	return tripDetails, nil
 }
 
