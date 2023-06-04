@@ -51,7 +51,7 @@ func GetTripDetailsHandler(TripCtl controllers.TripCtl) gin.HandlerFunc {
 		ctx := c.Request.Context()
 
 		// Get the trip id from the context
-		tripIdParam := c.Param(models.ExpenseParamTripId)
+		tripIdParam := c.Param(models.ExpenseParamKeyTripId)
 		// Convert the trip id (string) to uuid
 		tripId, err := uuid.Parse(tripIdParam)
 		if err != nil {
@@ -74,7 +74,7 @@ func UpdateTripEntryHandler(TripCtl controllers.TripCtl) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		ctx := c.Request.Context()
 
-		tripIdParam := c.Param(models.ExpenseParamTripId)
+		tripIdParam := c.Param(models.ExpenseParamKeyTripId)
 		tripId, err := uuid.Parse(tripIdParam)
 		if err != nil {
 			utils.HandleErrorAndAbort(c, *expense_errors.EXPENSE_BAD_REQUEST)
@@ -101,7 +101,7 @@ func DeleteTripEntryHandler(TripCtl controllers.TripCtl) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		ctx := c.Request.Context()
 
-		tripIdParam := c.Param(models.ExpenseParamTripId)
+		tripIdParam := c.Param(models.ExpenseParamKeyTripId)
 		tripId, err := uuid.Parse(tripIdParam)
 		if err != nil {
 			utils.HandleErrorAndAbort(c, *expense_errors.EXPENSE_BAD_REQUEST)
@@ -122,7 +122,7 @@ func InviteUserToTripHandler(TripCtl controllers.TripCtl) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		ctx := c.Request.Context()
 
-		tripIdParam := c.Param(models.ExpenseParamTripId)
+		tripIdParam := c.Param(models.ExpenseParamKeyTripId)
 		tripId, err := uuid.Parse(tripIdParam)
 		if err != nil {
 			utils.HandleErrorAndAbort(c, *expense_errors.EXPENSE_BAD_REQUEST)
@@ -149,7 +149,7 @@ func AcceptTripInviteHandler(TripCtl controllers.TripCtl) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		ctx := c.Request.Context()
 
-		tripIdParam := c.Param(models.ExpenseParamTripId)
+		tripIdParam := c.Param(models.ExpenseParamKeyTripId)
 		tripId, err := uuid.Parse(tripIdParam)
 		if err != nil {
 			utils.HandleErrorAndAbort(c, *expense_errors.EXPENSE_BAD_REQUEST)

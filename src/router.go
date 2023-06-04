@@ -23,8 +23,9 @@ type Controllers struct {
 func createRouter(dbConnection *sql.DB) *gin.Engine {
 	router := gin.Default()
 	apiv1 := router.Group("/api/v1")
-	securedApiv1 := router.Group("/api/v1")
+	apiv1.Use(middlewares.ValidateUUID())
 
+	securedApiv1 := router.Group("/api/v1")
 	securedApiv1.Use(middlewares.JwtAuthMiddleware())
 
 	databaseMgr := &managers.DatabaseManager{
@@ -80,17 +81,18 @@ func createRouter(dbConnection *sql.DB) *gin.Engine {
 	// Trip Routes
 	securedApiv1.Handle(http.MethodPost, "/trips", handlers.CreateTripEntryHandler(controllers.TripController))
 	securedApiv1.Handle(http.MethodGet, "/trips", handlers.GetTripEntriesHandler(controllers.TripController))
-	securedApiv1.Handle(http.MethodGet, "/trips/:tripId", handlers.GetTripDetailsHandler(controllers.TripController))
-	securedApiv1.Handle(http.MethodPatch, "/trips/:tripId", handlers.UpdateTripEntryHandler(controllers.TripController))
-	securedApiv1.Handle(http.MethodDelete, "/trips/:tripId", handlers.DeleteTripEntryHandler(controllers.TripController))
-	securedApiv1.Handle(http.MethodPost, "/trips/:tripId/invite", handlers.InviteUserToTripHandler(controllers.TripController))
+	securedTripApiv1.Handle(http.MethodGet, "/trips/:tripId", handlers.GetTripDetailsHandler(controllers.TripController))
+	securedTripApiv1.Handle(http.MethodPatch, "/trips/:tripId", handlers.UpdateTripEntryHandler(controllers.TripController))
+	securedTripApiv1.Handle(http.MethodDelete, "/trips/:tripId", handlers.DeleteTripEntryHandler(controllers.TripController))
+	securedTripApiv1.Handle(http.MethodPost, "/trips/:tripId/invite", handlers.InviteUserToTripHandler(controllers.TripController))
 	securedApiv1.Handle(http.MethodPost, "/trips/:tripId/accept", handlers.AcceptTripInviteHandler(controllers.TripController))
 
 	// Cost Category Routes
 	securedTripApiv1.Handle(http.MethodPost, "/cost-categories", handlers.CreateCostCategoryEntryHandler(controllers.CostCategoryController))
-	// securedTripApiv1.Handle(http.MethodPatch, "/cost-categories/:costCategoryId", handlers.UpdateCostCategoryEntryHandler(controllers.CostCategoryController))
-	// securedTripApiv1.Handle(http.MethodGet, "/cost-categories/:costCategoryId", handlers.GetCostCategoryDetailsHandler(controllers.CostCategoryController))
-	// securedTripApiv1.Handle(http.MethodDelete, "/cost-categories/:costCategoryId", handlers.DeleteCostCategoryEntryHandler(controllers.CostCategoryController))
+	securedTripApiv1.Handle(http.MethodGet, "/cost-categories", handlers.GetCostCategoryEntriesHandler(controllers.CostCategoryController))
+	securedTripApiv1.Handle(http.MethodGet, "/cost-categories/:costCategoryId", handlers.GetCostCategoryDetailsHandler(controllers.CostCategoryController))
+	securedTripApiv1.Handle(http.MethodPatch, "/cost-categories/:costCategoryId", handlers.UpdateCostCategoryEntryHandler(controllers.CostCategoryController))
+	securedTripApiv1.Handle(http.MethodDelete, "/cost-categories/:costCategoryId", handlers.DeleteCostCategoryEntryHandler(controllers.CostCategoryController))
 
 	// Cost Routes
 	securedTripApiv1.Handle(http.MethodPost, "/costs", handlers.CreateCostEntryHandler(controllers.CostController))

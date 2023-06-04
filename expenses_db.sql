@@ -65,8 +65,8 @@ CREATE TABLE public.activation_token (
 -- object: public.user_trip_association | type: TABLE --
 -- DROP TABLE IF EXISTS public.user_trip_association CASCADE;
 CREATE TABLE public.user_trip_association (
-	presence_start_date date NOT NULL,
-	presence_end_date date NOT NULL,
+	presence_start_date date,
+	presence_end_date date,
 	is_accepted boolean NOT NULL,
 	id_user uuid NOT NULL,
 	id_trip uuid NOT NULL,

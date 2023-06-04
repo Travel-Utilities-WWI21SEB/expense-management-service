@@ -2,11 +2,18 @@ package models
 
 import "github.com/google/uuid"
 
-type CreateCostCategoryRequest struct {
+type CostCategoryPostRequest struct {
 	Name        string `json:"name"`
 	Description string `json:"description"`
 	Icon        string `json:"icon"`
 	Color       string `json:"color"`
+}
+
+type CostCategoryPatchRequest struct {
+	Name        string `json:"name,omitempty"`
+	Description string `json:"description,omitempty"`
+	Icon        string `json:"icon,omitempty"`
+	Color       string `json:"color,omitempty"`
 }
 
 type CostCategoryResponse struct {
