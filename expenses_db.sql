@@ -17,23 +17,32 @@ CREATE DATABASE expensedb
 	OWNER = postgres;
 -- ddl-end --
 
+-- object: expensedb | type: EXTENSION --
+-- This extension is required to generate UUIDs
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp"; 
+-- ddl-end --
+
+-- object: public | type: SCHEMA --
+-- DROP SCHEMA IF EXISTS public CASCADE;
+CREATE SCHEMA public;
+-- ddl-end --
 
 -- object: public."user" | type: TABLE --
 -- DROP TABLE IF EXISTS public."user" CASCADE;
 CREATE TABLE public."user" (
-	id uuid NOT NULL,
+	id uuid NOT NULL DEFAULT uuid_generate_v4(),
 	username character varying NOT NULL,
 	email character varying NOT NULL,
 	password character varying NOT NULL,
 	activated boolean,
-	CONSTRAINT user_pk PRIMARY KEY (id)
+	CONSTRAINT user_pk PRIMARY KEY (id) 
 );
 -- ddl-end --
 
 -- object: public.trip | type: TABLE --
 -- DROP TABLE IF EXISTS public.trip CASCADE;
 CREATE TABLE public.trip (
-	id uuid NOT NULL,
+	id uuid NOT NULL DEFAULT uuid_generate_v4(),
 	location character varying,
 	start_date date,
 	end_date date,
@@ -44,7 +53,7 @@ CREATE TABLE public.trip (
 -- object: public.activation_token | type: TABLE --
 -- DROP TABLE IF EXISTS public.activation_token CASCADE;
 CREATE TABLE public.activation_token (
-	id uuid NOT NULL,
+	id uuid NOT NULL DEFAULT uuid_generate_v4(),
 	token character varying,
 	created_at timestamp with time zone,
 	confirmed_at timestamp with time zone,
@@ -68,22 +77,24 @@ CREATE TABLE public.user_trip_association (
 -- object: public.cost_category | type: TABLE --
 -- DROP TABLE IF EXISTS public.cost_category CASCADE;
 CREATE TABLE public.cost_category (
-	id uuid NOT NULL,
+	id uuid NOT NULL DEFAULT uuid_generate_v4(),
 	name character varying,
 	description character varying,
 	icon character varying,
-	color smallint,
-	id_trip uuid,
-	CONSTRAINT cost_category_pk PRIMARY KEY (id)
+	color character varying,
+	id_trip uuid NOT NULL,
+	CONSTRAINT cost_category_pk PRIMARY KEY (id),
+	CONSTRAINT cost_category_un UNIQUE (name,id_trip)
 );
 -- ddl-end --
 
 -- object: public.cost | type: TABLE --
 -- DROP TABLE IF EXISTS public.cost CASCADE;
 CREATE TABLE public.cost (
-	id uuid NOT NULL,
+	id uuid NOT NULL DEFAULT uuid_generate_v4(),
 	amount numeric,
-	description character v	rying,created_at timestamp wiath time zone,
+	description character varying,
+	created_at timestamp with time zone,
 	deducted_at date,
 	end_date date,
 	id_cost_category uuid NOT NULL,
@@ -104,7 +115,7 @@ CREATE TABLE public.user_cost_association (
 -- object: public.transaction | type: TABLE --
 -- DROP TABLE IF EXISTS public.transaction CASCADE;
 CREATE TABLE public.transaction (
-	id uuid NOT NULL,
+	id uuid NOT NULL DEFAULT uuid_generate_v4(),
 	sender_id uuid,
 	receiver_id uuid,
 	amount numeric,
