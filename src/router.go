@@ -31,6 +31,9 @@ func createRouter(dbConnection *sql.DB) *gin.Engine {
 		Connection: dbConnection,
 	}
 
+	securedTripApiv1 := securedApiv1.Group("/trips/:tripId")
+	securedTripApiv1.Use(middlewares.TripValidationMiddleware(databaseMgr))
+
 	// Initialize Mailgun client
 	mgInstance := managers.InitializeMailgunClient()
 	if mgInstance == nil {
@@ -83,23 +86,23 @@ func createRouter(dbConnection *sql.DB) *gin.Engine {
 	securedApiv1.Handle(http.MethodPost, "/trips/:tripId/invite", handlers.InviteUserToTripHandler(controllers.TripController))
 	securedApiv1.Handle(http.MethodPost, "/trips/:tripId/accept", handlers.AcceptTripInviteHandler(controllers.TripController))
 
-	// Cost Routes
-	securedApiv1.Handle(http.MethodPost, "/trips/:tripId/costs", handlers.CreateCostEntryHandler(controllers.CostController))
-	securedApiv1.Handle(http.MethodPatch, "trips/:tripId/costs/:costId", handlers.UpdateCostEntryHandler(controllers.CostController))
-	securedApiv1.Handle(http.MethodGet, "/trips/:tripId/costs/:costId", handlers.GetCostDetailsHandler(controllers.CostController))
-	securedApiv1.Handle(http.MethodDelete, "/trips/:tripId/costs/:costId", handlers.DeleteCostEntryHandler(controllers.CostController))
-
 	// Cost Category Routes
-	securedApiv1.Handle(http.MethodPost, "/trips/:tripId/cost-categories", handlers.CreateCostCategoryEntryHandler(controllers.CostCategoryController))
-	securedApiv1.Handle(http.MethodPatch, "trips/:tripId/cost-categories/:costCategoryId", handlers.UpdateCostCategoryEntryHandler(controllers.CostCategoryController))
-	securedApiv1.Handle(http.MethodGet, "/trips/:tripId/cost-categories/:costCategoryId", handlers.GetCostCategoryDetailsHandler(controllers.CostCategoryController))
-	securedApiv1.Handle(http.MethodDelete, "/trips/:tripId/cost-categories/:costCategoryId", handlers.DeleteCostCategoryEntryHandler(controllers.CostCategoryController))
+	securedTripApiv1.Handle(http.MethodPost, "/cost-categories", handlers.CreateCostCategoryEntryHandler(controllers.CostCategoryController))
+	// securedTripApiv1.Handle(http.MethodPatch, "/cost-categories/:costCategoryId", handlers.UpdateCostCategoryEntryHandler(controllers.CostCategoryController))
+	// securedTripApiv1.Handle(http.MethodGet, "/cost-categories/:costCategoryId", handlers.GetCostCategoryDetailsHandler(controllers.CostCategoryController))
+	// securedTripApiv1.Handle(http.MethodDelete, "/cost-categories/:costCategoryId", handlers.DeleteCostCategoryEntryHandler(controllers.CostCategoryController))
+
+	// Cost Routes
+	securedTripApiv1.Handle(http.MethodPost, "/costs", handlers.CreateCostEntryHandler(controllers.CostController))
+	securedTripApiv1.Handle(http.MethodPatch, "/costs/:costId", handlers.UpdateCostEntryHandler(controllers.CostController))
+	securedTripApiv1.Handle(http.MethodGet, "/costs/:costId", handlers.GetCostDetailsHandler(controllers.CostController))
+	securedTripApiv1.Handle(http.MethodDelete, "/costs/:costId", handlers.DeleteCostEntryHandler(controllers.CostController))
 
 	// Debts Routes
-	securedApiv1.Handle(http.MethodPost, "/trips/:tripId/debts", handlers.CreateDebtHandler(controllers.DebtController))
-	securedApiv1.Handle(http.MethodGet, "/trips/:tripId/debts", handlers.GetDebtsHandler(controllers.DebtController))
-	securedApiv1.Handle(http.MethodGet, "/trips/:tripId/debts/:debtId", handlers.GetDebtDetailsHandler(controllers.DebtController))
-	securedApiv1.Handle(http.MethodPatch, "/trips/:tripId/debts", handlers.UpdateDebtHandler(controllers.DebtController))
+	securedTripApiv1.Handle(http.MethodPost, "/debts", handlers.CreateDebtHandler(controllers.DebtController))
+	securedTripApiv1.Handle(http.MethodGet, "/debts", handlers.GetDebtsHandler(controllers.DebtController))
+	securedTripApiv1.Handle(http.MethodGet, "/debts/:debtId", handlers.GetDebtDetailsHandler(controllers.DebtController))
+	securedTripApiv1.Handle(http.MethodPatch, "/debts", handlers.UpdateDebtHandler(controllers.DebtController))
 
 	return router
 }

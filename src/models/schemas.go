@@ -21,7 +21,7 @@ type CostCategorySchema struct {
 	Name           string     `json:"name" db:"name"`
 	Description    string     `json:"description" db:"description"`
 	Icon           string     `json:"icon" db:"icon"`
-	Color          uint16     `json:"color" db:"color"`
+	Color          string     `json:"color" db:"color"`
 	TripID         *uuid.UUID `json:"tripId" db:"id_trip"`
 }
 

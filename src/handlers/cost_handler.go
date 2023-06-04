@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/Travel-Utilities-WWI21SEB/expense-management-service/src/controllers"
+	"github.com/Travel-Utilities-WWI21SEB/expense-management-service/src/utils"
 	"github.com/gin-gonic/gin"
 )
 
@@ -14,7 +15,7 @@ func CreateCostEntryHandler(costCtl controllers.CostCtl) gin.HandlerFunc {
 
 		response, err := costCtl.CreateCostEntry(ctx)
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, err.Error())
+			utils.HandleErrorAndAbort(c, *err)
 			return
 		}
 
@@ -27,9 +28,9 @@ func UpdateCostEntryHandler(costCtl controllers.CostCtl) gin.HandlerFunc {
 		// TO-DO
 		ctx := c.Request.Context()
 
-		response, err := costCtl.UpdateCostEntry(ctx)
+		response, err := costCtl.PatchCostEntry(ctx)
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, err.Error())
+			utils.HandleErrorAndAbort(c, *err)
 			return
 		}
 
@@ -44,7 +45,7 @@ func GetCostDetailsHandler(costCtl controllers.CostCtl) gin.HandlerFunc {
 
 		response, err := costCtl.GetCostDetails(ctx)
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, err.Error())
+			utils.HandleErrorAndAbort(c, *err)
 			return
 		}
 
@@ -59,7 +60,7 @@ func DeleteCostEntryHandler(costCtl controllers.CostCtl) gin.HandlerFunc {
 
 		err := costCtl.DeleteCostEntry(ctx)
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, err.Error())
+			utils.HandleErrorAndAbort(c, *err)
 			return
 		}
 

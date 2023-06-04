@@ -2,7 +2,6 @@ package controllers
 
 import (
 	"context"
-	"errors"
 
 	"github.com/Travel-Utilities-WWI21SEB/expense-management-service/src/managers"
 	"github.com/Travel-Utilities-WWI21SEB/expense-management-service/src/models"
@@ -23,32 +22,32 @@ type CostController struct {
 	DatabaseMgr managers.DatabaseMgr
 }
 
-func (cc *CostController) CreateCostEntry(ctx context.Context) (*models.CostResponse, error) {
+func (cc *CostController) CreateCostEntry(ctx context.Context) (*models.CostResponse, *models.ExpenseServiceError) {
 	// TO-DO
-	return nil, errors.New("not implemented")
+	return nil, nil
 }
 
-func (cc *CostController) PatchCostEntry(ctx context.Context) (*models.CostResponse, error) {
+func (cc *CostController) PatchCostEntry(ctx context.Context) (*models.CostResponse, *models.ExpenseServiceError) {
 	// TO-DO
-	return nil, errors.New("not implemented")
+	return nil, nil
 }
 
-func (cc *CostController) PutCostEntry(ctx context.Context) (*models.CostResponse, error) {
+func (cc *CostController) PutCostEntry(ctx context.Context) (*models.CostResponse, *models.ExpenseServiceError) {
 	// TO-DO
-	return nil, errors.New("not implemented")
+	return nil, nil
 }
 
-func (cc *CostController) GetCostDetails(ctx context.Context) (*models.CostResponse, error) {
+func (cc *CostController) GetCostDetails(ctx context.Context) (*models.CostResponse, *models.ExpenseServiceError) {
 	// TO-DO
-	return nil, errors.New("not implemented")
+	return nil, nil
 }
 
-func (cc *CostController) GetTripCosts(ctx context.Context) (*models.CostResponse, error) {
+func (cc *CostController) GetTripCosts(ctx context.Context) (*models.CostResponse, *models.ExpenseServiceError) {
 	// TO-DO
-	return nil, errors.New("not implemented")
+	return nil, nil
 }
 
-func (cc *CostController) DeleteCostEntry(ctx context.Context) error {
+func (cc *CostController) DeleteCostEntry(ctx context.Context) *models.ExpenseServiceError {
 	// TO-DO
-	return errors.New("not implemented")
+	return nil
 }
