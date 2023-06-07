@@ -1,7 +1,7 @@
 _id: req_033e3bf16eea4ba1b18389c2ada640a2
 type: Request
 parentId: fld_fb964101ac2d4651a16e19aa1fefe039
-modified: 1686155889751
+modified: 1686160600194
 created: 1684747930513
 url: "{{ _.api_url }}/{{ _.route }}/{% prompt 'TripId', '', 'TripId', 'tripid',
   false, true %}/{{ _.subRoute }}"
@@ -91,13 +91,20 @@ body:
   mimeType: application/json
   text: |-
     {
-    	
-    }
+    	"costCategoryId": "e63d5366-8bba-414a-ac78-732fc8ef6a0a", 
+     	"amount": "20.23", 
+     	"currency": "EUR", 
+     	"description": "TEsting", 
+     	"deductedAt": "2023-06-07T17:53:16+02:00"
+     }
 parameters: []
 headers:
   - name: Content-Type
     value: application/json
-authentication: {}
+authentication:
+  type: bearer
+  token: "{{ _.token }}"
+  prefix: Bearer
 metaSortKey: -1684747930513
 isPrivate: false
 settingStoreCookies: true

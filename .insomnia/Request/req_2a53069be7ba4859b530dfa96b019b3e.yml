@@ -1,7 +1,7 @@
 _id: req_2a53069be7ba4859b530dfa96b019b3e
 type: Request
 parentId: fld_d83c1d0d5e75433c97b1979a5f600fb4
-modified: 1686155591533
+modified: 1686160636157
 created: 1684747727157
 url: "{{ _.api_url }}/{{ _.route }}"
 name: Create Trip
@@ -88,13 +88,11 @@ description: >
 method: POST
 body:
   mimeType: application/json
-  text: >-
+  text: |-
     {
-    	"creator": "{% prompt 'UserID of Creator', 'userid', 'userId', 'userid', false, true %}",
-    	"location": "{% prompt 'Location', 'location', 'testLocation', 'tripLocation', false, true %}",
-    	"description": "{% prompt 'Description', 'tripDescription', 'Description of trip', 'tripDescription', false, true %}",
-    	"startDate": "{% prompt 'StartDate', 'startdate', '02/08/2023', 'startdate', false, true %}",
-    	"endDate": "{% prompt 'EndDate', 'enddate', '30/10/2023', 'enddate', false, true %}"
+    	"location": "Palo Alto",
+    	"startDate": "2023-08-02",
+    	"endDate": "2023-10-30"
     }
 parameters: []
 headers:

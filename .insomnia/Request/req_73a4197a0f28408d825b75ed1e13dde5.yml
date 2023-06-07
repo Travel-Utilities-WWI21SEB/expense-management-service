@@ -1,7 +1,7 @@
 _id: req_73a4197a0f28408d825b75ed1e13dde5
 type: Request
 parentId: fld_2b6e55b09af64965a02cd1bc8595679d
-modified: 1686155869967
+modified: 1686160475907
 created: 1684753628959
 url: "{{ _.api_url }}/{{ _.route }}/{% prompt 'TripId', '', 'TripId', 'tripid',
   false, true %}/{{ _.subRoute }}/{% prompt 'CostCategoryId', 'costCategoryId',
@@ -91,7 +91,10 @@ method: GET
 body: {}
 parameters: []
 headers: []
-authentication: {}
+authentication:
+  type: bearer
+  token: "{{ _.token }}"
+  prefix: Bearer
 metaSortKey: -1684747854971.375
 isPrivate: false
 settingStoreCookies: true
