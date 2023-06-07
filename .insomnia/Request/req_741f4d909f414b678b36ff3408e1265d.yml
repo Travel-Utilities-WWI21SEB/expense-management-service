@@ -1,9 +1,9 @@
 _id: req_741f4d909f414b678b36ff3408e1265d
 type: Request
 parentId: fld_377a889e84744fad9aa37e60971a9815
-modified: 1685017298528
+modified: 1686155042393
 created: 1684746520798
-url: "{{ _.localUrl }}/api/{{ _.apiVersion }}/{{ _.route }}/register"
+url: "{{ _.api_url }}/{{ _.route }}/register"
 name: Register
 description: |
   This endpoint is used to register a new user in our webapplication.

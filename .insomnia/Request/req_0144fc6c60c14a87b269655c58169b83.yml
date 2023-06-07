@@ -1,10 +1,10 @@
 _id: req_0144fc6c60c14a87b269655c58169b83
 type: Request
 parentId: fld_377a889e84744fad9aa37e60971a9815
-modified: 1685017319086
+modified: 1686155055345
 created: 1684747524857
-url: "{{ _.localUrl }}/api/{{ _.apiVersion }}/{{ _.route }}/{% prompt 'UserId',
-  '', 'userId', 'userid', false, true %}"
+url: "{{ _.api_url }}/{{ _.route }}/{% prompt 'UserId', '', 'userId', 'userid',
+  false, true %}"
 name: User Details
 description: >
   This endpoint allows the retrieval of user details based on their unique

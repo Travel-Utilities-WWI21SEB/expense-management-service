@@ -1,9 +1,9 @@
 _id: req_b0fffa78d0d14c718ca946182f96ef0d
 type: Request
 parentId: fld_d83c1d0d5e75433c97b1979a5f600fb4
-modified: 1685035727179
+modified: 1686155609607
 created: 1684747846830
-url: "{{ _.localUrl }}/{{ _.route }}/{% prompt 'TripId', '', 'TripId', 'tripid',
+url: "{{ _.api_url }}/{{ _.route }}/{% prompt 'TripId', '', 'TripId', 'tripid',
   false, true %}"
 name: Trip Details
 description: >

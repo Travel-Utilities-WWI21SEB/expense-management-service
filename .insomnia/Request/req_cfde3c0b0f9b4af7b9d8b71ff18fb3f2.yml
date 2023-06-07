@@ -1,9 +1,9 @@
 _id: req_cfde3c0b0f9b4af7b9d8b71ff18fb3f2
 type: Request
 parentId: fld_2b6e55b09af64965a02cd1bc8595679d
-modified: 1684922505340
+modified: 1686155878059
 created: 1684922384534
-url: "{{ _.localUrl }}/{{ _.route }}/{% prompt 'TripId', '', 'TripId', 'tripid',
+url: "{{ _.api_url }}/{{ _.route }}/{% prompt 'TripId', '', 'TripId', 'tripid',
   false, true %}/{{ _.subRoute }}"
 name: Update Cost Category
 description: ""

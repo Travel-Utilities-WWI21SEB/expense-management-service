@@ -1,9 +1,9 @@
 _id: req_3185450b69244ed4ab184790c6e80ceb
 type: Request
 parentId: fld_377a889e84744fad9aa37e60971a9815
-modified: 1685010285213
+modified: 1686155048662
 created: 1684746860492
-url: "{{ _.localUrl }}/api/{{ _.apiVersion }}/{{ _.route }}/login"
+url: "{{ _.api_url }}/{{ _.route }}/login"
 name: Login
 description: >-
   This endpoint is used to login a user in our webapplication with given

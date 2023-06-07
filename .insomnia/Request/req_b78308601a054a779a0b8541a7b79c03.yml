@@ -1,10 +1,10 @@
 _id: req_b78308601a054a779a0b8541a7b79c03
 type: Request
 parentId: fld_377a889e84744fad9aa37e60971a9815
-modified: 1685018245124
+modified: 1686155072407
 created: 1684747557399
-url: "{{ _.localUrl }}/api/{{ _.apiVersion }}/{{ _.route }}/{% prompt 'UserId',
-  '', 'userId', 'userid', false, true %}"
+url: "{{ _.api_url }}/{{ _.route }}/{% prompt 'UserId', '', 'userId', 'userid',
+  false, true %}"
 name: Delete User
 description: >-
   This endpoint is used to delete an user in our web application. The server
