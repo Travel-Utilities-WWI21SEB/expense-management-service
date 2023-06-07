@@ -1,10 +1,9 @@
 _id: req_effd9e08aece4f0dbba754e46f34784c
 type: Request
 parentId: fld_377a889e84744fad9aa37e60971a9815
-modified: 1686155065742
+modified: 1686161638263
 created: 1684747487640
-url: "{{ _.api_url }}/{{ _.route }}/{% prompt 'UserId', '', 'userId', 'userid',
-  false, true %}"
+url: "{{ _.api_url }}/{{ _.route }}"
 name: Update User
 description: >
   This endpoint enables the update of user information within the system. By
@@ -154,9 +153,7 @@ body:
   mimeType: application/json
   text: >-
     {
-    	"username": "{% prompt 'Username', '', 'testUser', 'username', _.username, true %}",
-    	"email": "{% prompt 'Email', _.email, 'testEmail', true, _.email, true %}",
-    	"password": "{% prompt 'Password', 'password', 'testPassword', true, true, true %}"
+    	"username": "{% prompt 'Username', '', 'testUser', 'username', _.username, true %}"
     }
 parameters: []
 headers:

@@ -1,7 +1,7 @@
 _id: env_0977cb90722f4586b48da4b0d1e24836
 type: Environment
 parentId: wrk_9005ef94d55f456f853b7aef2a0cdd44
-modified: 1686155544124
+modified: 1686161425850
 created: 1684746394964
 name: Base Environment
 data:
@@ -13,6 +13,7 @@ data:
     'b64::JC51c2VySWQ=::46b', 'no-history', 60 %}"
   last_trip_id: "{% response 'body', 'req_2a53069be7ba4859b530dfa96b019b3e',
     'b64::JC50cmlwSWQ=::46b', 'never', 60 %}"
+  user_id: "{% prompt 'User ID', '', _.last_user_id, _.user_id, false, true %}"
 dataPropertyOrder:
   "&":
     - base_url
@@ -20,6 +21,7 @@ dataPropertyOrder:
     - token
     - last_user_id
     - last_trip_id
+    - user_id
 color: null
 isPrivate: false
 metaSortKey: 1684746394964
