@@ -1,23 +1,14 @@
 _id: env_f3f7e6bd8e084d4c84d3110651349b52
 type: Environment
 parentId: env_0977cb90722f4586b48da4b0d1e24836
-modified: 1685016659832
+modified: 1686155198191
 created: 1684746533608
-name: Expense API
+name: Local Expense API
 data:
-  localUrl: http://localhost:8080
-  apiUrl: https://expenseapi.c930.net
-  apiVersion: v1
-  route: ""
-  token: "{% response 'body', 'req_3185450b69244ed4ab184790c6e80ceb',
-    'b64::JC50b2tlbg==::46b', 'when-expired', 900 %}"
+  base_url: http://localhost:8080
 dataPropertyOrder:
   "&":
-    - localUrl
-    - apiUrl
-    - apiVersion
-    - route
-    - token
-color: null
+    - base_url
+color: "#00b3ff"
 isPrivate: false
 metaSortKey: 1684746533608

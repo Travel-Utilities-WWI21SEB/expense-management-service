@@ -1,10 +1,10 @@
-_id: req_2a53069be7ba4859b530dfa96b019b3e
+_id: req_b512182cf3f946af8cdd45ea23575d19
 type: Request
 parentId: fld_d83c1d0d5e75433c97b1979a5f600fb4
-modified: 1686155591533
-created: 1684747727157
+modified: 1686155616301
+created: 1685906473623
 url: "{{ _.api_url }}/{{ _.route }}"
-name: Create Trip
+name: Trips
 description: >
   This endpoint is used to login a user in our webapplication with given
   credentials and set a JWT Header.
@@ -85,26 +85,15 @@ description: >
   }
 
   ```
-method: POST
-body:
-  mimeType: application/json
-  text: >-
-    {
-    	"creator": "{% prompt 'UserID of Creator', 'userid', 'userId', 'userid', false, true %}",
-    	"location": "{% prompt 'Location', 'location', 'testLocation', 'tripLocation', false, true %}",
-    	"description": "{% prompt 'Description', 'tripDescription', 'Description of trip', 'tripDescription', false, true %}",
-    	"startDate": "{% prompt 'StartDate', 'startdate', '02/08/2023', 'startdate', false, true %}",
-    	"endDate": "{% prompt 'EndDate', 'enddate', '30/10/2023', 'enddate', false, true %}"
-    }
+method: GET
+body: {}
 parameters: []
-headers:
-  - name: Content-Type
-    value: application/json
+headers: []
 authentication:
   type: bearer
   token: "{{ _.token }}"
   prefix: Bearer
-metaSortKey: -1684747857768.5
+metaSortKey: -1684747857643.5
 isPrivate: false
 settingStoreCookies: true
 settingSendCookies: true

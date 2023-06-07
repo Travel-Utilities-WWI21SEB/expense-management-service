@@ -1,12 +1,12 @@
 _id: fld_be8d98a0140c4e72bb747bce94c3cc3b
 type: RequestGroup
 parentId: wrk_9005ef94d55f456f853b7aef2a0cdd44
-modified: 1684852036416
+modified: 1686153942651
 created: 1684746491124
-name: Trip Related [API v1]
+name: Trip Related [v1]
 description: ""
 environment:
-  route: trip
+  route: trips
   subRoute: ""
 environmentPropertyOrder:
   "&":

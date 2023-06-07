@@ -1,9 +1,9 @@
 _id: req_5b80eec3468a461aab983c1e58243ef8
 type: Request
 parentId: fld_377a889e84744fad9aa37e60971a9815
-modified: 1685017789608
+modified: 1686155051968
 created: 1684747392889
-url: "{{ _.localUrl }}/api/{{ _.apiVersion }}/{{ _.route }}/activate"
+url: "{{ _.api_url }}/{{ _.route }}/activate"
 name: Activate User
 description: >
   This endpoint allows the activation of a user account using a token. When a
