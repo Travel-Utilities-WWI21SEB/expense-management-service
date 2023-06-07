@@ -21,7 +21,17 @@ type Controllers struct {
 }
 
 func createRouter(dbConnection *sql.DB) *gin.Engine {
-	router := gin.Default()
+	router := gin.New()
+
+	// Attach logger middleware
+	router.Use(gin.Logger())
+
+	// Attach recovery middleware
+	router.Use(gin.Recovery())
+
+	// Configure CORS
+	router.Use(middlewares.CorsMiddleware())
+
 	apiv1 := router.Group("/api/v1")
 	apiv1.Use(middlewares.ValidateUUID())
 
@@ -70,6 +80,7 @@ func createRouter(dbConnection *sql.DB) *gin.Engine {
 	apiv1.Handle(http.MethodPost, "/users/register", handlers.RegisterUserHandler(controllers.UserController))
 	apiv1.Handle(http.MethodPost, "/users/login", handlers.LoginUserHandler(controllers.UserController))
 	apiv1.Handle(http.MethodPost, "/users/refresh", handlers.RefreshTokenHandler(controllers.UserController))
+	apiv1.Handle(http.MethodPost, "users/resend-token", handlers.ResendTokenHandler(controllers.UserController))
 	apiv1.Handle(http.MethodPost, "/users/activate", handlers.ActivateUserHandler(controllers.UserController))
 	apiv1.Handle(http.MethodPost, "/users/check-email", handlers.CheckEmailHandler(controllers.UserController))
 	apiv1.Handle(http.MethodPost, "/users/check-username", handlers.CheckUsernameHandler(controllers.UserController))

@@ -19,6 +19,7 @@ type UserCtl interface {
 	RegisterUser(ctx context.Context, registrationData models.RegistrationRequest) *models.ExpenseServiceError
 	LoginUser(ctx context.Context, loginData models.LoginRequest) (*models.LoginResponse, *models.ExpenseServiceError)
 	RefreshToken(ctx context.Context, userId *uuid.UUID) (*models.RefreshTokenResponse, *models.ExpenseServiceError)
+	ResendToken(ctx context.Context, email string) *models.ExpenseServiceError
 	ActivateUser(ctx context.Context, token string) (*models.ActivationResponse, *models.ExpenseServiceError)
 	UpdateUser(ctx context.Context) (*models.UserDetailsResponse, *models.ExpenseServiceError)
 	DeleteUser(ctx context.Context) *models.ExpenseServiceError
@@ -85,17 +86,14 @@ func (uc *UserController) RegisterUser(ctx context.Context, registrationData mod
 
 	for {
 		activationToken = utils.GenerateRandomString(6)
-		row := uc.DatabaseMgr.ExecuteQueryRow(queryString, activationToken)
-
-		var count int
-		if err := row.Scan(&count); err != nil {
-			log.Printf("Error in userController.RegisterUser().Scan(): %v", err.Error())
+		exists, err := uc.DatabaseMgr.CheckIfExists(queryString, &activationToken)
+		if err != nil {
+			log.Printf("Error in userController.RegisterUser().CheckIfExists(): %v", err.Error())
 			return expense_errors.EXPENSE_UPSTREAM_ERROR
 		}
 
-		if count == 0 {
-			// Token is unique
-			break
+		if !exists {
+			break // Token is unique
 		}
 	}
 
@@ -153,7 +151,6 @@ func (uc *UserController) LoginUser(ctx context.Context, loginData models.LoginR
 	}
 
 	return &models.LoginResponse{
-		UserID:       &userId,
 		Token:        token,
 		RefreshToken: refreshToken,
 	}, nil
@@ -186,6 +183,65 @@ func (uc *UserController) RefreshToken(ctx context.Context, userId *uuid.UUID) (
 		Token:        token,
 		RefreshToken: refreshToken,
 	}, nil
+}
+
+func (uc *UserController) ResendToken(ctx context.Context, email string) *models.ExpenseServiceError {
+	if utils.ContainsEmptyString(email) {
+		return expense_errors.EXPENSE_BAD_REQUEST
+	}
+
+	queryString := "SELECT id, activated FROM \"user\" WHERE email = $1"
+	row := uc.DatabaseMgr.ExecuteQueryRow(queryString, email)
+
+	var userId uuid.UUID
+	var activated bool
+	if err := row.Scan(&userId, &activated); err != nil {
+		log.Printf("Error in userController.ResendToken().Scan(): %v", err.Error())
+		return expense_errors.EXPENSE_USER_NOT_FOUND
+	}
+
+	if activated {
+		// this state shouldn't normally happen
+		// but better safe than sorry
+		return expense_errors.EXPENSE_MAIL_ALREADY_VERIFIED
+	}
+
+	var activationToken string
+	now := time.Now()
+	queryString = "SELECT COUNT(*) FROM activation_token WHERE token = $1"
+
+	for {
+		activationToken = utils.GenerateRandomString(6)
+		exists, err := uc.DatabaseMgr.CheckIfExists(queryString, &activationToken)
+		if err != nil {
+			log.Printf("Error in userController.RegisterUser().CheckIfExists(): %v", err.Error())
+			return expense_errors.EXPENSE_UPSTREAM_ERROR
+		}
+
+		if !exists {
+			break // Token is unique
+		}
+	}
+
+	queryString = "UPDATE activation_token SET token = $1, created_at = $2 WHERE id_user = $3"
+	if _, err := uc.DatabaseMgr.ExecuteStatement(queryString, activationToken, now, userId); err != nil {
+		log.Printf("Error in userController.ResendToken().ExecuteStatement(): %v", err.Error())
+		return expense_errors.EXPENSE_UPSTREAM_ERROR
+	}
+
+	activationMail := &models.ActivationMail{
+		Username:        email,
+		ActivationToken: activationToken,
+		Subject:         activationMailSubject,
+		Recipients:      []string{email},
+	}
+
+	if err := uc.MailMgr.SendActivationMail(ctx, *activationMail); err != nil {
+		log.Printf("Error in userController.ResendToken().SendActivationMail(): %v", err.ErrorMessage)
+		return err
+	}
+
+	return nil
 }
 
 // UpdateUser updates the user entry in the database

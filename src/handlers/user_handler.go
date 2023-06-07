@@ -71,7 +71,27 @@ func RefreshTokenHandler(userCtl controllers.UserCtl) gin.HandlerFunc {
 			return
 		}
 
-		c.JSON(http.StatusCreated, response)
+		c.JSON(http.StatusOK, response)
+	}
+}
+
+func ResendTokenHandler(userCtl controllers.UserCtl) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		ctx := c.Request.Context()
+
+		var resendTokenData *models.ResendTokenRequest
+		if err := c.ShouldBindJSON(&resendTokenData); err != nil {
+			utils.HandleErrorAndAbort(c, *expense_errors.EXPENSE_BAD_REQUEST)
+			return
+		}
+
+		err := userCtl.ResendToken(ctx, resendTokenData.Email)
+		if err != nil {
+			utils.HandleErrorAndAbort(c, *err)
+			return
+		}
+
+		c.AbortWithStatus(http.StatusOK)
 	}
 }
 
