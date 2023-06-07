@@ -4,16 +4,17 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/shopspring/decimal"
 )
 
 type CostSchema struct {
-	CostID         *uuid.UUID `json:"costId" db:"id"`
-	Amount         float32    `json:"amount" db:"amount"`
-	CurrencyCode   string     `json:"currencyCode" db:"currency_code"`
-	CreationDate   *time.Time `json:"createdAt" db:"created_at"`
-	DeductionDate  *time.Time `json:"deductedAt" db:"deducted_at"`
-	EndDate        *time.Time `json:"endDate,omitempty" db:"end_date"`
-	CostCategoryID *uuid.UUID `json:"costCategoryId" db:"id_cost_category"`
+	CostID         *uuid.UUID      `json:"costId" db:"id"`
+	Amount         decimal.Decimal `json:"amount" db:"amount"`
+	Description    string          `json:"description" db:"description"`
+	CreationDate   *time.Time      `json:"createdAt" db:"created_at"`
+	DeductionDate  *time.Time      `json:"deductedAt" db:"deducted_at"`
+	EndDate        *time.Time      `json:"endDate,omitempty" db:"end_date"`
+	CostCategoryID *uuid.UUID      `json:"costCategoryId" db:"id_cost_category"`
 }
 
 type CostCategorySchema struct {

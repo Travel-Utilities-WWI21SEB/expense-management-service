@@ -18,8 +18,8 @@ import (
 
 // Exposed interface to the handler-package
 type TripCtl interface {
-	CreateTripEntry(ctx context.Context, tripData models.TripRequest) (*models.TripCreationResponse, *models.ExpenseServiceError)
-	UpdateTripEntry(ctx context.Context, tripID *uuid.UUID, tripUpdateData models.TripUpdateRequest) (*models.TripResponse, *models.ExpenseServiceError)
+	CreateTripEntry(ctx context.Context, tripData models.CreateTripRequest) (*models.TripCreationResponse, *models.ExpenseServiceError)
+	UpdateTripEntry(ctx context.Context, tripID *uuid.UUID, tripUpdateData models.UpdateTripRequest) (*models.TripResponse, *models.ExpenseServiceError)
 	GetTripDetails(ctx context.Context, tripID *uuid.UUID) (*models.TripResponse, *models.ExpenseServiceError)
 	DeleteTripEntry(ctx context.Context, tripID *uuid.UUID) *models.ExpenseServiceError
 	GetTripEntries(ctx context.Context) ([]*models.TripResponse, *models.ExpenseServiceError)
@@ -32,7 +32,7 @@ type TripController struct {
 	DatabaseMgr managers.DatabaseMgr
 }
 
-func (tc *TripController) CreateTripEntry(ctx context.Context, tripData models.TripRequest) (*models.TripCreationResponse, *models.ExpenseServiceError) {
+func (tc *TripController) CreateTripEntry(ctx context.Context, tripData models.CreateTripRequest) (*models.TripCreationResponse, *models.ExpenseServiceError) {
 	if utils.ContainsEmptyString(tripData.Location, tripData.StartDate, tripData.EndDate) {
 		log.Printf("Error in creating trip: %v", errors.New("empty string in request"))
 		return nil, expense_errors.EXPENSE_BAD_REQUEST
@@ -119,7 +119,7 @@ func (tc *TripController) GetTripEntries(ctx context.Context) ([]*models.TripRes
 	return tripResponses, nil
 }
 
-func (tc *TripController) UpdateTripEntry(ctx context.Context, tripID *uuid.UUID, tripUpdateDate models.TripUpdateRequest) (*models.TripResponse, *models.ExpenseServiceError) {
+func (tc *TripController) UpdateTripEntry(ctx context.Context, tripID *uuid.UUID, tripUpdateDate models.UpdateTripRequest) (*models.TripResponse, *models.ExpenseServiceError) {
 	// Get old trip data
 	getTripQueryString := "SELECT location, start_date, end_date FROM trip WHERE id = $1"
 	row := tc.DatabaseMgr.ExecuteQueryRow(getTripQueryString, tripID)

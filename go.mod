@@ -18,6 +18,7 @@ require (
 	github.com/gorilla/mux v1.8.0 // indirect
 	github.com/kitloong/go-currency-converter-api/v2 v2.0.1 // indirect
 	github.com/pkg/errors v0.8.1 // indirect
+	github.com/shopspring/decimal v1.3.1 // indirect
 )
 
 require (

@@ -26,7 +26,7 @@ func createRouter(dbConnection *sql.DB) *gin.Engine {
 	apiv1.Use(middlewares.ValidateUUID())
 
 	securedApiv1 := router.Group("/api/v1")
-	securedApiv1.Use(middlewares.JwtAuthMiddleware())
+	securedApiv1.Use(middlewares.ValidateUUID(), middlewares.JwtAuthMiddleware())
 
 	databaseMgr := &managers.DatabaseManager{
 		Connection: dbConnection,
@@ -96,6 +96,7 @@ func createRouter(dbConnection *sql.DB) *gin.Engine {
 
 	// Cost Routes
 	securedTripApiv1.Handle(http.MethodPost, "/costs", handlers.CreateCostEntryHandler(controllers.CostController))
+	securedTripApiv1.Handle(http.MethodGet, "/costs", handlers.GetCostEntriesHandler(controllers.CostController))
 	securedTripApiv1.Handle(http.MethodPatch, "/costs/:costId", handlers.UpdateCostEntryHandler(controllers.CostController))
 	securedTripApiv1.Handle(http.MethodGet, "/costs/:costId", handlers.GetCostDetailsHandler(controllers.CostController))
 	securedTripApiv1.Handle(http.MethodDelete, "/costs/:costId", handlers.DeleteCostEntryHandler(controllers.CostController))

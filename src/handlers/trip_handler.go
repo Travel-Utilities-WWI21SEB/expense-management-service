@@ -15,7 +15,7 @@ func CreateTripEntryHandler(tripCtl controllers.TripCtl) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		ctx := c.Request.Context()
 
-		var tripData models.TripRequest
+		var tripData models.CreateTripRequest
 
 		if err := c.ShouldBindJSON(&tripData); err != nil {
 			utils.HandleErrorAndAbort(c, *expense_errors.EXPENSE_BAD_REQUEST)
@@ -71,7 +71,7 @@ func UpdateTripEntryHandler(TripCtl controllers.TripCtl) gin.HandlerFunc {
 		// Get the tripId from the path
 		tripId := uuid.MustParse(c.Param(models.ExpenseParamKeyTripId))
 
-		var tripUpdateRequest models.TripUpdateRequest
+		var tripUpdateRequest models.UpdateTripRequest
 		if err := c.ShouldBindJSON(&tripUpdateRequest); err != nil {
 			utils.HandleErrorAndAbort(c, *expense_errors.EXPENSE_BAD_REQUEST)
 			return
