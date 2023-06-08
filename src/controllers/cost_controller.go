@@ -13,7 +13,7 @@ import (
 	"time"
 )
 
-// Exposed interface to the handler-package
+// CostCtl Exposed interface to the handler-package
 type CostCtl interface {
 	CreateCostEntry(ctx context.Context, createCostRequest models.CreateCostRequest) (*models.CostDetailsResponse, *models.ExpenseServiceError)
 	PatchCostEntry(ctx context.Context) (*models.CostResponse, *models.ExpenseServiceError)
@@ -23,7 +23,7 @@ type CostCtl interface {
 	DeleteCostEntry(ctx context.Context) *models.ExpenseServiceError
 }
 
-// Cost Controller structure
+// CostController Cost Controller structure
 type CostController struct {
 	DatabaseMgr managers.DatabaseMgr
 }
@@ -39,11 +39,6 @@ func (cc *CostController) CreateCostEntry(ctx context.Context, createCostRequest
 	// - Insert cost entry into database
 	// - Insert cost entry and creator into cost_category_cost table
 	// - Insert cost entry and debtor into user_cost_association table
-
-	// Check if cost entry already has empty fields
-	if utils.ContainsEmptyString(createCostRequest.Amount, createCostRequest.CurrencyCode) {
-		return nil, expense_errors.EXPENSE_BAD_REQUEST
-	}
 
 	// Generate costId
 	costId, err := uuid.NewUUID()

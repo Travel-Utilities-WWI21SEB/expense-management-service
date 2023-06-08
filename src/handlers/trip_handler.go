@@ -15,14 +15,19 @@ func CreateTripEntryHandler(tripCtl controllers.TripCtl) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		ctx := c.Request.Context()
 
-		var tripData models.CreateTripRequest
+		var tripRequest models.CreateTripRequest
 
-		if err := c.ShouldBindJSON(&tripData); err != nil {
+		if err := c.ShouldBindJSON(&tripRequest); err != nil {
 			utils.HandleErrorAndAbort(c, *expense_errors.EXPENSE_BAD_REQUEST)
 			return
 		}
 
-		response, serviceErr := tripCtl.CreateTripEntry(ctx, tripData)
+		if utils.ContainsEmptyString(tripRequest.Location, tripRequest.StartDate, tripRequest.EndDate) {
+			utils.HandleErrorAndAbort(c, *expense_errors.EXPENSE_BAD_REQUEST)
+			return
+		}
+
+		response, serviceErr := tripCtl.CreateTripEntry(ctx, tripRequest)
 		if serviceErr != nil {
 			utils.HandleErrorAndAbort(c, *serviceErr)
 			return
@@ -117,6 +122,10 @@ func InviteUserToTripHandler(TripCtl controllers.TripCtl) gin.HandlerFunc {
 			return
 		}
 
+		if utils.ContainsEmptyString(inviteUserRequest.Username) && utils.ContainsEmptyString(inviteUserRequest.EMail) {
+			utils.HandleErrorAndAbort(c, *expense_errors.EXPENSE_BAD_REQUEST)
+		}
+
 		response, serviceErr := TripCtl.InviteUserToTrip(ctx, &tripId, inviteUserRequest)
 		if serviceErr != nil {
 			utils.HandleErrorAndAbort(c, *serviceErr)
@@ -132,7 +141,11 @@ func AcceptTripInviteHandler(TripCtl controllers.TripCtl) gin.HandlerFunc {
 		ctx := c.Request.Context()
 
 		// Get the tripId from the path
-		tripId := uuid.MustParse(c.Param(models.ExpenseParamKeyTripId))
+		tripId, err := uuid.Parse(c.Param(models.ExpenseParamKeyTripId))
+		if err != nil {
+			utils.HandleErrorAndAbort(c, *expense_errors.EXPENSE_BAD_REQUEST)
+			return
+		}
 
 		serviceErr := TripCtl.AcceptTripInvite(ctx, &tripId)
 		if serviceErr != nil {

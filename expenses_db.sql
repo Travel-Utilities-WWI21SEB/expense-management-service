@@ -1,72 +1,54 @@
--- Database generated with pgModeler (PostgreSQL Database Modeler).
--- pgModeler version: 1.0.4
--- PostgreSQL version: 15.0
--- Project Site: pgmodeler.io
--- Model Author: ---
-
--- Database creation must be performed outside a multi lined SQL file. 
--- These commands were put in this file only as a convenience.
--- 
--- object: expensedb | type: DATABASE --
--- DROP DATABASE IF EXISTS expensedb;
-CREATE DATABASE expensedb
-	ENCODING = 'UTF8'
-	LC_COLLATE = 'en_US.utf8'
-	LC_CTYPE = 'en_US.utf8'
-	TABLESPACE = pg_default
-	OWNER = postgres;
--- ddl-end --
-
--- object: expensedb | type: EXTENSION --
--- This extension is required to generate UUIDs
-CREATE EXTENSION IF NOT EXISTS "uuid-ossp"; 
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 -- ddl-end --
 
 -- object: public | type: SCHEMA --
 -- DROP SCHEMA IF EXISTS public CASCADE;
-CREATE SCHEMA public;
+-- CREATE SCHEMA public;
 -- ddl-end --
 
 -- object: public."user" | type: TABLE --
--- DROP TABLE IF EXISTS public."user" CASCADE;
+DROP TABLE IF EXISTS public."user" CASCADE;
 CREATE TABLE public."user" (
 	id uuid NOT NULL DEFAULT uuid_generate_v4(),
 	username character varying NOT NULL,
 	email character varying NOT NULL,
 	password character varying NOT NULL,
-	activated boolean,
-	CONSTRAINT user_pk PRIMARY KEY (id) 
+	activated boolean NOT NULL,
+	CONSTRAINT user_pk PRIMARY KEY (id),
+    CONSTRAINT username_un UNIQUE (username),
+    CONSTRAINT email_un UNIQUE (email)
 );
 -- ddl-end --
 
 -- object: public.trip | type: TABLE --
--- DROP TABLE IF EXISTS public.trip CASCADE;
+DROP TABLE IF EXISTS public.trip CASCADE;
 CREATE TABLE public.trip (
 	id uuid NOT NULL DEFAULT uuid_generate_v4(),
 	location character varying,
-	start_date date,
-	end_date date,
+	start_date date NOT NULL,
+	end_date date NOT NULL,
 	CONSTRAINT travel_pk PRIMARY KEY (id)
 );
 -- ddl-end --
 
 -- object: public.activation_token | type: TABLE --
--- DROP TABLE IF EXISTS public.activation_token CASCADE;
+DROP TABLE IF EXISTS public.activation_token CASCADE;
 CREATE TABLE public.activation_token (
-	id uuid NOT NULL DEFAULT uuid_generate_v4(),
+	id_user uuid NOT NULL,
 	token character varying,
 	created_at timestamp with time zone,
 	confirmed_at timestamp with time zone,
-	id_user uuid NOT NULL,
-	CONSTRAINT activation_token_pk PRIMARY KEY (id)
+	expires_at timestamp with time zone,
+	CONSTRAINT activation_token_pk PRIMARY KEY (id_user),
+	CONSTRAINT activation_token_un UNIQUE (token)
 );
 -- ddl-end --
 
 -- object: public.user_trip_association | type: TABLE --
--- DROP TABLE IF EXISTS public.user_trip_association CASCADE;
+DROP TABLE IF EXISTS public.user_trip_association CASCADE;
 CREATE TABLE public.user_trip_association (
-	presence_start_date date,
-	presence_end_date date,
+	presence_start_date date NOT NULL,
+	presence_end_date date NOT NULL,
 	is_accepted boolean NOT NULL,
 	id_user uuid NOT NULL,
 	id_trip uuid NOT NULL,
@@ -75,7 +57,7 @@ CREATE TABLE public.user_trip_association (
 -- ddl-end --
 
 -- object: public.cost_category | type: TABLE --
--- DROP TABLE IF EXISTS public.cost_category CASCADE;
+DROP TABLE IF EXISTS public.cost_category CASCADE;
 CREATE TABLE public.cost_category (
 	id uuid NOT NULL DEFAULT uuid_generate_v4(),
 	name character varying,
@@ -89,7 +71,7 @@ CREATE TABLE public.cost_category (
 -- ddl-end --
 
 -- object: public.cost | type: TABLE --
--- DROP TABLE IF EXISTS public.cost CASCADE;
+DROP TABLE IF EXISTS public.cost CASCADE;
 CREATE TABLE public.cost (
 	id uuid NOT NULL DEFAULT uuid_generate_v4(),
 	amount numeric,
@@ -103,7 +85,7 @@ CREATE TABLE public.cost (
 -- ddl-end --
 
 -- object: public.user_cost_association | type: TABLE --
--- DROP TABLE IF EXISTS public.user_cost_association CASCADE;
+DROP TABLE IF EXISTS public.user_cost_association CASCADE;
 CREATE TABLE public.user_cost_association (
 	id_user uuid NOT NULL,
 	id_cost uuid NOT NULL,
@@ -113,7 +95,7 @@ CREATE TABLE public.user_cost_association (
 -- ddl-end --
 
 -- object: public.transaction | type: TABLE --
--- DROP TABLE IF EXISTS public.transaction CASCADE;
+DROP TABLE IF EXISTS public.transaction CASCADE;
 CREATE TABLE public.transaction (
 	id uuid NOT NULL DEFAULT uuid_generate_v4(),
 	sender_id uuid,

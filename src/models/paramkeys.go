@@ -6,4 +6,7 @@ const (
 
 	// ParamKeyTripId is the key for the id in the params
 	ExpenseParamKeyTripId = "tripId"
+
+	// ParamKeyCostCategoryId is the key for the id in the params
+	ExpenseParamKeyCostCategoryId = "costCategoryId"
 )

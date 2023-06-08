@@ -2,6 +2,7 @@ package main
 
 import (
 	"database/sql"
+	"github.com/Travel-Utilities-WWI21SEB/expense-management-service/src/repositories"
 	"net/http"
 
 	"github.com/Travel-Utilities-WWI21SEB/expense-management-service/src/controllers"
@@ -55,18 +56,34 @@ func createRouter(dbConnection *sql.DB) *gin.Engine {
 		MailgunInstance: mgInstance,
 	}
 
+	userRepo := &repositories.UserRepository{
+		DatabaseMgr: databaseMgr,
+	}
+
+	tripRepo := &repositories.TripRepository{
+		DatabaseMgr: databaseMgr,
+	}
+
+	costCategoryRepo := &repositories.CostCategoryRepository{
+		DatabaseMgr: databaseMgr,
+	}
+
 	controllers := Controllers{
 		UserController: &controllers.UserController{
 			MailMgr:     mailMgr,
 			DatabaseMgr: databaseMgr,
+			UserRepo:    userRepo,
 		},
 		TripController: &controllers.TripController{
 			DatabaseMgr: databaseMgr,
-		},
-		CostController: &controllers.CostController{
-			DatabaseMgr: databaseMgr,
+			TripRepo:    tripRepo,
+			UserRepo:    userRepo,
 		},
 		CostCategoryController: &controllers.CostCategoryController{
+			DatabaseMgr:      databaseMgr,
+			CostCategoryRepo: costCategoryRepo,
+		},
+		CostController: &controllers.CostController{
 			DatabaseMgr: databaseMgr,
 		},
 		DebtController: &controllers.DebtController{
@@ -80,7 +97,7 @@ func createRouter(dbConnection *sql.DB) *gin.Engine {
 	apiv1.Handle(http.MethodPost, "/users/register", handlers.RegisterUserHandler(controllers.UserController))
 	apiv1.Handle(http.MethodPost, "/users/login", handlers.LoginUserHandler(controllers.UserController))
 	apiv1.Handle(http.MethodPost, "/users/refresh", handlers.RefreshTokenHandler(controllers.UserController))
-	apiv1.Handle(http.MethodPost, "users/resend-token", handlers.ResendTokenHandler(controllers.UserController))
+	apiv1.Handle(http.MethodPost, "/users/resend-token", handlers.ResendTokenHandler(controllers.UserController))
 	apiv1.Handle(http.MethodPost, "/users/activate", handlers.ActivateUserHandler(controllers.UserController))
 	apiv1.Handle(http.MethodPost, "/users/check-email", handlers.CheckEmailHandler(controllers.UserController))
 	apiv1.Handle(http.MethodPost, "/users/check-username", handlers.CheckUsernameHandler(controllers.UserController))
@@ -96,7 +113,7 @@ func createRouter(dbConnection *sql.DB) *gin.Engine {
 	securedTripApiv1.Handle(http.MethodPatch, "", handlers.UpdateTripEntryHandler(controllers.TripController))
 	securedTripApiv1.Handle(http.MethodDelete, "", handlers.DeleteTripEntryHandler(controllers.TripController))
 	securedTripApiv1.Handle(http.MethodPost, "/invite", handlers.InviteUserToTripHandler(controllers.TripController))
-	securedApiv1.Handle(http.MethodPost, "/trips/:tripId/accept", handlers.AcceptTripInviteHandler(controllers.TripController))
+	securedTripApiv1.Handle(http.MethodPost, "/accept", handlers.AcceptTripInviteHandler(controllers.TripController))
 
 	// Cost Category Routes
 	securedTripApiv1.Handle(http.MethodPost, "/cost-categories", handlers.CreateCostCategoryEntryHandler(controllers.CostCategoryController))

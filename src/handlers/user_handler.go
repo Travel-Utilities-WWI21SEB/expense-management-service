@@ -20,6 +20,11 @@ func RegisterUserHandler(userCtl controllers.UserCtl) gin.HandlerFunc {
 			return
 		}
 
+		if utils.ContainsEmptyString(registrationData.Username, registrationData.Password, registrationData.Email) {
+			utils.HandleErrorAndAbort(c, *expense_errors.EXPENSE_BAD_REQUEST)
+			return
+		}
+
 		err := userCtl.RegisterUser(ctx, registrationData)
 		if err != nil {
 			utils.HandleErrorAndAbort(c, *err)
@@ -38,6 +43,10 @@ func LoginUserHandler(userCtl controllers.UserCtl) gin.HandlerFunc {
 		if err := c.ShouldBindJSON(&loginData); err != nil {
 			utils.HandleErrorAndAbort(c, *expense_errors.EXPENSE_BAD_REQUEST)
 			return
+		}
+
+		if utils.ContainsEmptyString(loginData.Password, loginData.Email) {
+			utils.HandleErrorAndAbort(c, *expense_errors.EXPENSE_BAD_REQUEST)
 		}
 
 		response, err := userCtl.LoginUser(ctx, loginData)
@@ -64,6 +73,11 @@ func RefreshTokenHandler(userCtl controllers.UserCtl) gin.HandlerFunc {
 			return
 		}
 
+		if utils.ContainsEmptyString(id.String()) {
+			utils.HandleErrorAndAbort(c, *expense_errors.EXPENSE_BAD_REQUEST)
+			return
+		}
+
 		// Generate new token and refresh token
 		response, serviceErr := userCtl.RefreshToken(c.Request.Context(), id)
 		if serviceErr != nil {
@@ -85,6 +99,11 @@ func ResendTokenHandler(userCtl controllers.UserCtl) gin.HandlerFunc {
 			return
 		}
 
+		if utils.ContainsEmptyString(resendTokenData.Email) {
+			utils.HandleErrorAndAbort(c, *expense_errors.EXPENSE_BAD_REQUEST)
+			return
+		}
+
 		err := userCtl.ResendToken(ctx, resendTokenData.Email)
 		if err != nil {
 			utils.HandleErrorAndAbort(c, *err)
@@ -97,10 +116,15 @@ func ResendTokenHandler(userCtl controllers.UserCtl) gin.HandlerFunc {
 
 func UpdateUserHandler(userCtl controllers.UserCtl) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		// TO-DO
 		ctx := c.Request.Context()
 
-		response, err := userCtl.UpdateUser(ctx)
+		var updateData *models.UpdateUserRequest
+		if err := c.ShouldBindJSON(&updateData); err != nil {
+			utils.HandleErrorAndAbort(c, *expense_errors.EXPENSE_BAD_REQUEST)
+			return
+		}
+
+		response, err := userCtl.UpdateUser(ctx, updateData)
 		if err != nil {
 			utils.HandleErrorAndAbort(c, *err)
 			return
@@ -131,6 +155,11 @@ func ActivateUserHandler(userCtl controllers.UserCtl) gin.HandlerFunc {
 
 		token := c.Query(models.ExpenseQueryKeyToken)
 
+		if utils.ContainsEmptyString(token) {
+			utils.HandleErrorAndAbort(c, *expense_errors.EXPENSE_BAD_REQUEST)
+			return
+		}
+
 		response, serviceErr := userCtl.ActivateUser(ctx, token)
 		if serviceErr != nil {
 			utils.HandleErrorAndAbort(c, *serviceErr)
@@ -160,6 +189,11 @@ func SuggestUsersHandler(userCtl controllers.UserCtl) gin.HandlerFunc {
 		ctx := c.Request.Context()
 
 		query := c.Query(models.ExpenseQueryKeyQueryString)
+		if utils.ContainsEmptyString(query) {
+			utils.HandleErrorAndAbort(c, *expense_errors.EXPENSE_BAD_REQUEST)
+			return
+		}
+
 		response, err := userCtl.SuggestUsers(ctx, query)
 		if err != nil {
 			utils.HandleErrorAndAbort(c, *err)
@@ -181,6 +215,11 @@ func CheckEmailHandler(userCtl controllers.UserCtl) gin.HandlerFunc {
 			return
 		}
 
+		if utils.ContainsEmptyString(emailData.Email) {
+			utils.HandleErrorAndAbort(c, *expense_errors.EXPENSE_BAD_REQUEST)
+			return
+		}
+
 		err := userCtl.CheckEmail(ctx, emailData.Email)
 		if err != nil {
 			utils.HandleErrorAndAbort(c, *err)
@@ -198,6 +237,11 @@ func CheckUsernameHandler(userCtl controllers.UserCtl) gin.HandlerFunc {
 		// Extract username from body
 		var usernameData *models.CheckUsernameRequest
 		if err := c.ShouldBindJSON(&usernameData); err != nil {
+			utils.HandleErrorAndAbort(c, *expense_errors.EXPENSE_BAD_REQUEST)
+			return
+		}
+
+		if utils.ContainsEmptyString(usernameData.Username) {
 			utils.HandleErrorAndAbort(c, *expense_errors.EXPENSE_BAD_REQUEST)
 			return
 		}

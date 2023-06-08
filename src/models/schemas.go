@@ -34,10 +34,19 @@ type TripSchema struct {
 }
 
 type UserSchema struct {
-	UserID   *uuid.UUID `json:"userId" db:"id"`
-	UserName string     `json:"userName" db:"username"`
-	Email    string     `json:"email" db:"email"`
-	Password string     `json:"password" db:"password"`
+	UserID    *uuid.UUID `json:"userId" db:"id"`
+	Username  string     `json:"userName" db:"username"`
+	Email     string     `json:"email" db:"email"`
+	Password  string     `json:"password" db:"password"`
+	Activated bool       `json:"activated" db:"activated"`
+}
+
+type ActivationTokenSchema struct {
+	UserID      *uuid.UUID `json:"userId" db:"id_user"`
+	Token       *string    `json:"token" db:"token"`
+	CreatedAt   *time.Time `json:"createdAt" db:"created_at"`
+	ConfirmedAt *time.Time `json:"confirmedAt" db:"confirmed_at"`
+	ExpiresAt   *time.Time `json:"expiresAt" db:"expires_at"`
 }
 
 type UserCostSchema struct {
@@ -46,12 +55,12 @@ type UserCostSchema struct {
 	IsCreditor bool       `json:"isCreditor" db:"is_creditor"`
 }
 
-type TripUserSchema struct {
-	UserID    *uuid.UUID `json:"id_user" db:"id_user"`
-	TripID    *uuid.UUID `json:"id_trip" db:"id_trip"`
-	Accepted  bool       `json:"accepted" db:"accepted"`
-	StartDate *time.Time `json:"startDate" db:"attendance_start_date"`
-	EndDate   *time.Time `json:"endDate" db:"attendance_end_date"`
+type UserTripSchema struct {
+	UserID            *uuid.UUID `json:"id_user" db:"id_user"`
+	TripID            *uuid.UUID `json:"id_trip" db:"id_trip"`
+	HasAccepted       bool       `json:"accepted" db:"is_accepted"`
+	PresenceStartDate *time.Time `json:"startDate" db:"presence_start_date"`
+	PresenceEndDate   *time.Time `json:"endDate" db:"presence_end_date"`
 }
 
 type Transaction struct {

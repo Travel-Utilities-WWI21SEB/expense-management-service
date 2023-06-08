@@ -37,7 +37,7 @@ func CreateCostCategoryEntryHandler(costCategoryCtl controllers.CostCategoryCtl)
 func UpdateCostCategoryEntryHandler(costCategoryCtl controllers.CostCategoryCtl) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		// Get costCategoryId from path
-		costCategoryId := uuid.MustParse(c.Param("costCategoryId"))
+		costCategoryId := uuid.MustParse(c.Param(models.ExpenseParamKeyCostCategoryId))
 
 		// Get cost category entry from request body
 		var costCategoryData models.CostCategoryPatchRequest
@@ -60,7 +60,7 @@ func UpdateCostCategoryEntryHandler(costCategoryCtl controllers.CostCategoryCtl)
 func GetCostCategoryDetailsHandler(costCategoryCtl controllers.CostCategoryCtl) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		// Get costCategoryId from path
-		costCategoryId := uuid.MustParse(c.Param("costCategoryId"))
+		costCategoryId := uuid.MustParse(c.Param(models.ExpenseParamKeyCostCategoryId))
 
 		// Get cost category entry
 		response, serviceErr := costCategoryCtl.GetCostCategoryDetails(&costCategoryId)
@@ -76,7 +76,7 @@ func GetCostCategoryDetailsHandler(costCategoryCtl controllers.CostCategoryCtl) 
 func DeleteCostCategoryEntryHandler(costCategoryCtl controllers.CostCategoryCtl) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		// Get costCategoryId from path
-		costCategoryId := uuid.MustParse(c.Param("costCategoryId"))
+		costCategoryId := uuid.MustParse(c.Param(models.ExpenseParamKeyCostCategoryId))
 
 		// Delete cost category entry
 		serviceErr := costCategoryCtl.DeleteCostCategory(&costCategoryId)
