@@ -89,6 +89,81 @@ func RefreshTokenHandler(userCtl controllers.UserCtl) gin.HandlerFunc {
 	}
 }
 
+func ForgotPasswordHandler(userCtl controllers.UserCtl) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		ctx := c.Request.Context()
+
+		var forgotPasswordData *models.ForgotPasswordRequest
+		if err := c.ShouldBindJSON(&forgotPasswordData); err != nil {
+			utils.HandleErrorAndAbort(c, *expense_errors.EXPENSE_BAD_REQUEST)
+			return
+		}
+
+		if utils.ContainsEmptyString(forgotPasswordData.Email) {
+			utils.HandleErrorAndAbort(c, *expense_errors.EXPENSE_BAD_REQUEST)
+			return
+		}
+
+		err := userCtl.ForgotPassword(ctx, forgotPasswordData.Email)
+		if err != nil {
+			utils.HandleErrorAndAbort(c, *err)
+			return
+		}
+
+		c.AbortWithStatus(http.StatusOK)
+	}
+}
+
+func VerifyPasswordResetTokenHandler(userCtl controllers.UserCtl) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		ctx := c.Request.Context()
+
+		var verifyResetTokenData *models.VerifyPasswordResetTokenRequest
+		if err := c.ShouldBindJSON(&verifyResetTokenData); err != nil {
+			utils.HandleErrorAndAbort(c, *expense_errors.EXPENSE_BAD_REQUEST)
+			return
+		}
+
+		if utils.ContainsEmptyString(verifyResetTokenData.Token) {
+			utils.HandleErrorAndAbort(c, *expense_errors.EXPENSE_BAD_REQUEST)
+			return
+		}
+
+		err := userCtl.VerifyPasswordResetToken(ctx, verifyResetTokenData.Email, verifyResetTokenData.Token)
+		if err != nil {
+			utils.HandleErrorAndAbort(c, *err)
+			return
+		}
+
+		c.AbortWithStatus(http.StatusOK)
+	}
+}
+
+func ResetPasswordHandler(userCtl controllers.UserCtl) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		ctx := c.Request.Context()
+
+		var resetPasswordData *models.ResetPasswordRequest
+		if err := c.ShouldBindJSON(&resetPasswordData); err != nil {
+			utils.HandleErrorAndAbort(c, *expense_errors.EXPENSE_BAD_REQUEST)
+			return
+		}
+
+		if utils.ContainsEmptyString(resetPasswordData.Email, resetPasswordData.Token, resetPasswordData.Password) {
+			utils.HandleErrorAndAbort(c, *expense_errors.EXPENSE_BAD_REQUEST)
+			return
+		}
+
+		err := userCtl.ResetPassword(ctx, resetPasswordData.Email, resetPasswordData.Password, resetPasswordData.Token)
+		if err != nil {
+			utils.HandleErrorAndAbort(c, *err)
+			return
+		}
+
+		c.AbortWithStatus(http.StatusOK)
+	}
+}
+
 func ResendTokenHandler(userCtl controllers.UserCtl) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		ctx := c.Request.Context()

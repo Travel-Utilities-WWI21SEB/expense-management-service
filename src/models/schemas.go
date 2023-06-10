@@ -41,9 +41,10 @@ type UserSchema struct {
 	Activated bool       `json:"activated" db:"activated"`
 }
 
-type ActivationTokenSchema struct {
+type TokenSchema struct {
 	UserID      *uuid.UUID `json:"userId" db:"id_user"`
-	Token       *string    `json:"token" db:"token"`
+	Token       string     `json:"token" db:"token"`
+	Type        string     `json:"type" db:"type"`
 	CreatedAt   *time.Time `json:"createdAt" db:"created_at"`
 	ConfirmedAt *time.Time `json:"confirmedAt" db:"confirmed_at"`
 	ExpiresAt   *time.Time `json:"expiresAt" db:"expires_at"`
