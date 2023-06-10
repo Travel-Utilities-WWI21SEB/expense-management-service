@@ -35,6 +35,21 @@ type RefreshTokenResponse struct {
 	RefreshToken string `json:"refreshToken"`
 }
 
+type ForgotPasswordRequest struct {
+	Email string `json:"email"`
+}
+
+type VerifyPasswordResetTokenRequest struct {
+	Email string `json:"email"`
+	Token string `json:"token"`
+}
+
+type ResetPasswordRequest struct {
+	Email    string `json:"email"`
+	Password string `json:"password"`
+	Token    string `json:"token"`
+}
+
 type ResendTokenRequest struct {
 	Email string `json:"email"`
 }

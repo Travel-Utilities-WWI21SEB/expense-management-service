@@ -16,6 +16,9 @@ type UserCtl interface {
 	RegisterUser(ctx context.Context, registrationData models.RegistrationRequest) *models.ExpenseServiceError
 	LoginUser(ctx context.Context, loginData models.LoginRequest) (*models.LoginResponse, *models.ExpenseServiceError)
 	RefreshToken(ctx context.Context, userId *uuid.UUID) (*models.RefreshTokenResponse, *models.ExpenseServiceError)
+	ForgotPassword(ctx context.Context, email string) *models.ExpenseServiceError
+	VerifyPasswordResetToken(ctx context.Context, email, token string) *models.ExpenseServiceError
+	ResetPassword(ctx context.Context, email, password, token string) *models.ExpenseServiceError
 	ResendToken(ctx context.Context, email string) *models.ExpenseServiceError
 	ActivateUser(ctx context.Context, token string) (*models.ActivationResponse, *models.ExpenseServiceError)
 	UpdateUser(ctx context.Context, request *models.UpdateUserRequest) (*models.UserDetailsResponse, *models.ExpenseServiceError)
@@ -36,6 +39,14 @@ type UserController struct {
 
 const activationMailSubject = "Welcome to Costventures!"
 const confirmationMailSubject = "Your mail has been verified!"
+
+const passwordResetMailSubject = "Reset your password!"
+const passwordResetConfirmationMailSubject = "Your password has been reset!"
+
+const (
+	activationToken    = "activationToken"
+	resetPasswordToken = "forgotPasswordToken"
+)
 
 // RegisterUser creates a new user entry in the database
 func (uc *UserController) RegisterUser(ctx context.Context, registrationData models.RegistrationRequest) *models.ExpenseServiceError {
@@ -61,14 +72,14 @@ func (uc *UserController) RegisterUser(ctx context.Context, registrationData mod
 	}
 
 	// Insert token into database
-	token, repoErr := uc.UserRepo.CreateActivationToken(user.UserID)
+	token, repoErr := uc.UserRepo.CreateTokenByUserIdAndType(user.UserID, activationToken)
 	if repoErr != nil {
 		return repoErr
 	}
 
 	activationMail := &models.ActivationMail{
 		Username:        user.Username,
-		ActivationToken: *token.Token,
+		ActivationToken: token.Token,
 		Subject:         activationMailSubject,
 		Recipients:      []string{user.Email},
 	}
@@ -130,6 +141,95 @@ func (uc *UserController) RefreshToken(ctx context.Context, userId *uuid.UUID) (
 	}, nil
 }
 
+func (uc *UserController) ForgotPassword(ctx context.Context, email string) *models.ExpenseServiceError {
+	user := &models.UserSchema{
+		Email: email,
+	}
+
+	// Get user from database
+	user, repoErr := uc.UserRepo.GetUserBySchema(user)
+	if repoErr != nil {
+		return repoErr
+	}
+
+	// Insert token into database
+	token, repoErr := uc.UserRepo.CreateTokenByUserIdAndType(user.UserID, resetPasswordToken)
+	if repoErr != nil {
+		return repoErr
+	}
+
+	passwordResetMail := &models.PasswordResetMail{
+		Username:   user.Username,
+		ResetToken: token.Token,
+		Subject:    passwordResetMailSubject,
+		Recipients: []string{user.Email},
+	}
+
+	return uc.MailMgr.SendPasswordResetMail(ctx, passwordResetMail)
+}
+
+func (uc *UserController) VerifyPasswordResetToken(ctx context.Context, email, token string) *models.ExpenseServiceError {
+	// Get token from database
+	tokenSchema, repoErr := uc.UserRepo.GetTokenByTokenAndType(token, resetPasswordToken)
+	if repoErr != nil {
+		return repoErr
+	}
+
+	// Get user email from database
+	user, repoErr := uc.UserRepo.GetUserById(tokenSchema.UserID)
+	if repoErr != nil {
+		return repoErr
+	}
+
+	// Validate token
+	if user.Email != email {
+		return expense_errors.EXPENSE_FORBIDDEN
+	}
+
+	return nil
+}
+
+func (uc *UserController) ResetPassword(ctx context.Context, email, password, token string) *models.ExpenseServiceError {
+	// Get token from database
+	tokenSchema, repoErr := uc.UserRepo.GetTokenByTokenAndType(token, resetPasswordToken)
+	if repoErr != nil {
+		return repoErr
+	}
+
+	// Get user from database
+	user, repoErr := uc.UserRepo.GetUserById(tokenSchema.UserID)
+	if repoErr != nil {
+		return repoErr
+	}
+
+	// Validate token
+	if user.Email != email {
+		return expense_errors.EXPENSE_FORBIDDEN
+	}
+
+	// Hash password
+	hashedPassword, err := utils.HashPassword(password)
+	if err != nil {
+		log.Printf("Error in userController.ResetPassword().HashPassword(): %v", err.Error())
+		return expense_errors.EXPENSE_UPSTREAM_ERROR
+	}
+
+	// Update password
+	if repoErr := uc.UserRepo.UpdatePassword(user.UserID, hashedPassword); repoErr != nil {
+		return repoErr
+	}
+
+	passwordResetConfirmationMail := &models.ResetPasswordConfirmationMail{
+		Username: user.Username,
+		Subject:  passwordResetConfirmationMailSubject,
+		Recipients: []string{
+			user.Email,
+		},
+	}
+
+	return uc.MailMgr.SendResetPasswordConfirmationMail(ctx, passwordResetConfirmationMail)
+}
+
 func (uc *UserController) ResendToken(ctx context.Context, email string) *models.ExpenseServiceError {
 	user := &models.UserSchema{
 		Email: email,
@@ -147,19 +247,19 @@ func (uc *UserController) ResendToken(ctx context.Context, email string) *models
 	}
 
 	// Delete old token
-	if repoErr := uc.UserRepo.DeleteActivationToken(user.UserID); repoErr != nil {
+	if repoErr := uc.UserRepo.DeleteTokenByUserIdAndType(user.UserID, activationToken); repoErr != nil {
 		return repoErr
 	}
 
 	// Insert token into database
-	token, repoErr := uc.UserRepo.CreateActivationToken(user.UserID)
+	token, repoErr := uc.UserRepo.CreateTokenByUserIdAndType(user.UserID, activationToken)
 	if repoErr != nil {
 		return repoErr
 	}
 
 	activationMail := &models.ActivationMail{
 		Username:        email,
-		ActivationToken: *token.Token,
+		ActivationToken: token.Token,
 		Subject:         activationMailSubject,
 		Recipients:      []string{email},
 	}
@@ -215,7 +315,7 @@ func (uc *UserController) DeleteUser(ctx context.Context) *models.ExpenseService
 
 func (uc *UserController) ActivateUser(ctx context.Context, tokenString string) (*models.ActivationResponse, *models.ExpenseServiceError) {
 	// Get UserID from token
-	token, repoErr := uc.UserRepo.GetActivationTokenByToken(tokenString)
+	token, repoErr := uc.UserRepo.GetTokenByTokenAndType(tokenString, activationToken)
 	if repoErr != nil {
 		return nil, repoErr
 	}
@@ -226,7 +326,7 @@ func (uc *UserController) ActivateUser(ctx context.Context, tokenString string) 
 	}
 
 	// Confirm token
-	if repoErr := uc.UserRepo.ConfirmActivationToken(token.UserID); repoErr != nil {
+	if repoErr := uc.UserRepo.ConfirmTokenByType(token.UserID, activationToken); repoErr != nil {
 		return nil, repoErr
 	}
 

@@ -398,3 +398,8 @@ FodyWeavers.xsd
 
 # JetBrains Rider
 *.sln.iml
+/.idea/dataSources.xml
+/.idea/modules.xml
+/.idea/vcs.xml
+/.idea/expense-management-service.iml
+/.idea/sqldialects.xml

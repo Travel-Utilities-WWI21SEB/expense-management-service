@@ -12,3 +12,16 @@ type ConfirmationMail struct {
 	Subject    string   `json:"subject"`
 	Recipients []string `json:"recipients"`
 }
+
+type PasswordResetMail struct {
+	Username   string   `json:"username"`
+	ResetToken string   `json:"resetToken"`
+	Subject    string   `json:"subject"`
+	Recipients []string `json:"recipients"`
+}
+
+type ResetPasswordConfirmationMail struct {
+	Username   string   `json:"username"`
+	Subject    string   `json:"subject"`
+	Recipients []string `json:"recipients"`
+}

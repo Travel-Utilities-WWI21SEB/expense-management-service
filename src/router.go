@@ -68,7 +68,7 @@ func createRouter(dbConnection *sql.DB) *gin.Engine {
 		DatabaseMgr: databaseMgr,
 	}
 
-	controllers := Controllers{
+	controller := Controllers{
 		UserController: &controllers.UserController{
 			MailMgr:     mailMgr,
 			DatabaseMgr: databaseMgr,
@@ -94,46 +94,49 @@ func createRouter(dbConnection *sql.DB) *gin.Engine {
 	router.Handle(http.MethodGet, "/lifecheck", handlers.LifeCheckHandler())
 
 	// User Routes
-	apiv1.Handle(http.MethodPost, "/users/register", handlers.RegisterUserHandler(controllers.UserController))
-	apiv1.Handle(http.MethodPost, "/users/login", handlers.LoginUserHandler(controllers.UserController))
-	apiv1.Handle(http.MethodPost, "/users/refresh", handlers.RefreshTokenHandler(controllers.UserController))
-	apiv1.Handle(http.MethodPost, "/users/resend-token", handlers.ResendTokenHandler(controllers.UserController))
-	apiv1.Handle(http.MethodPost, "/users/activate", handlers.ActivateUserHandler(controllers.UserController))
-	apiv1.Handle(http.MethodPost, "/users/check-email", handlers.CheckEmailHandler(controllers.UserController))
-	apiv1.Handle(http.MethodPost, "/users/check-username", handlers.CheckUsernameHandler(controllers.UserController))
-	securedApiv1.Handle(http.MethodGet, "/users/suggest", handlers.SuggestUsersHandler(controllers.UserController))
-	securedApiv1.Handle(http.MethodGet, "/users", handlers.GetUserDetailsHandler(controllers.UserController))
-	securedApiv1.Handle(http.MethodPatch, "/users", handlers.UpdateUserHandler(controllers.UserController))
-	securedApiv1.Handle(http.MethodDelete, "/users", handlers.DeleteUserHandler(controllers.UserController))
+	apiv1.Handle(http.MethodPost, "/users/register", handlers.RegisterUserHandler(controller.UserController))
+	apiv1.Handle(http.MethodPost, "/users/login", handlers.LoginUserHandler(controller.UserController))
+	apiv1.Handle(http.MethodPost, "/users/refresh", handlers.RefreshTokenHandler(controller.UserController))
+	apiv1.Handle(http.MethodPost, "/users/resend-token", handlers.ResendTokenHandler(controller.UserController))
+	apiv1.Handle(http.MethodPost, "/users/activate", handlers.ActivateUserHandler(controller.UserController))
+	apiv1.Handle(http.MethodPost, "/users/check-email", handlers.CheckEmailHandler(controller.UserController))
+	apiv1.Handle(http.MethodPost, "/users/check-username", handlers.CheckUsernameHandler(controller.UserController))
+	apiv1.Handle(http.MethodPost, "/users/forgot-password", handlers.ForgotPasswordHandler(controller.UserController))
+	apiv1.Handle(http.MethodPost, "/users/verify-reset-token", handlers.VerifyPasswordResetTokenHandler(controller.UserController))
+	apiv1.Handle(http.MethodPost, "/users/reset-password", handlers.ResetPasswordHandler(controller.UserController))
+	securedApiv1.Handle(http.MethodGet, "/users/suggest", handlers.SuggestUsersHandler(controller.UserController))
+	securedApiv1.Handle(http.MethodGet, "/users", handlers.GetUserDetailsHandler(controller.UserController))
+	securedApiv1.Handle(http.MethodPatch, "/users", handlers.UpdateUserHandler(controller.UserController))
+	securedApiv1.Handle(http.MethodDelete, "/users", handlers.DeleteUserHandler(controller.UserController))
 
 	// Trip Routes
-	securedApiv1.Handle(http.MethodPost, "/trips", handlers.CreateTripEntryHandler(controllers.TripController))
-	securedApiv1.Handle(http.MethodGet, "/trips", handlers.GetTripEntriesHandler(controllers.TripController))
-	securedTripApiv1.Handle(http.MethodGet, "", handlers.GetTripDetailsHandler(controllers.TripController))
-	securedTripApiv1.Handle(http.MethodPatch, "", handlers.UpdateTripEntryHandler(controllers.TripController))
-	securedTripApiv1.Handle(http.MethodDelete, "", handlers.DeleteTripEntryHandler(controllers.TripController))
-	securedTripApiv1.Handle(http.MethodPost, "/invite", handlers.InviteUserToTripHandler(controllers.TripController))
-	securedTripApiv1.Handle(http.MethodPost, "/accept", handlers.AcceptTripInviteHandler(controllers.TripController))
+	securedApiv1.Handle(http.MethodPost, "/trips", handlers.CreateTripEntryHandler(controller.TripController))
+	securedApiv1.Handle(http.MethodGet, "/trips", handlers.GetTripEntriesHandler(controller.TripController))
+	securedTripApiv1.Handle(http.MethodGet, "", handlers.GetTripDetailsHandler(controller.TripController))
+	securedTripApiv1.Handle(http.MethodPatch, "", handlers.UpdateTripEntryHandler(controller.TripController))
+	securedTripApiv1.Handle(http.MethodDelete, "", handlers.DeleteTripEntryHandler(controller.TripController))
+	securedTripApiv1.Handle(http.MethodPost, "/invite", handlers.InviteUserToTripHandler(controller.TripController))
+	securedTripApiv1.Handle(http.MethodPost, "/accept", handlers.AcceptTripInviteHandler(controller.TripController))
 
 	// Cost Category Routes
-	securedTripApiv1.Handle(http.MethodPost, "/cost-categories", handlers.CreateCostCategoryEntryHandler(controllers.CostCategoryController))
-	securedTripApiv1.Handle(http.MethodGet, "/cost-categories", handlers.GetCostCategoryEntriesHandler(controllers.CostCategoryController))
-	securedTripApiv1.Handle(http.MethodGet, "/cost-categories/:costCategoryId", handlers.GetCostCategoryDetailsHandler(controllers.CostCategoryController))
-	securedTripApiv1.Handle(http.MethodPatch, "/cost-categories/:costCategoryId", handlers.UpdateCostCategoryEntryHandler(controllers.CostCategoryController))
-	securedTripApiv1.Handle(http.MethodDelete, "/cost-categories/:costCategoryId", handlers.DeleteCostCategoryEntryHandler(controllers.CostCategoryController))
+	securedTripApiv1.Handle(http.MethodPost, "/cost-categories", handlers.CreateCostCategoryEntryHandler(controller.CostCategoryController))
+	securedTripApiv1.Handle(http.MethodGet, "/cost-categories", handlers.GetCostCategoryEntriesHandler(controller.CostCategoryController))
+	securedTripApiv1.Handle(http.MethodGet, "/cost-categories/:costCategoryId", handlers.GetCostCategoryDetailsHandler(controller.CostCategoryController))
+	securedTripApiv1.Handle(http.MethodPatch, "/cost-categories/:costCategoryId", handlers.UpdateCostCategoryEntryHandler(controller.CostCategoryController))
+	securedTripApiv1.Handle(http.MethodDelete, "/cost-categories/:costCategoryId", handlers.DeleteCostCategoryEntryHandler(controller.CostCategoryController))
 
 	// Cost Routes
-	securedTripApiv1.Handle(http.MethodPost, "/costs", handlers.CreateCostEntryHandler(controllers.CostController))
-	securedTripApiv1.Handle(http.MethodGet, "/costs", handlers.GetCostEntriesHandler(controllers.CostController))
-	securedTripApiv1.Handle(http.MethodPatch, "/costs/:costId", handlers.UpdateCostEntryHandler(controllers.CostController))
-	securedTripApiv1.Handle(http.MethodGet, "/costs/:costId", handlers.GetCostDetailsHandler(controllers.CostController))
-	securedTripApiv1.Handle(http.MethodDelete, "/costs/:costId", handlers.DeleteCostEntryHandler(controllers.CostController))
+	securedTripApiv1.Handle(http.MethodPost, "/costs", handlers.CreateCostEntryHandler(controller.CostController))
+	securedTripApiv1.Handle(http.MethodGet, "/costs", handlers.GetCostEntriesHandler(controller.CostController))
+	securedTripApiv1.Handle(http.MethodPatch, "/costs/:costId", handlers.UpdateCostEntryHandler(controller.CostController))
+	securedTripApiv1.Handle(http.MethodGet, "/costs/:costId", handlers.GetCostDetailsHandler(controller.CostController))
+	securedTripApiv1.Handle(http.MethodDelete, "/costs/:costId", handlers.DeleteCostEntryHandler(controller.CostController))
 
 	// Debts Routes
-	securedTripApiv1.Handle(http.MethodPost, "/debts", handlers.CreateDebtHandler(controllers.DebtController))
-	securedTripApiv1.Handle(http.MethodGet, "/debts", handlers.GetDebtsHandler(controllers.DebtController))
-	securedTripApiv1.Handle(http.MethodGet, "/debts/:debtId", handlers.GetDebtDetailsHandler(controllers.DebtController))
-	securedTripApiv1.Handle(http.MethodPatch, "/debts", handlers.UpdateDebtHandler(controllers.DebtController))
+	securedTripApiv1.Handle(http.MethodPost, "/debts", handlers.CreateDebtHandler(controller.DebtController))
+	securedTripApiv1.Handle(http.MethodGet, "/debts", handlers.GetDebtsHandler(controller.DebtController))
+	securedTripApiv1.Handle(http.MethodGet, "/debts/:debtId", handlers.GetDebtDetailsHandler(controller.DebtController))
+	securedTripApiv1.Handle(http.MethodPatch, "/debts", handlers.UpdateDebtHandler(controller.DebtController))
 
 	return router
 }
