@@ -1,7 +1,7 @@
 _id: req_741f4d909f414b678b36ff3408e1265d
 type: Request
 parentId: fld_377a889e84744fad9aa37e60971a9815
-modified: 1686155042393
+modified: 1686393137234
 created: 1684746520798
 url: "{{ _.api_url }}/{{ _.route }}/register"
 name: Register
@@ -125,10 +125,10 @@ description: |
 method: POST
 body:
   mimeType: application/json
-  text: >-
+  text: |-
     {
-    	"username": "{% prompt 'Username', '', 'testUser', 'username', _.username, true %}",
-    	"email": "{% prompt 'Email', _.email, 'testEmail', true, _.email, true %}",
+    	"username": "testUser",
+    	"email": "testEmail",
     	"password": "abcdef"
     }
 parameters: []

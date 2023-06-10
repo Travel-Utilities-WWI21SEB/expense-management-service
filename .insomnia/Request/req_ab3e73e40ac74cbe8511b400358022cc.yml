@@ -1,7 +1,7 @@
 _id: req_ab3e73e40ac74cbe8511b400358022cc
 type: Request
 parentId: fld_d83c1d0d5e75433c97b1979a5f600fb4
-modified: 1686160829180
+modified: 1686328873102
 created: 1684747799383
 url: "{{ _.api_url }}/{{ _.route }}/{% prompt 'TripId', '', _.last_trip_id,
   'tripid', false, true %}"
@@ -89,12 +89,11 @@ description: >
 method: PATCH
 body:
   mimeType: application/json
-  text: >-
+  text: |-
     {
-    	"location": "{% prompt 'Location', 'location', 'testLocation', 'tripLocation', false, true %}",
-    	"description": "{% prompt 'Description', 'tripDescription', 'Description of trip', 'tripDescription', false, true %}",
-    	"startDate": "{% prompt 'StartDate', 'startdate', '02/08/2023', 'startdate', false, true %}",
-    	"endDate": "{% prompt 'EndDate', 'enddate', '30/10/2023', 'enddate', false, true %}"
+    	"location": "",
+    	"startDate": "2023-09-02",
+    	"endDate": ""
     }
 parameters: []
 headers:

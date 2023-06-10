@@ -1,0 +1,28 @@
+_id: req_0f755ff417564f00a59c68f23127df04
+type: Request
+parentId: fld_377a889e84744fad9aa37e60971a9815
+modified: 1686315018793
+created: 1686312676220
+url: "{{ _.api_url }}/{{ _.route }}/resend-token"
+name: Resend Activation Token
+description: ""
+method: POST
+body:
+  mimeType: application/json
+  text: |-
+    {
+    	"email": "testEmail"
+    }
+parameters: []
+headers:
+  - name: Content-Type
+    value: application/json
+authentication: {}
+metaSortKey: -1684747534645.0234
+isPrivate: false
+settingStoreCookies: true
+settingSendCookies: true
+settingDisableRenderRequestBody: false
+settingEncodeUrl: true
+settingRebuildPath: true
+settingFollowRedirects: global

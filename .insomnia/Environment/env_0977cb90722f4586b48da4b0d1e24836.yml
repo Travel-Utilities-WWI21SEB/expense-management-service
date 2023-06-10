@@ -1,7 +1,7 @@
 _id: env_0977cb90722f4586b48da4b0d1e24836
 type: Environment
 parentId: wrk_9005ef94d55f456f853b7aef2a0cdd44
-modified: 1686161425850
+modified: 1686302470351
 created: 1684746394964
 name: Base Environment
 data:
@@ -9,6 +9,8 @@ data:
   api_url: "{{ _.base_url }}/api/v1"
   token: "{% response 'body', 'req_3185450b69244ed4ab184790c6e80ceb',
     'b64::JC50b2tlbg==::46b', 'when-expired', 900 %}"
+  refresh_token: "{% response 'body', 'req_3185450b69244ed4ab184790c6e80ceb',
+    'b64::JC5yZWZyZXNoVG9rZW4=::46b', 'when-expired', 900 %}"
   last_user_id: "{% response 'body', 'req_3185450b69244ed4ab184790c6e80ceb',
     'b64::JC51c2VySWQ=::46b', 'no-history', 60 %}"
   last_trip_id: "{% response 'body', 'req_2a53069be7ba4859b530dfa96b019b3e',
@@ -19,6 +21,7 @@ dataPropertyOrder:
     - base_url
     - api_url
     - token
+    - refresh_token
     - last_user_id
     - last_trip_id
     - user_id
