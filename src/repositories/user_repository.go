@@ -196,13 +196,12 @@ func (ur *UserRepository) GetTokenByUserIdAndType(userId *uuid.UUID, tokenType s
 }
 
 func (ur *UserRepository) CreateTokenByUserIdAndType(userId *uuid.UUID, tokenType string) (*models.TokenSchema, *models.ExpenseServiceError) {
-	tokenString := utils.GenerateRandomString(6)
 	creationDate := time.Now()
 	expirationDate := creationDate.Add(time.Hour * 1)
 
 	token := &models.TokenSchema{
 		UserID:    userId,
-		Token:     tokenString,
+		Token:     utils.GenerateRandomString(6),
 		Type:      tokenType,
 		CreatedAt: &creationDate,
 		ExpiresAt: &expirationDate,
@@ -213,7 +212,7 @@ func (ur *UserRepository) CreateTokenByUserIdAndType(userId *uuid.UUID, tokenTyp
 	for _, err := ur.DatabaseMgr.ExecuteStatement("INSERT INTO token(id, id_user, token, type, created_at, expires_at) VALUES ($1, $2, $3, $4, $5, $6) RETURNING token", tokenId, token.UserID, token.Token, token.Type, token.CreatedAt, token.ExpiresAt); err != nil; {
 		if pqErr := err.(*pq.Error); pqErr.Code.Name() == "unique_violation" {
 			// If the token already exists, generate a new one and try again
-			tokenString = utils.GenerateRandomString(6)
+			token.Token = utils.GenerateRandomString(6)
 			continue
 		}
 
