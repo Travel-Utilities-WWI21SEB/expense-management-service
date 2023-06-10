@@ -1,7 +1,7 @@
 _id: req_3185450b69244ed4ab184790c6e80ceb
 type: Request
 parentId: fld_377a889e84744fad9aa37e60971a9815
-modified: 1686161273702
+modified: 1686251437929
 created: 1684746860492
 url: "{{ _.api_url }}/{{ _.route }}/login"
 name: Login
@@ -151,10 +151,10 @@ description: >-
 method: POST
 body:
   mimeType: application/json
-  text: >-
+  text: |-
     {
-    	"email": "{% prompt 'Email', 'Email', 'testEmail', true, false, true %}",
-    	"password": "{% prompt 'Password', 'password', 'testPassword', 'password', true, true %}"
+    	"email": "testEmail",
+    	"password": "abcdef"
     }
 parameters: []
 headers:

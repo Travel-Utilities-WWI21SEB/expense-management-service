@@ -1,7 +1,7 @@
 _id: req_5571ed27fa2b41c2857c92cb3af5199d
 type: Request
 parentId: fld_377a889e84744fad9aa37e60971a9815
-modified: 1686155059431
+modified: 1686315376559
 created: 1684747608058
 url: "{{ _.api_url }}/{{ _.route }}/suggest"
 name: Suggest Users
@@ -160,8 +160,7 @@ body: {}
 parameters:
   - id: pair_6d302e8582b04c99a5cd413484f73470
     name: q
-    value: "{% prompt 'Query string', '', 'queryString', 'queryUserString', false,
-      true %}"
+    value: "{% prompt 'Query string', '', 'queryString', '', false, true %}"
     description: QueryString to restrict suggested users
 headers: []
 authentication:

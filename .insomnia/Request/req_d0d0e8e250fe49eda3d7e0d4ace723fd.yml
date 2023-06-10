@@ -1,10 +1,10 @@
 _id: req_d0d0e8e250fe49eda3d7e0d4ace723fd
 type: Request
 parentId: fld_fb964101ac2d4651a16e19aa1fefe039
-modified: 1684760123196
+modified: 1686394496741
 created: 1684754226862
-url: "{{ _.scheme }}{{ _.localUrl }}/{{ _.route }}/{% prompt 'TripId', '',
-  'tripId', 'tripid', false, true %}/{{ _.subRoute }}"
+url: "{{ _.api_url }}/{{ _.route }}/{% prompt 'TripId', '', 'TripId', 'tripid',
+  false, true %}/{{ _.subRoute }}"
 name: All Costs (toggle filter)
 description: >
   This endpoint is used to login a user in our webapplication with given
