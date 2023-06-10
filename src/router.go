@@ -68,6 +68,10 @@ func createRouter(dbConnection *sql.DB) *gin.Engine {
 		DatabaseMgr: databaseMgr,
 	}
 
+	costRepo := &repositories.CostRepository{
+		DatabaseMgr: databaseMgr,
+	}
+
 	controller := Controllers{
 		UserController: &controllers.UserController{
 			MailMgr:     mailMgr,
@@ -85,6 +89,8 @@ func createRouter(dbConnection *sql.DB) *gin.Engine {
 		},
 		CostController: &controllers.CostController{
 			DatabaseMgr: databaseMgr,
+			CostRepo:    costRepo,
+			UserRepo:    userRepo,
 		},
 		DebtController: &controllers.DebtController{
 			DatabaseMgr: databaseMgr,

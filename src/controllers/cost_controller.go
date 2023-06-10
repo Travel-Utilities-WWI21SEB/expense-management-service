@@ -2,14 +2,11 @@ package controllers
 
 import (
 	"context"
-	"github.com/Travel-Utilities-WWI21SEB/expense-management-service/src/expense_errors"
 	"github.com/Travel-Utilities-WWI21SEB/expense-management-service/src/managers"
 	"github.com/Travel-Utilities-WWI21SEB/expense-management-service/src/models"
-	"github.com/Travel-Utilities-WWI21SEB/expense-management-service/src/utils"
+	"github.com/Travel-Utilities-WWI21SEB/expense-management-service/src/repositories"
 	"github.com/google/uuid"
-	"github.com/lib/pq"
 	"github.com/shopspring/decimal"
-	"log"
 	"time"
 )
 
@@ -26,42 +23,13 @@ type CostCtl interface {
 // CostController Cost Controller structure
 type CostController struct {
 	DatabaseMgr managers.DatabaseMgr
+	CostRepo    repositories.CostRepo
+	UserRepo    repositories.UserRepo
 }
 
+// CreateCostEntry Creates a cost entry and inserts it into the database
 func (cc *CostController) CreateCostEntry(ctx context.Context, createCostRequest models.CreateCostRequest) (*models.CostDetailsResponse, *models.ExpenseServiceError) {
-	// Workflow:
-	// - Check if cost entry already has empty fields
-	// - Generate costId
-	// - Convert amount to decimal
-	// - Check if amount is negative
-	// - Check if currency code is valid
-	// - Create cost entry
-	// - Insert cost entry into database
-	// - Insert cost entry and creator into cost_category_cost table
-	// - Insert cost entry and debtor into user_cost_association table
-
-	// Generate costId
-	costId, err := uuid.NewUUID()
-	if err != nil {
-		return nil, expense_errors.EXPENSE_INTERNAL_ERROR
-	}
-
-	// Convert amount to decimal
-	amount, err := decimal.NewFromString(createCostRequest.Amount)
-	if err != nil {
-		return nil, expense_errors.EXPENSE_BAD_REQUEST
-	}
-
-	// Check if amount is negative
-	if amount.IsNegative() {
-		return nil, expense_errors.EXPENSE_BAD_REQUEST
-	}
-
-	// Check if currency code is valid
-	if !utils.IsValidCurrencyCode(createCostRequest.CurrencyCode) {
-		return nil, expense_errors.EXPENSE_BAD_REQUEST
-	}
-
+	costId := uuid.New()
 	now := time.Now()
 
 	if createCostRequest.DeductedAt == nil {
@@ -69,9 +37,9 @@ func (cc *CostController) CreateCostEntry(ctx context.Context, createCostRequest
 	}
 
 	// Create cost entry
-	costEntry := models.CostSchema{
+	costEntry := &models.CostSchema{
 		CostID:         &costId,
-		Amount:         amount,
+		Amount:         decimal.RequireFromString(createCostRequest.Amount),
 		Description:    createCostRequest.Description,
 		CreationDate:   &now,
 		DeductionDate:  createCostRequest.DeductedAt,
@@ -80,91 +48,44 @@ func (cc *CostController) CreateCostEntry(ctx context.Context, createCostRequest
 	}
 
 	// Insert cost entry into database
-	insertString := "INSERT INTO cost (id, amount, description, created_at, deducted_at, end_date, id_cost_category) VALUES ($1, $2, $3, $4, $5, $6, $7)"
-	if _, err = cc.DatabaseMgr.ExecuteStatement(insertString, costEntry.CostID, costEntry.Amount, costEntry.Description, costEntry.CreationDate, costEntry.DeductionDate, costEntry.EndDate, costEntry.CostCategoryID); err != nil {
-		// Check if cost category exists
-		if pqErr, ok := err.(*pq.Error); ok && pqErr.Code.Name() == "foreign_key_violation" {
-			return nil, expense_errors.EXPENSE_NOT_FOUND // Cost Category Not found
-		}
-
-		log.Printf("Error in controller.cost_controller.CreateCostEntry: %v", err)
-		return nil, expense_errors.EXPENSE_INTERNAL_ERROR
+	if repoErr := cc.CostRepo.CreateCost(costEntry); repoErr != nil {
+		return nil, repoErr
 	}
 
-	// Get creator id
-	creatorId := ctx.Value(models.ExpenseContextKeyUserID).(*uuid.UUID)
-	// Check if creator is creditor
-	isCreatorCreditor := createCostRequest.PaidBy == nil || *createCostRequest.PaidBy == *creatorId
-
-	// Insert cost entry and creator into cost_category_cost table
-	insertCreatorString := "INSERT INTO user_cost_association (id_user, id_cost, is_creditor) VALUES ($1, $2, $3)"
-	if _, err = cc.DatabaseMgr.ExecuteStatement(insertCreatorString, creatorId, costEntry.CostID, isCreatorCreditor); err != nil {
-		log.Printf("Error in controller.cost_controller.CreateCostEntry: %v", err)
-		// Delete cost entry
-		if _, err = cc.DatabaseMgr.ExecuteStatement("DELETE FROM cost WHERE id = $1", costEntry.CostID); err != nil {
-			log.Printf("Error in controller.cost_controller.CreateCostEntry: %v", err)
+	// If no contributors, set creator as only contributor
+	if createCostRequest.Contributors == nil {
+		creator, repoErr := cc.UserRepo.GetUserByContext(ctx)
+		if repoErr != nil {
+			return nil, repoErr
 		}
-		return nil, expense_errors.EXPENSE_INTERNAL_ERROR
+		// If no contributors, set creator as contributor
+		createCostRequest.Contributors = []*models.ContributorsRequest{{Username: creator.Username, IsCreditor: true}}
 	}
 
-	// Insert cost entry and *creditor* into cost_category_cost table, if creator is not creditor
-	if !isCreatorCreditor {
-		insertString = "INSERT INTO user_cost_association (id_user, id_cost, is_creditor) VALUES ($1, $2, $3)"
-		if _, err = cc.DatabaseMgr.ExecuteStatement(insertString, createCostRequest.PaidBy, costEntry.CostID, true); err != nil {
-			expenseErr := expense_errors.EXPENSE_INTERNAL_ERROR
+	// Iterate over contributors and insert them into database
+	for _, contributor := range createCostRequest.Contributors {
+		user, repoErr := cc.UserRepo.GetUserBySchema(&models.UserSchema{Username: contributor.Username})
+		if repoErr != nil {
+			return nil, repoErr
+		}
 
-			// If foreign key violation, user in paidBy field does not exist
-			if pqErr, ok := err.(*pq.Error); ok && pqErr.Code.Name() == "foreign_key_violation" {
-				expenseErr = expense_errors.EXPENSE_USER_NOT_FOUND // Paid by user not found
-			} else {
-				log.Printf("Error in controller.cost_controller.CreateCostEntry: %v", err)
-			}
+		contribution := &models.CostContributionSchema{
+			CostID:     &costId,
+			UserID:     user.UserID,
+			IsCreditor: contributor.IsCreditor,
+		}
 
+		if repoErr := cc.CostRepo.AddCostContributor(contribution); repoErr != nil {
 			// Delete cost entry
-			deleteString := "DELETE FROM cost WHERE id = $1"
-			if _, err = cc.DatabaseMgr.ExecuteStatement(deleteString, costEntry.CostID); err != nil {
-				log.Printf("Error in controller.cost_controller.CreateCostEntry: %v", err)
+			delError := cc.CostRepo.DeleteCostEntry(&costId)
+			if delError != nil {
+				return nil, delError
 			}
-			return nil, expenseErr
+			return nil, repoErr
 		}
 	}
 
-	// Insert cost entry and *debtors* into cost_category_cost table
-	for _, debtorId := range createCostRequest.PaidFor {
-		insertString = "INSERT INTO user_cost_association (id_user, id_cost, is_creditor) VALUES ($1, $2, $3)"
-		if _, err = cc.DatabaseMgr.ExecuteStatement(insertString, debtorId, costEntry.CostID, false); err != nil {
-			expenseErr := expense_errors.EXPENSE_INTERNAL_ERROR
-
-			// If foreign key violation, user in paidFor field does not exist
-			if pqErr, ok := err.(*pq.Error); ok && pqErr.Code.Name() == "foreign_key_violation" {
-				expenseErr = expense_errors.EXPENSE_USER_NOT_FOUND // Paid for user not found
-			} else {
-				log.Printf("Error in controller.cost_controller.CreateCostEntry: %v", err)
-			}
-
-			// Delete cost entry
-			deleteString := "DELETE FROM cost WHERE id = $1"
-			if _, err = cc.DatabaseMgr.ExecuteStatement(deleteString, costEntry.CostID); err != nil {
-				log.Printf("Error in controller.cost_controller.CreateCostEntry: %v", err)
-			}
-			return nil, expenseErr
-		}
-	}
-
-	// Return cost entry
-	costResponse := &models.CostDetailsResponse{
-		CostID:         costEntry.CostID,
-		Amount:         costEntry.Amount.String(),
-		Description:    costEntry.Description,
-		CreationDate:   costEntry.CreationDate,
-		DeductionDate:  costEntry.DeductionDate,
-		EndDate:        costEntry.EndDate,
-		CostCategoryID: costEntry.CostCategoryID,
-		PaidBy:         creatorId,
-		PaidFor:        createCostRequest.PaidFor,
-	}
-
-	return costResponse, nil
+	return cc.mapCostToResponse(costEntry), nil
 }
 
 func (cc *CostController) PatchCostEntry(ctx context.Context) (*models.CostResponse, *models.ExpenseServiceError) {
@@ -190,4 +111,30 @@ func (cc *CostController) GetTripCosts(ctx context.Context) (*models.CostRespons
 func (cc *CostController) DeleteCostEntry(ctx context.Context) *models.ExpenseServiceError {
 	// TO-DO
 	return nil
+}
+
+func (cc *CostController) mapCostToResponse(cost *models.CostSchema) *models.CostDetailsResponse {
+	contributions, _ := cc.CostRepo.GetCostContributors(cost.CostID)
+	response := &models.CostDetailsResponse{
+		CostID:         cost.CostID,
+		Amount:         cost.Amount.String(),
+		Description:    cost.Description,
+		CreationDate:   cost.CreationDate,
+		DeductionDate:  cost.DeductionDate,
+		EndDate:        cost.EndDate,
+		CostCategoryID: cost.CostCategoryID,
+	}
+	response.Contributors = *new([]*models.ContributorsResponse)
+
+	for _, contribution := range contributions {
+		user, _ := cc.UserRepo.GetUserById(contribution.UserID)
+		response.Contributors = append(response.Contributors, &models.ContributorsResponse{
+			Username: user.Username,
+			// Divide amount by number of contributors (prevents rounding errors for money)
+			Amount:     cost.Amount.Div(decimal.NewFromInt(int64(len(contributions)))).String(),
+			IsCreditor: contribution.IsCreditor,
+		})
+	}
+
+	return response
 }

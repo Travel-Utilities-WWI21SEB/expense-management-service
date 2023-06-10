@@ -6,6 +6,7 @@ import (
 	"github.com/Travel-Utilities-WWI21SEB/expense-management-service/src/models"
 	"github.com/Travel-Utilities-WWI21SEB/expense-management-service/src/utils"
 	"github.com/gin-gonic/gin"
+	"github.com/shopspring/decimal"
 	"log"
 	"net/http"
 )
@@ -24,6 +25,25 @@ func CreateCostEntryHandler(costCtl controllers.CostCtl) gin.HandlerFunc {
 
 		// Check if cost entry already has empty fields
 		if utils.ContainsEmptyString(costData.Amount, costData.CurrencyCode) {
+			utils.HandleErrorAndAbort(c, *expense_errors.EXPENSE_BAD_REQUEST)
+			return
+		}
+
+		// Convert amount to decimal
+		amount, err := decimal.NewFromString(costData.Amount)
+		if err != nil {
+			utils.HandleErrorAndAbort(c, *expense_errors.EXPENSE_BAD_REQUEST)
+			return
+		}
+
+		// Check if amount is negative
+		if amount.IsNegative() {
+			utils.HandleErrorAndAbort(c, *expense_errors.EXPENSE_BAD_REQUEST)
+			return
+		}
+
+		// Check if currency code is valid
+		if !utils.IsValidCurrencyCode(costData.CurrencyCode) {
 			utils.HandleErrorAndAbort(c, *expense_errors.EXPENSE_BAD_REQUEST)
 			return
 		}

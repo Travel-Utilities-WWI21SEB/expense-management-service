@@ -50,7 +50,9 @@ type TokenSchema struct {
 	ExpiresAt   *time.Time `json:"expiresAt" db:"expires_at"`
 }
 
-type UserCostSchema struct {
+// CostContributionSchema Users are called contributors in the context of a cost.
+// A user can be a creditor or a debtor: creditor means that the user has paid for the cost, debtor means that the user has to pay for the cost
+type CostContributionSchema struct {
 	UserID     *uuid.UUID `json:"userId" db:"id_user"`
 	CostID     *uuid.UUID `json:"costId" db:"id_cost"`
 	IsCreditor bool       `json:"isCreditor" db:"is_creditor"`
