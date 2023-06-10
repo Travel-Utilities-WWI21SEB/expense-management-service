@@ -14,6 +14,8 @@ import (
 type MailMgr interface {
 	SendActivationMail(ctx context.Context, mailData models.ActivationMail) *models.ExpenseServiceError
 	SendConfirmationMail(ctx context.Context, mailData models.ConfirmationMail) *models.ExpenseServiceError
+	SendPasswordResetMail(ctx context.Context, mailData *models.PasswordResetMail) *models.ExpenseServiceError
+	SendResetPasswordConfirmationMail(ctx context.Context, mailData *models.ResetPasswordConfirmationMail) *models.ExpenseServiceError
 }
 
 type MailManager struct {
@@ -54,6 +56,44 @@ func (mm *MailManager) SendConfirmationMail(ctx context.Context, mailData models
 
 		if i == retryMailCount-1 {
 			log.Printf("Error in MailManager.SendConfirmationMail().SendMail(): %v", err.Error())
+			return expense_errors.EXPENSE_MAIL_NOT_SENT
+		}
+	}
+
+	return nil
+}
+
+func (mm *MailManager) SendPasswordResetMail(ctx context.Context, mailData *models.PasswordResetMail) *models.ExpenseServiceError {
+	mailBody := utils.PreparePasswordResetMailBody(mailData.Username, mailData.ResetToken)
+
+	// try sending mail 3 times
+	for i := 0; i < retryMailCount; i++ {
+		err := mm.sendMail(ctx, mailData.Recipients, mailData.Subject, mailBody)
+		if err == nil {
+			break
+		}
+
+		if i == retryMailCount-1 {
+			log.Printf("Error in MailManager.SendPasswordResetMail().SendMail(): %v", err.Error())
+			return expense_errors.EXPENSE_MAIL_NOT_SENT
+		}
+	}
+
+	return nil
+}
+
+func (mm *MailManager) SendResetPasswordConfirmationMail(ctx context.Context, mailData *models.ResetPasswordConfirmationMail) *models.ExpenseServiceError {
+	mailBody := utils.PreparePasswordResetConfirmationMailBody(mailData.Username)
+
+	// try sending mail 3 times
+	for i := 0; i < retryMailCount; i++ {
+		err := mm.sendMail(ctx, mailData.Recipients, mailData.Subject, mailBody)
+		if err == nil {
+			break
+		}
+
+		if i == retryMailCount-1 {
+			log.Printf("Error in MailManager.SendResetPasswordConfirmationMail().SendMail(): %v", err.Error())
 			return expense_errors.EXPENSE_MAIL_NOT_SENT
 		}
 	}

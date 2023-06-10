@@ -17,25 +17,27 @@ type UserRepo interface {
 	GetUserById(userId *uuid.UUID) (*models.UserSchema, *models.ExpenseServiceError)
 	GetUserBySchema(user *models.UserSchema) (*models.UserSchema, *models.ExpenseServiceError)
 	GetUserByContext(ctx context.Context) (*models.UserSchema, *models.ExpenseServiceError)
+
 	CreateUser(user *models.UserSchema) *models.ExpenseServiceError
 	UpdateUser(user *models.UserSchema) *models.ExpenseServiceError
 	DeleteUser(userId *uuid.UUID) *models.ExpenseServiceError
 
+	UpdatePassword(userId *uuid.UUID, newPassword string) *models.ExpenseServiceError
+
 	ValidateIfUserExists(userId *uuid.UUID) *models.ExpenseServiceError
-
-	GetActivationTokenByUserId(userId *uuid.UUID) (*models.ActivationTokenSchema, *models.ExpenseServiceError)
-	GetActivationTokenByToken(token string) (*models.ActivationTokenSchema, *models.ExpenseServiceError)
-	CreateActivationToken(userId *uuid.UUID) (*models.ActivationTokenSchema, *models.ExpenseServiceError)
-	DeleteActivationToken(userId *uuid.UUID) *models.ExpenseServiceError
-	ActivateUser(userId *uuid.UUID) *models.ExpenseServiceError
-	ConfirmActivationToken(userId *uuid.UUID) *models.ExpenseServiceError
-
 	ValidateIfUserIsActivated(userId *uuid.UUID) *models.ExpenseServiceError
-
-	FindUsersLikeUsername(username string) ([]*models.UserSchema, *models.ExpenseServiceError)
-
 	ValidateEmailExistence(email string) *models.ExpenseServiceError
 	ValidateUsernameExistence(username string) *models.ExpenseServiceError
+
+	ActivateUser(userId *uuid.UUID) *models.ExpenseServiceError
+
+	CreateTokenByUserIdAndType(userId *uuid.UUID, tokenType string) (*models.TokenSchema, *models.ExpenseServiceError)
+	DeleteTokenByUserIdAndType(userId *uuid.UUID, tokenType string) *models.ExpenseServiceError
+	GetTokenByUserIdAndType(userId *uuid.UUID, tokenType string) (*models.TokenSchema, *models.ExpenseServiceError)
+	GetTokenByTokenAndType(token, tokenType string) (*models.TokenSchema, *models.ExpenseServiceError)
+	ConfirmTokenByType(userId *uuid.UUID, tokenType string) *models.ExpenseServiceError
+
+	FindUsersLikeUsername(username string) ([]*models.UserSchema, *models.ExpenseServiceError)
 }
 
 type UserRepository struct {
@@ -151,6 +153,16 @@ func (ur *UserRepository) GetUserByContext(ctx context.Context) (*models.UserSch
 	return user, nil
 }
 
+func (ur *UserRepository) UpdatePassword(userId *uuid.UUID, newPassword string) *models.ExpenseServiceError {
+	_, err := ur.DatabaseMgr.ExecuteStatement("UPDATE \"user\" SET password = $1 WHERE id = $2", newPassword, userId)
+	if err != nil {
+		log.Printf("Error while updating password: %v", err)
+		return expense_errors.EXPENSE_INTERNAL_ERROR
+	}
+
+	return nil
+}
+
 func (ur *UserRepository) ValidateIfUserExists(userId *uuid.UUID) *models.ExpenseServiceError {
 	rows, err := ur.DatabaseMgr.ExecuteQuery("SELECT id FROM \"user\" WHERE id = $1", userId)
 
@@ -166,9 +178,10 @@ func (ur *UserRepository) ValidateIfUserExists(userId *uuid.UUID) *models.Expens
 	return expense_errors.EXPENSE_USER_EXISTS
 }
 
-func (ur *UserRepository) GetActivationTokenByUserId(userId *uuid.UUID) (*models.ActivationTokenSchema, *models.ExpenseServiceError) {
-	token := &models.ActivationTokenSchema{}
-	row := ur.DatabaseMgr.ExecuteQueryRow("SELECT id_user, token, created_at, confirmed_at, expires_at FROM activation_token WHERE id_user = $1", userId)
+func (ur *UserRepository) GetTokenByUserIdAndType(userId *uuid.UUID, tokenType string) (*models.TokenSchema, *models.ExpenseServiceError) {
+	token := &models.TokenSchema{}
+
+	row := ur.DatabaseMgr.ExecuteQueryRow("SELECT id_user, token, created_at, confirmed_at, expires_at FROM token WHERE id_user = $1 AND type = $2", userId, tokenType)
 	if err := row.Scan(&token.UserID, &token.Token, &token.CreatedAt, &token.ConfirmedAt, &token.ExpiresAt); err != nil {
 		// Check if no rows were returned, if so return error EXPENSE_USER_NOT_FOUND
 		if err == sql.ErrNoRows {
@@ -182,22 +195,24 @@ func (ur *UserRepository) GetActivationTokenByUserId(userId *uuid.UUID) (*models
 	return token, nil
 }
 
-func (ur *UserRepository) CreateActivationToken(userId *uuid.UUID) (*models.ActivationTokenSchema, *models.ExpenseServiceError) {
-	tokenString := utils.GenerateRandomString(6)
+func (ur *UserRepository) CreateTokenByUserIdAndType(userId *uuid.UUID, tokenType string) (*models.TokenSchema, *models.ExpenseServiceError) {
 	creationDate := time.Now()
 	expirationDate := creationDate.Add(time.Hour * 1)
 
-	token := &models.ActivationTokenSchema{
+	token := &models.TokenSchema{
 		UserID:    userId,
-		Token:     &tokenString,
+		Token:     utils.GenerateRandomString(6),
+		Type:      tokenType,
 		CreatedAt: &creationDate,
 		ExpiresAt: &expirationDate,
 	}
 
-	for _, err := ur.DatabaseMgr.ExecuteStatement("INSERT INTO activation_token (id_user, token, created_at, expires_at) VALUES ($1, $2, $3, $4) RETURNING token", token.UserID, token.Token, token.CreatedAt, token.ExpiresAt); err != nil; {
+	tokenId := uuid.New()
+
+	for _, err := ur.DatabaseMgr.ExecuteStatement("INSERT INTO token(id, id_user, token, type, created_at, expires_at) VALUES ($1, $2, $3, $4, $5, $6) RETURNING token", tokenId, token.UserID, token.Token, token.Type, token.CreatedAt, token.ExpiresAt); err != nil; {
 		if pqErr := err.(*pq.Error); pqErr.Code.Name() == "unique_violation" {
 			// If the token already exists, generate a new one and try again
-			tokenString = utils.GenerateRandomString(6)
+			token.Token = utils.GenerateRandomString(6)
 			continue
 		}
 
@@ -208,10 +223,10 @@ func (ur *UserRepository) CreateActivationToken(userId *uuid.UUID) (*models.Acti
 	return token, nil
 }
 
-func (ur *UserRepository) DeleteActivationToken(userId *uuid.UUID) *models.ExpenseServiceError {
-	result, err := ur.DatabaseMgr.ExecuteStatement("DELETE FROM activation_token WHERE id_user = $1 AND confirmed_at IS NULL", userId)
+func (ur *UserRepository) DeleteTokenByUserIdAndType(userId *uuid.UUID, tokenType string) *models.ExpenseServiceError {
+	result, err := ur.DatabaseMgr.ExecuteStatement("DELETE FROM token WHERE id_user = $1 AND type = $2 AND confirmed_at IS NULL", userId, tokenType)
 	if err != nil {
-		log.Printf("Error while deleting activation token: %v", err)
+		log.Printf("Error while deleting %v token: %v", tokenType, err)
 		return expense_errors.EXPENSE_INTERNAL_ERROR
 	}
 
@@ -236,14 +251,9 @@ func (ur *UserRepository) ActivateUser(userId *uuid.UUID) *models.ExpenseService
 	return nil
 }
 
-func (ur *UserRepository) ConfirmActivationToken(userId *uuid.UUID) *models.ExpenseServiceError {
-	_, err := ur.DatabaseMgr.ExecuteStatement("UPDATE activation_token SET confirmed_at = $1, expires_at = $2, token = $3 WHERE id_user = $4", time.Now(), nil, nil, userId)
+func (ur *UserRepository) ConfirmTokenByType(userId *uuid.UUID, tokenType string) *models.ExpenseServiceError {
+	_, err := ur.DatabaseMgr.ExecuteStatement("UPDATE token SET confirmed_at = $1, expires_at = $2, token = $3 WHERE id_user = $4 AND type = $5", time.Now(), nil, nil, userId, tokenType)
 	if err != nil {
-		_, err := ur.DatabaseMgr.ExecuteStatement("UPDATE \"user\" SET activated = false WHERE id = $1", userId)
-		if err != nil {
-			log.Printf("Error while deactivating user: %v", err)
-		}
-
 		log.Printf("Error while updating activation token: %v", err)
 		return expense_errors.EXPENSE_INTERNAL_ERROR
 	}
@@ -292,10 +302,10 @@ func (ur *UserRepository) FindUsersLikeUsername(username string) ([]*models.User
 	return users, nil
 }
 
-func (ur *UserRepository) GetActivationTokenByToken(token string) (*models.ActivationTokenSchema, *models.ExpenseServiceError) {
-	tokenSchema := &models.ActivationTokenSchema{}
+func (ur *UserRepository) GetTokenByTokenAndType(token, tokenType string) (*models.TokenSchema, *models.ExpenseServiceError) {
+	tokenSchema := &models.TokenSchema{}
 
-	row := ur.DatabaseMgr.ExecuteQueryRow("SELECT id_user, token, created_at, confirmed_at, expires_at FROM activation_token WHERE token = $1", token)
+	row := ur.DatabaseMgr.ExecuteQueryRow("SELECT id_user, token, created_at, confirmed_at, expires_at FROM token WHERE token = $1 AND type = $2", token, tokenType)
 	if err := row.Scan(&tokenSchema.UserID, &tokenSchema.Token, &tokenSchema.CreatedAt, &tokenSchema.ConfirmedAt, &tokenSchema.ExpiresAt); err != nil {
 		// Check if no rows were returned, if so then the token has expired
 		if err == sql.ErrNoRows {

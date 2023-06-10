@@ -28,7 +28,7 @@ func PrepareActivationMailBody(inviteCode string, username string) string {
 			},
 			Actions: []hermes.Action{
 				{
-					Instructions: "Please copy your invite code:",
+					Instructions: "Please copy your verification token:",
 					InviteCode:   inviteCode,
 				},
 			},
@@ -73,6 +73,67 @@ func PrepareConfirmationMailBody(username string) string {
 	emailBody, err := h.GenerateHTML(hermesMail)
 	if err != nil {
 		log.Printf("Error in utils.prepareConfirmationMailBody().GenerateHTML(): %v", err.Error())
+		return ""
+	}
+
+	return emailBody
+}
+
+func PreparePasswordResetMailBody(username, token string) string {
+	hermesMail := hermes.Email{
+		Body: hermes.Body{
+			Name: username,
+			Intros: []string{
+				"You have requested a password reset. Please follow the instructions to use Costventures again.",
+			},
+			Actions: []hermes.Action{
+				{
+					Instructions: "Please copy your reset token:",
+					InviteCode:   token,
+				},
+			},
+			Outros: []string{
+				"If you did not request a password reset, please ignore this email.",
+			},
+		},
+	}
+
+	emailBody, err := h.GenerateHTML(hermesMail)
+	if err != nil {
+		log.Printf("Error in utils.preparePasswordResetMailBody().GenerateHTML(): %v", err.Error())
+		return ""
+	}
+
+	return emailBody
+}
+
+func PreparePasswordResetConfirmationMailBody(email string) string {
+	hermesMail := hermes.Email{
+		Body: hermes.Body{
+			Name: email,
+			Intros: []string{
+				"Your password has been successfully reset.",
+				"Please notify our support team if you did not request this password reset.",
+			},
+			Actions: []hermes.Action{
+				{
+					Instructions: "To get started with Costventures please click here:",
+					Button: hermes.Button{
+						Color: "#22BC66",
+						Text:  "Go to Costventures",
+						Link:  "https://expenseui.c930.net",
+					},
+				},
+			},
+			Outros: []string{
+				"Have fun and enjoy your trips!",
+			},
+		},
+	}
+
+	emailBody, err := h.GenerateHTML(hermesMail)
+	if err != nil {
+		log.Printf("Error in utils.preparePasswordResetConfirmationMailBody().GenerateHTML(): %v", err.Error())
 		return ""
 	}
 
