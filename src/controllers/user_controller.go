@@ -152,6 +152,11 @@ func (uc *UserController) ForgotPassword(ctx context.Context, email string) *mod
 		return repoErr
 	}
 
+	// Delete old token
+	if _, repoErr := uc.UserRepo.DeleteTokenByUserIdAndType(user.UserID, resetPasswordToken); repoErr != nil {
+		return repoErr
+	}
+
 	// Insert token into database
 	token, repoErr := uc.UserRepo.CreateTokenByUserIdAndType(user.UserID, resetPasswordToken)
 	if repoErr != nil {
@@ -247,7 +252,7 @@ func (uc *UserController) ResendToken(ctx context.Context, email string) *models
 	}
 
 	// Delete old token
-	if repoErr := uc.UserRepo.DeleteTokenByUserIdAndType(user.UserID, activationToken); repoErr != nil {
+	if _, repoErr := uc.UserRepo.DeleteTokenByUserIdAndType(user.UserID, activationToken); repoErr != nil {
 		return repoErr
 	}
 

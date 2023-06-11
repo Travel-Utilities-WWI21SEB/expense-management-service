@@ -32,7 +32,7 @@ type UserRepo interface {
 	ActivateUser(userId *uuid.UUID) *models.ExpenseServiceError
 
 	CreateTokenByUserIdAndType(userId *uuid.UUID, tokenType string) (*models.TokenSchema, *models.ExpenseServiceError)
-	DeleteTokenByUserIdAndType(userId *uuid.UUID, tokenType string) *models.ExpenseServiceError
+	DeleteTokenByUserIdAndType(userId *uuid.UUID, tokenType string) (int64, *models.ExpenseServiceError)
 	GetTokenByUserIdAndType(userId *uuid.UUID, tokenType string) (*models.TokenSchema, *models.ExpenseServiceError)
 	GetTokenByTokenAndType(token, tokenType string) (*models.TokenSchema, *models.ExpenseServiceError)
 	ConfirmTokenByType(userId *uuid.UUID, tokenType string) *models.ExpenseServiceError
@@ -175,7 +175,7 @@ func (ur *UserRepository) ValidateIfUserExists(userId *uuid.UUID) *models.Expens
 		return expense_errors.EXPENSE_USER_NOT_FOUND
 	}
 
-	return expense_errors.EXPENSE_USER_EXISTS
+	return nil
 }
 
 func (ur *UserRepository) GetTokenByUserIdAndType(userId *uuid.UUID, tokenType string) (*models.TokenSchema, *models.ExpenseServiceError) {
@@ -223,18 +223,19 @@ func (ur *UserRepository) CreateTokenByUserIdAndType(userId *uuid.UUID, tokenTyp
 	return token, nil
 }
 
-func (ur *UserRepository) DeleteTokenByUserIdAndType(userId *uuid.UUID, tokenType string) *models.ExpenseServiceError {
+func (ur *UserRepository) DeleteTokenByUserIdAndType(userId *uuid.UUID, tokenType string) (int64, *models.ExpenseServiceError) {
 	result, err := ur.DatabaseMgr.ExecuteStatement("DELETE FROM token WHERE id_user = $1 AND type = $2 AND confirmed_at IS NULL", userId, tokenType)
 	if err != nil {
 		log.Printf("Error while deleting %v token: %v", tokenType, err)
-		return expense_errors.EXPENSE_INTERNAL_ERROR
+		return 0, expense_errors.EXPENSE_INTERNAL_ERROR
 	}
 
-	if rowsAffected, _ := result.RowsAffected(); rowsAffected == 0 {
-		return expense_errors.EXPENSE_MAIL_ALREADY_VERIFIED
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return 0, expense_errors.EXPENSE_INTERNAL_ERROR
 	}
 
-	return nil
+	return rowsAffected, nil
 }
 
 func (ur *UserRepository) ActivateUser(userId *uuid.UUID) *models.ExpenseServiceError {
