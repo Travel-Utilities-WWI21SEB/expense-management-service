@@ -25,6 +25,8 @@ type CostRepo interface {
 	AddCostContributor(contributor *models.CostContributionSchema) *models.ExpenseServiceError
 	UpdateCostContributor(contributor *models.CostContributionSchema) *models.ExpenseServiceError
 	RemoveCostContributor(costId *uuid.UUID, userId *uuid.UUID) *models.ExpenseServiceError
+
+	GetTripByCostID(costId *uuid.UUID) (*models.TripSchema, *models.ExpenseServiceError)
 }
 
 type CostRepository struct {
@@ -219,6 +221,25 @@ func (cr *CostRepository) RemoveCostContributor(costId *uuid.UUID, userId *uuid.
 	}
 
 	return nil
+}
+
+//********************************************************************************************************************\\
+// Others  																											  \\
+//********************************************************************************************************************\\
+
+// GetTripByCostID returns the trip associated with a cost using costcategory table
+func (cr *CostRepository) GetTripByCostID(costId *uuid.UUID) (*models.TripSchema, *models.ExpenseServiceError) {
+	row, err := cr.DatabaseMgr.ExecuteQuery("SELECT cost_category.id_trip FROM cost_category INNER JOIN cost ON cost.id_cost_category = cost_category.id WHERE cost.id = $1", costId)
+	if err != nil {
+		log.Printf("Error while querying database: %v", err)
+		return nil, expense_errors.EXPENSE_INTERNAL_ERROR
+	}
+
+	if !row.Next() {
+		return nil, expense_errors.EXPENSE_NOT_FOUND // Cost not found
+	}
+
+	return nil, nil
 }
 
 //********************************************************************************************************************\\

@@ -6,6 +6,7 @@ import (
 	"github.com/Travel-Utilities-WWI21SEB/expense-management-service/src/models"
 	"github.com/Travel-Utilities-WWI21SEB/expense-management-service/src/utils"
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 	"github.com/shopspring/decimal"
 	"log"
 	"net/http"
@@ -77,26 +78,33 @@ func UpdateCostEntryHandler(costCtl controllers.CostCtl) gin.HandlerFunc {
 func GetCostEntriesHandler(costCtl controllers.CostCtl) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		// TO-DO
-		ctx := c.Request.Context()
+		// ctx := c.Request.Context()
 
-		response, err := costCtl.GetTripCosts(ctx)
+		/*response, err := costCtl.GetTripCosts(ctx, nil)
 		if err != nil {
 			utils.HandleErrorAndAbort(c, *err)
 			return
-		}
+		}*/
 
-		c.JSON(http.StatusOK, response)
+		c.JSON(http.StatusOK, nil)
 	}
 }
 
 func GetCostDetailsHandler(costCtl controllers.CostCtl) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		// TO-DO
 		ctx := c.Request.Context()
 
-		response, err := costCtl.GetCostDetails(ctx)
+		// Get costId from request params
+		costId, err := uuid.Parse(c.Param(models.ExpenseParamKeyCostId))
+
 		if err != nil {
-			utils.HandleErrorAndAbort(c, *err)
+			utils.HandleErrorAndAbort(c, *expense_errors.EXPENSE_BAD_REQUEST)
+			return
+		}
+
+		response, serviceErr := costCtl.GetCostDetails(ctx, &costId)
+		if serviceErr != nil {
+			utils.HandleErrorAndAbort(c, *serviceErr)
 			return
 		}
 

@@ -23,6 +23,12 @@ func CreateCostCategoryEntryHandler(costCategoryCtl controllers.CostCategoryCtl)
 			return
 		}
 
+		// Check if cost category entry already has empty fields
+		if utils.ContainsEmptyString(costCategoryData.Name) {
+			utils.HandleErrorAndAbort(c, *expense_errors.EXPENSE_BAD_REQUEST)
+			return
+		}
+
 		// Create cost category entry
 		response, serviceErr := costCategoryCtl.CreateCostCategory(&tripId, costCategoryData)
 		if serviceErr != nil {

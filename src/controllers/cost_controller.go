@@ -13,10 +13,12 @@ import (
 // CostCtl Exposed interface to the handler-package
 type CostCtl interface {
 	CreateCostEntry(ctx context.Context, createCostRequest models.CreateCostRequest) (*models.CostDetailsResponse, *models.ExpenseServiceError)
-	PatchCostEntry(ctx context.Context) (*models.CostResponse, *models.ExpenseServiceError)
-	PutCostEntry(ctx context.Context) (*models.CostResponse, *models.ExpenseServiceError)
-	GetCostDetails(ctx context.Context) (*models.CostResponse, *models.ExpenseServiceError)
-	GetTripCosts(ctx context.Context) (*models.CostResponse, *models.ExpenseServiceError)
+	GetCostDetails(ctx context.Context, costId *uuid.UUID) (*models.CostDetailsResponse, *models.ExpenseServiceError)
+	// GetCostsByTrip(ctx context.Context, tripId *uuid.UUID) (*models.CostResponse, *models.ExpenseServiceError)
+	// GetCostsByCostCategory(ctx context.Context, costCategoryId *uuid.UUID) (*models.CostResponse, *models.ExpenseServiceError)
+	// GetCostsByContext(ctx context.Context) (*[]models.CostResponse, *models.ExpenseServiceError)
+	PatchCostEntry(ctx context.Context) (*models.CostDetailsResponse, *models.ExpenseServiceError)
+	PutCostEntry(ctx context.Context) (*models.CostDetailsResponse, *models.ExpenseServiceError)
 	DeleteCostEntry(ctx context.Context) *models.ExpenseServiceError
 }
 
@@ -25,6 +27,7 @@ type CostController struct {
 	DatabaseMgr managers.DatabaseMgr
 	CostRepo    repositories.CostRepo
 	UserRepo    repositories.UserRepo
+	TripRepo    repositories.TripRepo
 }
 
 // CreateCostEntry Creates a cost entry and inserts it into the database
@@ -88,22 +91,26 @@ func (cc *CostController) CreateCostEntry(ctx context.Context, createCostRequest
 	return cc.mapCostToResponse(costEntry), nil
 }
 
-func (cc *CostController) PatchCostEntry(ctx context.Context) (*models.CostResponse, *models.ExpenseServiceError) {
+func (cc *CostController) GetCostDetails(ctx context.Context, costId *uuid.UUID) (*models.CostDetailsResponse, *models.ExpenseServiceError) {
+	// Get cost entry from database
+	cost, repoErr := cc.CostRepo.GetCostByID(costId)
+	if repoErr != nil {
+		return nil, repoErr
+	}
+	return cc.mapCostToResponse(cost), nil
+}
+
+func (cc *CostController) GetCostsByTrip(ctx context.Context) (*[]models.CostDetailsResponse, *models.ExpenseServiceError) {
 	// TO-DO
 	return nil, nil
 }
 
-func (cc *CostController) PutCostEntry(ctx context.Context) (*models.CostResponse, *models.ExpenseServiceError) {
+func (cc *CostController) PatchCostEntry(ctx context.Context) (*models.CostDetailsResponse, *models.ExpenseServiceError) {
 	// TO-DO
 	return nil, nil
 }
 
-func (cc *CostController) GetCostDetails(ctx context.Context) (*models.CostResponse, *models.ExpenseServiceError) {
-	// TO-DO
-	return nil, nil
-}
-
-func (cc *CostController) GetTripCosts(ctx context.Context) (*models.CostResponse, *models.ExpenseServiceError) {
+func (cc *CostController) PutCostEntry(ctx context.Context) (*models.CostDetailsResponse, *models.ExpenseServiceError) {
 	// TO-DO
 	return nil, nil
 }

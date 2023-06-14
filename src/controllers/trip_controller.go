@@ -55,7 +55,7 @@ func (tc *TripController) CreateTripEntry(ctx context.Context, tripRequest model
 	}
 
 	// Insert user-trip association into database
-	if repoErr := tc.TripRepo.InviteUserToTrip(trip, ctx.Value(models.ExpenseContextKeyUserID).(*uuid.UUID), true); repoErr != nil {
+	if repoErr := tc.TripRepo.AddUserToTrip(trip, ctx.Value(models.ExpenseContextKeyUserID).(*uuid.UUID), true); repoErr != nil {
 		// TODO: Delete trip from database
 		return nil, repoErr
 	}
@@ -157,7 +157,7 @@ func (tc *TripController) InviteUserToTrip(ctx context.Context, tripId *uuid.UUI
 	}
 
 	// Invite invitedUser to trip
-	if repoErr := tc.TripRepo.InviteUserToTrip(trip, invitedUser.UserID, false); repoErr != nil {
+	if repoErr := tc.TripRepo.AddUserToTrip(trip, invitedUser.UserID, false); repoErr != nil {
 		return nil, repoErr
 	}
 

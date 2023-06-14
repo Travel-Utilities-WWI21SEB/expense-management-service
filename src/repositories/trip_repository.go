@@ -16,7 +16,7 @@ type TripRepo interface {
 	UpdateTrip(trip *models.TripSchema) *models.ExpenseServiceError
 	DeleteTrip(tripId *uuid.UUID) *models.ExpenseServiceError
 
-	InviteUserToTrip(trip *models.TripSchema, invitedUserId *uuid.UUID, isCreator bool) *models.ExpenseServiceError
+	AddUserToTrip(trip *models.TripSchema, invitedUserId *uuid.UUID, isCreator bool) *models.ExpenseServiceError
 	AcceptTripInvite(tripId *uuid.UUID, userId *uuid.UUID) *models.ExpenseServiceError
 
 	ValidateIfTripExists(tripId *uuid.UUID) *models.ExpenseServiceError
@@ -110,7 +110,7 @@ func (tr *TripRepository) DeleteTrip(tripId *uuid.UUID) *models.ExpenseServiceEr
 	return nil
 }
 
-func (tr *TripRepository) InviteUserToTrip(trip *models.TripSchema, invitedUserId *uuid.UUID, isCreator bool) *models.ExpenseServiceError {
+func (tr *TripRepository) AddUserToTrip(trip *models.TripSchema, invitedUserId *uuid.UUID, isCreator bool) *models.ExpenseServiceError {
 	// Insert user into user_trip_association
 	_, err := tr.DatabaseMgr.ExecuteStatement("INSERT INTO user_trip_association (id_user, id_trip, is_accepted, presence_start_date, presence_end_date) VALUES ($1, $2, $3, $4, $5)", invitedUserId, trip.TripID, isCreator, trip.StartDate, trip.EndDate)
 	if err != nil {

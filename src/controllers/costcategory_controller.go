@@ -1,11 +1,9 @@
 package controllers
 
 import (
-	"github.com/Travel-Utilities-WWI21SEB/expense-management-service/src/expense_errors"
 	"github.com/Travel-Utilities-WWI21SEB/expense-management-service/src/managers"
 	"github.com/Travel-Utilities-WWI21SEB/expense-management-service/src/models"
 	"github.com/Travel-Utilities-WWI21SEB/expense-management-service/src/repositories"
-	"github.com/Travel-Utilities-WWI21SEB/expense-management-service/src/utils"
 	"github.com/google/uuid"
 )
 
@@ -25,10 +23,6 @@ type CostCategoryController struct {
 }
 
 func (ccc *CostCategoryController) CreateCostCategory(tripId *uuid.UUID, createCostCategoryRequest models.CostCategoryPostRequest) (*models.CostCategoryResponse, *models.ExpenseServiceError) {
-	if utils.ContainsEmptyString(createCostCategoryRequest.Name) {
-		return nil, expense_errors.EXPENSE_BAD_REQUEST
-	}
-
 	// Generate cost category id
 	costCategoryId := uuid.New()
 

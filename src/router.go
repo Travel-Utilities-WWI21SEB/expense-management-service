@@ -91,6 +91,7 @@ func createRouter(dbConnection *sql.DB) *gin.Engine {
 			DatabaseMgr: databaseMgr,
 			CostRepo:    costRepo,
 			UserRepo:    userRepo,
+			TripRepo:    tripRepo,
 		},
 		DebtController: &controllers.DebtController{
 			DatabaseMgr: databaseMgr,

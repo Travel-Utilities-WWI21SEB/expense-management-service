@@ -9,4 +9,7 @@ const (
 
 	// ParamKeyCostCategoryId is the key for the id in the params
 	ExpenseParamKeyCostCategoryId = "costCategoryId"
+
+	// ParamKeyCostId is the key for the id in the params
+	ExpenseParamKeyCostId = "costId"
 )
