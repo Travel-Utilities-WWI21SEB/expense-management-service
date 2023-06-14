@@ -8,8 +8,8 @@ require (
 	github.com/google/uuid v1.3.0
 	github.com/joho/godotenv v1.5.1
 	github.com/lib/pq v1.10.9
-	github.com/mailgun/mailgun-go/v4 v4.8.2
 	github.com/shopspring/decimal v1.3.1
+	github.com/mailgun/mailgun-go/v4 v4.9.0
 	golang.org/x/crypto v0.9.0
 )
 
