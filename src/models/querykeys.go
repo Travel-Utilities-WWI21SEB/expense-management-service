@@ -1,4 +1,4 @@
-package model
+package models
 
 const (
 	// ExpenseQueryKeyQueryString is the key for the queryString in the query

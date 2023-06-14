@@ -1,4 +1,4 @@
-package model
+package models
 
 import (
 	"github.com/google/uuid"
@@ -16,9 +16,14 @@ type LoginRequest struct {
 }
 
 type LoginResponse struct {
-	UserID       *uuid.UUID `json:"userId"`
-	Token        string     `json:"token"`
-	RefreshToken string     `json:"refreshToken"`
+	Token        string `json:"token"`
+	RefreshToken string `json:"refreshToken"`
+}
+
+type UpdateUserRequest struct {
+	Username string `json:"username"`
+	Email    string `json:"email"`
+	Password string `json:"password"`
 }
 
 type RefreshTokenRequest struct {
@@ -28,6 +33,25 @@ type RefreshTokenRequest struct {
 type RefreshTokenResponse struct {
 	Token        string `json:"token"`
 	RefreshToken string `json:"refreshToken"`
+}
+
+type ForgotPasswordRequest struct {
+	Email string `json:"email"`
+}
+
+type VerifyPasswordResetTokenRequest struct {
+	Email string `json:"email"`
+	Token string `json:"token"`
+}
+
+type ResetPasswordRequest struct {
+	Email    string `json:"email"`
+	Password string `json:"password"`
+	Token    string `json:"token"`
+}
+
+type ResendTokenRequest struct {
+	Email string `json:"email"`
 }
 
 type ActivationResponse struct {

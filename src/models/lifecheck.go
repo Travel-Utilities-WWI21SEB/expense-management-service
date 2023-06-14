@@ -1,4 +1,4 @@
-package model
+package models
 
 // LifeCheckResponse is the response for the lifecheck endpoint
 type LifeCheckResponse struct {

@@ -8,13 +8,16 @@ require (
 	github.com/google/uuid v1.3.0
 	github.com/joho/godotenv v1.5.1
 	github.com/lib/pq v1.10.9
+	github.com/shopspring/decimal v1.3.1
 	github.com/mailgun/mailgun-go/v4 v4.9.0
 	golang.org/x/crypto v0.9.0
 )
 
 require (
+	github.com/Rhymond/go-money v1.0.9 // indirect
 	github.com/gabriel-vasile/mimetype v1.4.2 // indirect
 	github.com/gorilla/mux v1.8.0 // indirect
+	github.com/kitloong/go-currency-converter-api/v2 v2.0.1 // indirect
 	github.com/pkg/errors v0.8.1 // indirect
 )
 
