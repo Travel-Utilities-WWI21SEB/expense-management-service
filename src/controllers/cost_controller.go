@@ -31,7 +31,7 @@ type CostController struct {
 }
 
 // CreateCostEntry Creates a cost entry and inserts it into the database
-func (cc *CostController) CreateCostEntry(ctx context.Context, createCostRequest models.CreateCostRequest) (*models.CostDetailsResponse, *models.ExpenseServiceError) {
+func (cc *CostController) CreateCostEntry(_ context.Context, createCostRequest models.CreateCostRequest) (*models.CostDetailsResponse, *models.ExpenseServiceError) {
 	costId := uuid.New()
 	now := time.Now()
 
@@ -55,18 +55,11 @@ func (cc *CostController) CreateCostEntry(ctx context.Context, createCostRequest
 		return nil, repoErr
 	}
 
-	// If no contributors, set creator as only contributor
-	if createCostRequest.Contributors == nil {
-		creator, repoErr := cc.UserRepo.GetUserByContext(ctx)
-		if repoErr != nil {
-			return nil, repoErr
-		}
-		// If no contributors, set creator as contributor
-		createCostRequest.Contributors = []*models.ContributorsRequest{{Username: creator.Username, IsCreditor: true}}
-	}
+	contributors := make([]*models.Contributor, len(createCostRequest.Contributors))
 
-	// Iterate over contributors and insert them into database
-	for _, contributor := range createCostRequest.Contributors {
+	// Create cost contribution for contributors
+	for i, contributor := range createCostRequest.Contributors {
+		// Get user from database
 		user, repoErr := cc.UserRepo.GetUserBySchema(&models.UserSchema{Username: contributor.Username})
 		if repoErr != nil {
 			return nil, repoErr
@@ -75,29 +68,27 @@ func (cc *CostController) CreateCostEntry(ctx context.Context, createCostRequest
 		contribution := &models.CostContributionSchema{
 			CostID:     &costId,
 			UserID:     user.UserID,
-			IsCreditor: contributor.IsCreditor,
+			IsCreditor: contributor.Username == createCostRequest.Creditor,
+			Amount:     decimal.RequireFromString(contributor.Amount),
 		}
 
+		// Insert cost contribution into database
 		if repoErr := cc.CostRepo.AddCostContributor(contribution); repoErr != nil {
-			// Delete cost entry
-			delError := cc.CostRepo.DeleteCostEntry(&costId)
-			if delError != nil {
-				return nil, delError
-			}
 			return nil, repoErr
 		}
-	}
 
-	return cc.mapCostToResponse(costEntry), nil
+		contributors[i] = &models.Contributor{Username: contributor.Username, Amount: contributor.Amount}
+	}
+	return cc.mapCostToResponse(costEntry, contributors), nil
 }
 
-func (cc *CostController) GetCostDetails(ctx context.Context, costId *uuid.UUID) (*models.CostDetailsResponse, *models.ExpenseServiceError) {
+func (cc *CostController) GetCostDetails(_ context.Context, costId *uuid.UUID) (*models.CostDetailsResponse, *models.ExpenseServiceError) {
 	// Get cost entry from database
 	cost, repoErr := cc.CostRepo.GetCostByID(costId)
 	if repoErr != nil {
 		return nil, repoErr
 	}
-	return cc.mapCostToResponse(cost), nil
+	return cc.mapCostToResponse(cost, nil), nil
 }
 
 func (cc *CostController) GetCostsByTrip(ctx context.Context) (*[]models.CostDetailsResponse, *models.ExpenseServiceError) {
@@ -120,8 +111,8 @@ func (cc *CostController) DeleteCostEntry(ctx context.Context) *models.ExpenseSe
 	return nil
 }
 
-func (cc *CostController) mapCostToResponse(cost *models.CostSchema) *models.CostDetailsResponse {
-	contributions, _ := cc.CostRepo.GetCostContributors(cost.CostID)
+// You can add optional parameters with: func (cc *CostController) GetCostDetails(ctx context.Context, costId *uuid.UUID, optionalParam string) (*models.CostDetailsResponse, *models.ExpenseServiceError) {
+func (cc *CostController) mapCostToResponse(cost *models.CostSchema, contributors []*models.Contributor) *models.CostDetailsResponse {
 	response := &models.CostDetailsResponse{
 		CostID:         cost.CostID,
 		Amount:         cost.Amount.String(),
@@ -131,16 +122,27 @@ func (cc *CostController) mapCostToResponse(cost *models.CostSchema) *models.Cos
 		EndDate:        cost.EndDate,
 		CostCategoryID: cost.CostCategoryID,
 	}
-	response.Contributors = *new([]*models.ContributorsResponse)
 
-	for _, contribution := range contributions {
+	// If contributors are passed as parameter, use them
+	if contributors != nil {
+		response.Contributors = contributors
+		return response
+	}
+
+	// Else get contributors from database
+	contributions, _ := cc.CostRepo.GetCostContributors(cost.CostID)
+
+	response.Contributors = make([]*models.Contributor, len(contributions))
+	for i, contribution := range contributions {
 		user, _ := cc.UserRepo.GetUserById(contribution.UserID)
-		response.Contributors = append(response.Contributors, &models.ContributorsResponse{
+		response.Contributors[i] = &models.Contributor{
 			Username: user.Username,
-			// Divide amount by number of contributors (prevents rounding errors for money)
-			Amount:     cost.Amount.Div(decimal.NewFromInt(int64(len(contributions)))).String(),
-			IsCreditor: contribution.IsCreditor,
-		})
+			Amount:   contribution.Amount.String(),
+		}
+
+		if contribution.IsCreditor {
+			response.Creditor = user.Username
+		}
 	}
 
 	return response

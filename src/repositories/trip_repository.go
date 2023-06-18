@@ -1,6 +1,7 @@
 package repositories
 
 import (
+	"database/sql"
 	"github.com/Travel-Utilities-WWI21SEB/expense-management-service/src/expense_errors"
 	"github.com/Travel-Utilities-WWI21SEB/expense-management-service/src/managers"
 	"github.com/Travel-Utilities-WWI21SEB/expense-management-service/src/models"
@@ -11,7 +12,7 @@ import (
 
 type TripRepo interface {
 	GetTripById(tripId *uuid.UUID) (*models.TripSchema, *models.ExpenseServiceError)
-	GetTripsByUserId(userId *uuid.UUID) ([]models.TripSchema, *models.ExpenseServiceError)
+	GetTripsByUserId(userId *uuid.UUID) ([]*models.TripSchema, *models.ExpenseServiceError)
 	CreateTrip(trip *models.TripSchema) *models.ExpenseServiceError
 	UpdateTrip(trip *models.TripSchema) *models.ExpenseServiceError
 	DeleteTrip(tripId *uuid.UUID) *models.ExpenseServiceError
@@ -32,37 +33,21 @@ type TripRepository struct {
 }
 
 func (tr *TripRepository) GetTripById(tripId *uuid.UUID) (*models.TripSchema, *models.ExpenseServiceError) {
-	trip := &models.TripSchema{}
-	row := tr.DatabaseMgr.ExecuteQueryRow("SELECT id, location, start_date, end_date FROM trip WHERE id = $1", tripId)
-	if err := row.Scan(&trip.TripID, &trip.Location, &trip.StartDate, &trip.EndDate); err != nil {
-		return nil, expense_errors.EXPENSE_TRIP_NOT_FOUND
-	}
-
-	return trip, nil
+	row := tr.DatabaseMgr.ExecuteQueryRow("SELECT id, name, description, location, start_date, end_date FROM trip WHERE id = $1", tripId)
+	return rowToTripSchema(row)
 }
 
-func (tr *TripRepository) GetTripsByUserId(userId *uuid.UUID) ([]models.TripSchema, *models.ExpenseServiceError) {
-	trips := make([]models.TripSchema, 0)
-	rows, err := tr.DatabaseMgr.ExecuteQuery("SELECT trip.id, trip.location, trip.start_date, trip.end_date FROM trip JOIN user_trip_association tp on trip.id = tp.id_trip WHERE tp.id_user = $1", userId)
+func (tr *TripRepository) GetTripsByUserId(userId *uuid.UUID) ([]*models.TripSchema, *models.ExpenseServiceError) {
+	rows, err := tr.DatabaseMgr.ExecuteQuery("SELECT t.id, t.name, t.description, t.location, t.start_date, t.end_date FROM trip t JOIN user_trip_association uta on t.id = uta.id_trip WHERE uta.id_user = $1", userId)
 	if err != nil {
 		log.Printf("Error while querying trips: %v", err)
 		return nil, expense_errors.EXPENSE_INTERNAL_ERROR
 	}
-
-	for rows.Next() {
-		trip := models.TripSchema{}
-		if err := rows.Scan(&trip.TripID, &trip.Location, &trip.StartDate, &trip.EndDate); err != nil {
-			log.Printf("Error while scanning trip: %v", err)
-			return nil, expense_errors.EXPENSE_INTERNAL_ERROR
-		}
-		trips = append(trips, trip)
-	}
-
-	return trips, nil
+	return rowsToTripSchema(rows)
 }
 
 func (tr *TripRepository) CreateTrip(trip *models.TripSchema) *models.ExpenseServiceError {
-	result, err := tr.DatabaseMgr.ExecuteStatement("INSERT INTO trip (id, location, start_date, end_date) VALUES ($1, $2, $3, $4)", trip.TripID, trip.Location, trip.StartDate, trip.EndDate)
+	result, err := tr.DatabaseMgr.ExecuteStatement("INSERT INTO trip (id, name, description, location, start_date, end_date) VALUES ($1, $2, $3, $4, $5, $6)", trip.TripID, trip.Name, trip.Description, trip.Location, trip.StartDate, trip.EndDate)
 	if err != nil {
 		log.Printf("Error while inserting trip: %v", err)
 		return expense_errors.EXPENSE_INTERNAL_ERROR
@@ -230,4 +215,35 @@ func (tr *TripRepository) UpdateTripParticipant(userTrip *models.UserTripSchema)
 	}
 
 	return nil
+}
+
+// rowToTripSchema converts a row to a TripSchema
+func rowToTripSchema(row *sql.Row) (*models.TripSchema, *models.ExpenseServiceError) {
+	trip := models.TripSchema{}
+	if err := row.Scan(&trip.TripID, &trip.Name, &trip.Description, &trip.Location, &trip.StartDate, &trip.EndDate); err != nil {
+		if err == sql.ErrNoRows {
+			return nil, expense_errors.EXPENSE_TRIP_NOT_FOUND
+		}
+
+		log.Printf("Error while scanning trip: %v", err)
+		return nil, expense_errors.EXPENSE_INTERNAL_ERROR
+	}
+
+	return &trip, nil
+}
+
+// rowsToTripSchema converts a set of rows to a slice of TripSchema
+func rowsToTripSchema(rows *sql.Rows) ([]*models.TripSchema, *models.ExpenseServiceError) {
+	trips := make([]*models.TripSchema, 0) // It is important to initialize the slice with 0 length so that it is serialized to [] instead of null
+	for rows.Next() {
+		var trip models.TripSchema
+		err := rows.Scan(&trip.TripID, &trip.Name, &trip.Description, &trip.Location, &trip.StartDate, &trip.EndDate)
+		if err != nil {
+			log.Printf("Error while scanning trip: %v", err)
+			return nil, expense_errors.EXPENSE_INTERNAL_ERROR
+		}
+		trips = append(trips, &trip)
+	}
+
+	return trips, nil
 }

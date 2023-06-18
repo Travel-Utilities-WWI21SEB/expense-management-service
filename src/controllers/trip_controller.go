@@ -24,9 +24,11 @@ type TripCtl interface {
 
 // TripController Trip Controller structure
 type TripController struct {
-	DatabaseMgr managers.DatabaseMgr
-	TripRepo    repositories.TripRepo
-	UserRepo    repositories.UserRepo
+	DatabaseMgr      managers.DatabaseMgr
+	TripRepo         repositories.TripRepo
+	UserRepo         repositories.UserRepo
+	CostRepo         repositories.CostRepo
+	CostCategoryRepo repositories.CostCategoryRepo
 }
 
 func (tc *TripController) CreateTripEntry(ctx context.Context, tripRequest models.CreateTripRequest) (*models.TripResponse, *models.ExpenseServiceError) {
@@ -43,10 +45,12 @@ func (tc *TripController) CreateTripEntry(ctx context.Context, tripRequest model
 	}
 
 	trip := &models.TripSchema{
-		TripID:    &tripID,
-		Location:  tripRequest.Location,
-		StartDate: &tripStartDate,
-		EndDate:   &tripEndDate,
+		TripID:      &tripID,
+		Name:        tripRequest.Name,
+		Description: tripRequest.Description,
+		Location:    tripRequest.Location,
+		StartDate:   &tripStartDate,
+		EndDate:     &tripEndDate,
 	}
 
 	// Insert trip into database
@@ -60,7 +64,7 @@ func (tc *TripController) CreateTripEntry(ctx context.Context, tripRequest model
 		return nil, repoErr
 	}
 
-	return tc.buildTripResponse(&tripID)
+	return tc.buildTripResponse(trip)
 }
 
 func (tc *TripController) GetTripEntries(ctx context.Context) ([]*models.TripResponse, *models.ExpenseServiceError) {
@@ -75,7 +79,7 @@ func (tc *TripController) GetTripEntries(ctx context.Context) ([]*models.TripRes
 	for _, trip := range trips {
 
 		// Append trip response to response array
-		tripResponse, err := tc.buildTripResponse(trip.TripID)
+		tripResponse, err := tc.buildTripResponse(trip)
 		if err != nil {
 			return nil, err
 		}
@@ -98,6 +102,14 @@ func (tc *TripController) UpdateTripEntry(ctx context.Context, tripID *uuid.UUID
 	}
 
 	// Update trip data
+	if tripRequest.Name != "" {
+		trip.Name = tripRequest.Name
+	}
+
+	if tripRequest.Description != "" {
+		trip.Description = tripRequest.Description
+	}
+
 	if tripRequest.Location != "" {
 		trip.Location = tripRequest.Location
 	}
@@ -116,11 +128,16 @@ func (tc *TripController) UpdateTripEntry(ctx context.Context, tripID *uuid.UUID
 		return nil, repoErr
 	}
 
-	return tc.buildTripResponse(tripID)
+	return tc.buildTripResponse(trip)
 }
 
 func (tc *TripController) GetTripDetails(_ context.Context, tripID *uuid.UUID) (*models.TripResponse, *models.ExpenseServiceError) {
-	return tc.buildTripResponse(tripID)
+	// Get trip from database
+	trip, repoErr := tc.TripRepo.GetTripById(tripID)
+	if repoErr != nil {
+		return nil, repoErr
+	}
+	return tc.buildTripResponse(trip)
 }
 
 func (tc *TripController) DeleteTripEntry(ctx context.Context, tripID *uuid.UUID) *models.ExpenseServiceError {
@@ -161,24 +178,21 @@ func (tc *TripController) InviteUserToTrip(ctx context.Context, tripId *uuid.UUI
 		return nil, repoErr
 	}
 
-	return tc.buildTripResponse(tripId)
+	return tc.buildTripResponse(trip)
 }
 
 func (tc *TripController) AcceptTripInvite(ctx context.Context, tripId *uuid.UUID) *models.ExpenseServiceError {
 	return tc.TripRepo.AcceptTripInvite(tripId, ctx.Value(models.ExpenseContextKeyUserID).(*uuid.UUID))
 }
 
-func (tc *TripController) buildTripResponse(tripId *uuid.UUID) (*models.TripResponse, *models.ExpenseServiceError) {
-	trip, repoErr := tc.TripRepo.GetTripById(tripId)
-	if repoErr != nil {
-		return nil, repoErr
-	}
-
+func (tc *TripController) buildTripResponse(trip *models.TripSchema) (*models.TripResponse, *models.ExpenseServiceError) {
+	// Get trip participants from database
 	participants, repoErr := tc.TripRepo.GetTripParticipants(trip.TripID)
 	if repoErr != nil {
 		return nil, repoErr
 	}
 
+	// Build participant responses
 	participationResponses := make([]models.TripParticipantResponse, len(participants))
 	for i, participant := range participants {
 		user, repoErr := tc.UserRepo.GetUserById(participant.UserID)
@@ -194,11 +208,50 @@ func (tc *TripController) buildTripResponse(tripId *uuid.UUID) (*models.TripResp
 		}
 	}
 
+	// Get total cost of trip
+	totalCostOfTrip, repoErr := tc.CostRepo.GetTotalCostByTripID(trip.TripID)
+	if repoErr != nil {
+		return nil, repoErr
+	}
+
+	// Get costcategories from database
+	costCategories, repoErr := tc.CostCategoryRepo.GetCostCategoriesByTripID(trip.TripID)
+	if repoErr != nil {
+		return nil, repoErr
+	}
+
+	// Build cost category responses
+	costCategoryResponses := make([]models.CostCategoryResponse, len(costCategories))
+	for i, costCategory := range costCategories {
+		// Get total cost for cost category
+		totalCostOfCategory, repoErr := tc.CostRepo.GetTotalCostByCostCategoryID(costCategory.CostCategoryID)
+		if repoErr != nil {
+			return nil, repoErr
+		}
+
+		costCategoryResponses[i] = models.CostCategoryResponse{
+			CostCategoryId: costCategory.CostCategoryID,
+			Name:           costCategory.Name,
+			Description:    costCategory.Description,
+			Color:          costCategory.Color,
+			Icon:           costCategory.Icon,
+			TotalCost:      totalCostOfCategory.String(),
+		}
+
+	}
+
+	// Build trip response
 	return &models.TripResponse{
-		TripID:       trip.TripID,
-		Location:     trip.Location,
-		StartDate:    trip.StartDate.Format(time.DateOnly),
-		EndDate:      trip.EndDate.Format(time.DateOnly),
-		Participants: participationResponses,
+		TripID:         trip.TripID,
+		Name:           trip.Name,
+		Description:    trip.Description,
+		Location:       trip.Location,
+		StartDate:      trip.StartDate.Format(time.DateOnly),
+		EndDate:        trip.EndDate.Format(time.DateOnly),
+		CostCategories: costCategoryResponses,
+		TotalCost:      totalCostOfTrip.String(),
+		UserDebt:       "0.00",
+		UserCredit:     "0.00",
+		Participants:   participationResponses,
 	}, nil
 }

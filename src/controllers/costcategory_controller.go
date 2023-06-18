@@ -20,6 +20,7 @@ type CostCategoryCtl interface {
 type CostCategoryController struct {
 	DatabaseMgr      managers.DatabaseMgr
 	CostCategoryRepo repositories.CostCategoryRepo
+	CostRepo         repositories.CostRepo
 }
 
 func (ccc *CostCategoryController) CreateCostCategory(tripId *uuid.UUID, createCostCategoryRequest models.CostCategoryPostRequest) (*models.CostCategoryResponse, *models.ExpenseServiceError) {
@@ -40,7 +41,7 @@ func (ccc *CostCategoryController) CreateCostCategory(tripId *uuid.UUID, createC
 		return nil, err
 	}
 
-	return responseBuilder(costCategory), nil
+	return ccc.responseBuilder(costCategory), nil
 }
 
 func (ccc *CostCategoryController) PatchCostCategory(costCategoryId *uuid.UUID, costCategoryPatchRequest models.CostCategoryPatchRequest) (*models.CostCategoryResponse, *models.ExpenseServiceError) {
@@ -73,7 +74,7 @@ func (ccc *CostCategoryController) PatchCostCategory(costCategoryId *uuid.UUID, 
 	}
 
 	// Return updated cost category
-	return responseBuilder(costCategory), nil
+	return ccc.responseBuilder(costCategory), nil
 }
 
 func (ccc *CostCategoryController) GetCostCategoryDetails(costCategoryId *uuid.UUID) (*models.CostCategoryResponse, *models.ExpenseServiceError) {
@@ -81,7 +82,7 @@ func (ccc *CostCategoryController) GetCostCategoryDetails(costCategoryId *uuid.U
 	if repoErr != nil {
 		return nil, repoErr
 	}
-	return responseBuilder(costCategory), nil
+	return ccc.responseBuilder(costCategory), nil
 }
 
 func (ccc *CostCategoryController) DeleteCostCategory(costCategoryId *uuid.UUID) *models.ExpenseServiceError {
@@ -96,18 +97,25 @@ func (ccc *CostCategoryController) GetCostCategoryEntries(tripId *uuid.UUID) ([]
 
 	costCategoriesReponse := make([]*models.CostCategoryResponse, 0, len(costCategories))
 	for _, costCategory := range costCategories {
-		costCategoriesReponse = append(costCategoriesReponse, responseBuilder(&costCategory))
+		costCategoriesReponse = append(costCategoriesReponse, ccc.responseBuilder(&costCategory))
 	}
 
 	return costCategoriesReponse, nil
 }
 
-func responseBuilder(costCategories *models.CostCategorySchema) *models.CostCategoryResponse {
+func (ccc *CostCategoryController) responseBuilder(costCategories *models.CostCategorySchema) *models.CostCategoryResponse {
+	// Get total cost of cost category
+	totalCost, err := ccc.CostRepo.GetTotalCostByCostCategoryID(costCategories.CostCategoryID)
+	if err != nil {
+		return nil
+	}
+
 	return &models.CostCategoryResponse{
 		CostCategoryId: costCategories.CostCategoryID,
 		Name:           costCategories.Name,
 		Description:    costCategories.Description,
 		Icon:           costCategories.Icon,
 		Color:          costCategories.Color,
+		TotalCost:      totalCost.String(),
 	}
 }
