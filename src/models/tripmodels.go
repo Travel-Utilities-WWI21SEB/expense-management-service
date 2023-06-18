@@ -12,15 +12,19 @@ type TripParticipantResponse struct {
 }
 
 type CreateTripRequest struct {
-	Location  string `json:"location"`
-	StartDate string `json:"startDate"`
-	EndDate   string `json:"endDate"`
+	Name        string `json:"name"`
+	Description string `json:"description"`
+	Location    string `json:"location"`
+	StartDate   string `json:"startDate"`
+	EndDate     string `json:"endDate"`
 }
 
 type UpdateTripRequest struct {
-	Location  string `json:"location"`
-	StartDate string `json:"startDate"`
-	EndDate   string `json:"endDate"`
+	Name        string `json:"name"`
+	Description string `json:"description"`
+	Location    string `json:"location"`
+	StartDate   string `json:"startDate"`
+	EndDate     string `json:"endDate"`
 }
 
 type UpdateTripParticipantRequest struct {
@@ -34,14 +38,28 @@ type InviteUserRequest struct {
 	EMail    string `json:"invitedEmail"`
 }
 
-type TripResponse struct {
-	TripID       *uuid.UUID                `json:"tripId"`
-	Location     string                    `json:"location"`
-	StartDate    string                    `json:"startDate"`
-	EndDate      string                    `json:"endDate"`
-	Participants []TripParticipantResponse `json:"participants"`
+type TripDetailsResponse struct {
+	TripID         *uuid.UUID                `json:"tripId"`
+	Name           string                    `json:"name"`
+	Description    string                    `json:"description"`
+	Location       string                    `json:"location"`
+	StartDate      string                    `json:"startDate"`
+	EndDate        string                    `json:"endDate"`
+	Participants   []TripParticipantResponse `json:"participants"`
+	CostCategories []CostCategoryResponse    `json:"costCategories"`
+	Costs          []CostDetailsResponse     `json:"costs"`
 }
 
-type TripCreationResponse struct {
-	TripID *uuid.UUID `json:"tripId"`
+type TripResponse struct {
+	TripID         *uuid.UUID                `json:"tripId"`
+	Name           string                    `json:"name"`
+	Description    string                    `json:"description"`
+	Location       string                    `json:"location"`
+	StartDate      string                    `json:"startDate"`
+	EndDate        string                    `json:"endDate"`
+	TotalCost      string                    `json:"totalCost"`
+	UserDebt       string                    `json:"userDebt"`   // How much the user owes
+	UserCredit     string                    `json:"userCredit"` // How much the user is owed
+	CostCategories []CostCategoryResponse    `json:"costCategories"`
+	Participants   []TripParticipantResponse `json:"participants"`
 }

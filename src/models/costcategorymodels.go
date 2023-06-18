@@ -22,4 +22,5 @@ type CostCategoryResponse struct {
 	Description    string     `json:"description"`
 	Icon           string     `json:"icon"`
 	Color          string     `json:"color"`
+	TotalCost      string     `json:"totalCost"`
 }

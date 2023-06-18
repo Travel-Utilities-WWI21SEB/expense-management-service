@@ -79,13 +79,16 @@ func createRouter(dbConnection *sql.DB) *gin.Engine {
 			UserRepo:    userRepo,
 		},
 		TripController: &controllers.TripController{
-			DatabaseMgr: databaseMgr,
-			TripRepo:    tripRepo,
-			UserRepo:    userRepo,
+			DatabaseMgr:      databaseMgr,
+			TripRepo:         tripRepo,
+			UserRepo:         userRepo,
+			CostRepo:         costRepo,
+			CostCategoryRepo: costCategoryRepo,
 		},
 		CostCategoryController: &controllers.CostCategoryController{
 			DatabaseMgr:      databaseMgr,
 			CostCategoryRepo: costCategoryRepo,
+			CostRepo:         costRepo,
 		},
 		CostController: &controllers.CostController{
 			DatabaseMgr: databaseMgr,

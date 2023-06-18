@@ -27,10 +27,12 @@ type CostCategorySchema struct {
 }
 
 type TripSchema struct {
-	TripID    *uuid.UUID `json:"tripId" db:"id"`
-	Location  string     `json:"location" db:"location"`
-	StartDate *time.Time `json:"startDate" db:"start_date"`
-	EndDate   *time.Time `json:"endDate" db:"end_date"`
+	TripID      *uuid.UUID `json:"tripId" db:"id"`
+	Name        string     `json:"name" db:"name"`
+	Description string     `json:"description" db:"description"`
+	Location    string     `json:"location" db:"location"`
+	StartDate   *time.Time `json:"startDate" db:"start_date"`
+	EndDate     *time.Time `json:"endDate" db:"end_date"`
 }
 
 type UserSchema struct {
@@ -53,9 +55,10 @@ type TokenSchema struct {
 // CostContributionSchema Users are called contributors in the context of a cost.
 // A user can be a creditor or a debtor: creditor means that the user has paid for the cost, debtor means that the user has to pay for the cost
 type CostContributionSchema struct {
-	UserID     *uuid.UUID `json:"userId" db:"id_user"`
-	CostID     *uuid.UUID `json:"costId" db:"id_cost"`
-	IsCreditor bool       `json:"isCreditor" db:"is_creditor"`
+	UserID     *uuid.UUID      `json:"userId" db:"id_user"`
+	CostID     *uuid.UUID      `json:"costId" db:"id_cost"`
+	IsCreditor bool            `json:"isCreditor" db:"is_creditor"`
+	Amount     decimal.Decimal `json:"amount" db:"amount"`
 }
 
 type UserTripSchema struct {

@@ -7,6 +7,7 @@ import (
 	"github.com/Travel-Utilities-WWI21SEB/expense-management-service/src/models"
 	"github.com/google/uuid"
 	"github.com/lib/pq"
+	"github.com/shopspring/decimal"
 	"log"
 )
 
@@ -27,6 +28,9 @@ type CostRepo interface {
 	RemoveCostContributor(costId *uuid.UUID, userId *uuid.UUID) *models.ExpenseServiceError
 
 	GetTripByCostID(costId *uuid.UUID) (*models.TripSchema, *models.ExpenseServiceError)
+
+	GetTotalCostByTripID(tripId *uuid.UUID) (*decimal.Decimal, *models.ExpenseServiceError)
+	GetTotalCostByCostCategoryID(costCategoryId *uuid.UUID) (*decimal.Decimal, *models.ExpenseServiceError)
 }
 
 type CostRepository struct {
@@ -154,16 +158,16 @@ func (cr *CostRepository) GetCostsByContributorID(contributorId *uuid.UUID) ([]*
 
 // GetCostContributors returns all cost contributors associated with a cost
 func (cr *CostRepository) GetCostContributors(costId *uuid.UUID) ([]*models.CostContributionSchema, *models.ExpenseServiceError) {
-	rows, err := cr.DatabaseMgr.ExecuteQuery("SELECT id_user, id_cost, is_creditor FROM user_cost_association WHERE id_cost = $1", costId)
+	rows, err := cr.DatabaseMgr.ExecuteQuery("SELECT id_user, id_cost, is_creditor, amount FROM user_cost_association WHERE id_cost = $1", costId)
 	if err != nil {
 		log.Printf("Error while querying database: %v", err)
 		return nil, expense_errors.EXPENSE_INTERNAL_ERROR
 	}
 
-	contributors := make([]*models.CostContributionSchema, 0) // Empty slice
+	var contributors []*models.CostContributionSchema
 	for rows.Next() {
 		var contributor models.CostContributionSchema
-		err := rows.Scan(&contributor.UserID, &contributor.CostID, &contributor.IsCreditor)
+		err := rows.Scan(&contributor.UserID, &contributor.CostID, &contributor.IsCreditor, &contributor.Amount)
 		if err != nil {
 			log.Printf("Error while scanning row: %v", err)
 			return nil, expense_errors.EXPENSE_INTERNAL_ERROR
@@ -176,7 +180,7 @@ func (cr *CostRepository) GetCostContributors(costId *uuid.UUID) ([]*models.Cost
 
 // AddCostContributor adds a cost contributor to the database table user_cost_association
 func (cr *CostRepository) AddCostContributor(contributor *models.CostContributionSchema) *models.ExpenseServiceError {
-	_, err := cr.DatabaseMgr.ExecuteStatement("INSERT INTO user_cost_association (id_user, id_cost, is_creditor) VALUES ($1, $2, $3)", contributor.UserID, contributor.CostID, contributor.IsCreditor)
+	_, err := cr.DatabaseMgr.ExecuteStatement("INSERT INTO user_cost_association (id_user, id_cost, is_creditor, amount) VALUES ($1, $2, $3, $4)", contributor.UserID, contributor.CostID, contributor.IsCreditor, contributor.Amount)
 	if err != nil {
 		if pqErr := err.(*pq.Error); pqErr.Code.Name() == "foreign_key_violation" {
 			return expense_errors.EXPENSE_NOT_FOUND // Cost or User not found
@@ -190,7 +194,7 @@ func (cr *CostRepository) AddCostContributor(contributor *models.CostContributio
 
 // UpdateCostContributor updates a cost contributor in the database table user_cost_association
 func (cr *CostRepository) UpdateCostContributor(contributor *models.CostContributionSchema) *models.ExpenseServiceError {
-	result, err := cr.DatabaseMgr.ExecuteStatement("UPDATE user_cost_association SET is_creditor = $1 WHERE id_user = $2 AND id_cost = $3", contributor.IsCreditor, contributor.UserID, contributor.CostID)
+	result, err := cr.DatabaseMgr.ExecuteStatement("UPDATE user_cost_association SET is_creditor = $1 WHERE id_user = $2 AND id_cost = $3 AND amount = $4", contributor.IsCreditor, contributor.UserID, contributor.CostID, contributor.Amount)
 	if err != nil {
 		if pqErr := err.(*pq.Error); pqErr.Code.Name() == "foreign_key_violation" {
 			log.Printf("Error while updating cost contributor: %v", err)
@@ -221,6 +225,45 @@ func (cr *CostRepository) RemoveCostContributor(costId *uuid.UUID, userId *uuid.
 	}
 
 	return nil
+}
+
+//********************************************************************************************************************\\
+// Calculation  																									  \\
+//********************************************************************************************************************\\
+
+// GetTotalCostByTripID returns the total cost of a trip
+func (cr *CostRepository) GetTotalCostByTripID(tripId *uuid.UUID) (*decimal.Decimal, *models.ExpenseServiceError) {
+	row, err := cr.DatabaseMgr.ExecuteQuery("SELECT COALESCE(SUM(c.amount),0) FROM cost c INNER JOIN cost_category cc ON c.id_cost_category = cc.id WHERE cc.id_trip = $1", tripId)
+	if err != nil {
+		log.Printf("Error while querying database: %v", err)
+		return nil, expense_errors.EXPENSE_INTERNAL_ERROR
+	}
+
+	if !row.Next() {
+		return nil, expense_errors.EXPENSE_NOT_FOUND // Trip not found
+	}
+
+	var totalCost decimal.Decimal
+	err = row.Scan(&totalCost)
+	if err != nil {
+		log.Printf("Error while scanning row: %v", err)
+		return nil, expense_errors.EXPENSE_INTERNAL_ERROR
+	}
+
+	return &totalCost, nil
+}
+
+// GetTotalCostByCostCategoryID returns the total cost of a cost category
+func (cr *CostRepository) GetTotalCostByCostCategoryID(costCategoryId *uuid.UUID) (*decimal.Decimal, *models.ExpenseServiceError) {
+	var totalCost decimal.Decimal
+	row := cr.DatabaseMgr.ExecuteQueryRow("SELECT COALESCE(SUM(amount),0) FROM cost WHERE id_cost_category = $1", costCategoryId)
+	err := row.Scan(&totalCost)
+	if err != nil {
+		log.Printf("Error while scanning row: %v", err)
+		return nil, expense_errors.EXPENSE_INTERNAL_ERROR
+	}
+
+	return &totalCost, nil
 }
 
 //********************************************************************************************************************\\
