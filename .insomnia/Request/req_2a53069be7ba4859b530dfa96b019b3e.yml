@@ -1,7 +1,7 @@
 _id: req_2a53069be7ba4859b530dfa96b019b3e
 type: Request
 parentId: fld_d83c1d0d5e75433c97b1979a5f600fb4
-modified: 1686160636157
+modified: 1687091241277
 created: 1684747727157
 url: "{{ _.api_url }}/{{ _.route }}"
 name: Create Trip
@@ -90,6 +90,8 @@ body:
   mimeType: application/json
   text: |-
     {
+    	"name": "Testing 2023",
+    	"description": "This is for testing purposes.",
     	"location": "Palo Alto",
     	"startDate": "2023-08-02",
     	"endDate": "2023-10-30"
