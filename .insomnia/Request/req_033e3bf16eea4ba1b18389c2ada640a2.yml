@@ -1,10 +1,10 @@
 _id: req_033e3bf16eea4ba1b18389c2ada640a2
 type: Request
 parentId: fld_fb964101ac2d4651a16e19aa1fefe039
-modified: 1686393966105
+modified: 1687091330911
 created: 1684747930513
-url: "{{ _.api_url }}/{{ _.route }}/{% prompt 'TripId', '', 'TripId', 'tripid',
-  false, true %}/{{ _.subRoute }}"
+url: "{{ _.api_url }}/{{ _.route }}/{% prompt 'TripId', '', _.last_trip_id,
+  'tripid', false, true %}/{{ _.subRoute }}"
 name: Create Cost
 description: >
   This endpoint is used to login a user in our webapplication with given
@@ -91,12 +91,22 @@ body:
   mimeType: application/json
   text: |-
     {
-    	"costCategoryId": "8b8f1c89-2b7c-4627-8be5-964ed134341a", 
-     	"amount": "20.23", 
-     	"currency": "EUR", 
-     	"description": "TEsting", 
-     	"deductedAt": "2023-06-07T17:53:16+02:00"
-     }
+    	"costCategoryId": "cdab1692-1c24-4ea9-b773-f5bb0001b48e",
+    	"amount": "20.23",
+    	"currency": "EUR",
+    	"description": "TEsting",
+    	"deductedAt": "2023-06-07T17:53:16+02:00",
+    	"creditor": {
+    		"username": "testUser",
+    		"amount": ""
+    	},
+    	"debtors": [
+    		{
+    			"username": "testUser2",
+    			"amount": ""
+    		}
+    	]
+    }
 parameters: []
 headers:
   - name: Content-Type
