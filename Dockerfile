@@ -12,7 +12,7 @@ RUN go mod download
 RUN go build -o expense-api ./src
 
 ## Serve only the compiled binary in the second stage
-FROM alpine:3.18.0 AS serve
+FROM alpine:3.18.2 AS serve
 
 ## Neccessary to run a health check in our docker-compose file
 RUN apk --update --no-cache add curl
