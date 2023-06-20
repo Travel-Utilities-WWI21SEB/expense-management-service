@@ -1,11 +1,11 @@
 _id: req_ad65f56b54214540a06f43043a459ec6
 type: Request
 parentId: fld_d83c1d0d5e75433c97b1979a5f600fb4
-modified: 1686160808025
+modified: 1687294371564
 created: 1685350371079
 url: "{{ _.api_url }}/{{ _.route }}/{% prompt 'TripId', '', _.last_trip_id,
   'tripid', false, true %}/accept"
-name: Accept trip invite
+name: Accept Trip Invite
 description: >
   This endpoint is used to login a user in our webapplication with given
   credentials and set a JWT Header.
@@ -87,9 +87,17 @@ description: >
 
   ```
 method: POST
-body: {}
+body:
+  mimeType: application/json
+  text: |-
+    {
+    	"presenceStartDate": "2023-09-14",
+    	"presenceEndDate": "2023-10-20"
+    }
 parameters: []
-headers: []
+headers:
+  - name: Content-Type
+    value: application/json
 authentication:
   type: bearer
   token: "{{ _.token }}"

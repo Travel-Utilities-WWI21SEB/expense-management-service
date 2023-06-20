@@ -1,11 +1,11 @@
-_id: req_033e3bf16eea4ba1b18389c2ada640a2
+_id: req_df33e900fa6d46709b2f9a83adb5d023
 type: Request
-parentId: fld_fb964101ac2d4651a16e19aa1fefe039
-modified: 1687122742809
-created: 1684747930513
+parentId: fld_d83c1d0d5e75433c97b1979a5f600fb4
+modified: 1687293625801
+created: 1687293612701
 url: "{{ _.api_url }}/{{ _.route }}/{% prompt 'TripId', '', _.last_trip_id,
-  'tripid', false, true %}/{{ _.subRoute }}"
-name: Create Cost
+  'tripid', false, true %}/decline"
+name: Decline Trip Invite
 description: >
   This endpoint is used to login a user in our webapplication with given
   credentials and set a JWT Header.
@@ -87,40 +87,14 @@ description: >
 
   ```
 method: POST
-body:
-  mimeType: application/json
-  text: |-
-    {
-    	"costCategoryId": "cdab1692-1c24-4ea9-b773-f5bb0001b48e",
-    	"amount": "9.3866",
-    	"currency": "EUR",
-    	"description": "TEsting",
-    	"deductedAt": "2023-06-07T17:53:16+02:00",
-    	"creditor": "testUser",
-    	"contributors": [
-    		{
-    			"username": "testUser",
-    			"amount": ""
-    		},
-    		{
-    			"username": "testUser2",
-    			"amount": ""
-    		},
-    		{
-    			"username": "testUser3",
-    			"amount": ""
-    		}
-    	]
-    }
+body: {}
 parameters: []
-headers:
-  - name: Content-Type
-    value: application/json
+headers: []
 authentication:
   type: bearer
   token: "{{ _.token }}"
   prefix: Bearer
-metaSortKey: -1684747930513
+metaSortKey: -1684747857681
 isPrivate: false
 settingStoreCookies: true
 settingSendCookies: true
