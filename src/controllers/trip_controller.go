@@ -13,13 +13,14 @@ import (
 
 // TripCtl Exposed interface to the handler-package
 type TripCtl interface {
-	CreateTripEntry(ctx context.Context, tripData models.CreateTripRequest) (*models.TripResponse, *models.ExpenseServiceError)
-	UpdateTripEntry(ctx context.Context, tripID *uuid.UUID, tripUpdateData models.UpdateTripRequest) (*models.TripResponse, *models.ExpenseServiceError)
-	GetTripDetails(ctx context.Context, tripID *uuid.UUID) (*models.TripResponse, *models.ExpenseServiceError)
+	CreateTripEntry(ctx context.Context, tripData models.TripDTO) (*models.TripDTO, *models.ExpenseServiceError)
+	UpdateTripEntry(ctx context.Context, tripID *uuid.UUID, tripUpdateData models.TripDTO) (*models.TripDTO, *models.ExpenseServiceError)
+	GetTripDetails(ctx context.Context, tripID *uuid.UUID) (*models.TripDTO, *models.ExpenseServiceError)
 	DeleteTripEntry(ctx context.Context, tripID *uuid.UUID) *models.ExpenseServiceError
-	GetTripEntries(ctx context.Context) ([]*models.TripResponse, *models.ExpenseServiceError)
-	InviteUserToTrip(ctx context.Context, tripId *uuid.UUID, inviteUserRequest models.InviteUserRequest) (*models.TripResponse, *models.ExpenseServiceError)
-	AcceptTripInvite(ctx context.Context, tripId *uuid.UUID) *models.ExpenseServiceError
+	GetTripEntries(ctx context.Context) ([]*models.TripDTO, *models.ExpenseServiceError)
+	InviteUserToTrip(ctx context.Context, tripId *uuid.UUID, inviteUserRequest models.UserDto) (*models.TripDTO, *models.ExpenseServiceError)
+	AcceptTripInvite(ctx context.Context, tripId *uuid.UUID, acceptRequest models.TripParticipationDTO) (*models.TripDTO, *models.ExpenseServiceError)
+	DeclineTripInvite(ctx context.Context, tripId *uuid.UUID) *models.ExpenseServiceError
 }
 
 // TripController Trip Controller structure
@@ -31,7 +32,7 @@ type TripController struct {
 	CostCategoryRepo repositories.CostCategoryRepo
 }
 
-func (tc *TripController) CreateTripEntry(ctx context.Context, tripRequest models.CreateTripRequest) (*models.TripResponse, *models.ExpenseServiceError) {
+func (tc *TripController) CreateTripEntry(ctx context.Context, tripRequest models.TripDTO) (*models.TripDTO, *models.ExpenseServiceError) {
 	// Create new trip
 	tripID := uuid.New()
 	tripStartDate, err := time.Parse(time.DateOnly, tripRequest.StartDate)
@@ -58,38 +59,29 @@ func (tc *TripController) CreateTripEntry(ctx context.Context, tripRequest model
 		return nil, repoErr
 	}
 
+	var deleteTripError *models.ExpenseServiceError
+
+	// Delete trip from database if user is not added to trip
+	defer func() {
+		if deleteTripError != nil {
+			tc.TripRepo.DeleteTrip(&tripID)
+		}
+	}()
+
 	// Insert user-trip association into database
 	if repoErr := tc.TripRepo.AddUserToTrip(trip, ctx.Value(models.ExpenseContextKeyUserID).(*uuid.UUID), true); repoErr != nil {
-		// TODO: Delete trip from database
+		deleteTripError = repoErr
 		return nil, repoErr
 	}
 
-	return tc.buildTripResponse(trip)
-}
-
-func (tc *TripController) GetTripEntries(ctx context.Context) ([]*models.TripResponse, *models.ExpenseServiceError) {
-	// Get trips from database
-	trips, repoErr := tc.TripRepo.GetTripsByUserId(ctx.Value(models.ExpenseContextKeyUserID).(*uuid.UUID))
-	if repoErr != nil {
-		return nil, repoErr
+	if deleteTripError != nil {
+		return nil, deleteTripError
 	}
 
-	// Iterate over rows and create trip response
-	var tripResponses []*models.TripResponse
-	for _, trip := range trips {
-
-		// Append trip response to response array
-		tripResponse, err := tc.buildTripResponse(trip)
-		if err != nil {
-			return nil, err
-		}
-		tripResponses = append(tripResponses, tripResponse)
-	}
-
-	return tripResponses, nil
+	return tc.mapTripToResponse(trip)
 }
 
-func (tc *TripController) UpdateTripEntry(ctx context.Context, tripID *uuid.UUID, tripRequest models.UpdateTripRequest) (*models.TripResponse, *models.ExpenseServiceError) {
+func (tc *TripController) UpdateTripEntry(ctx context.Context, tripID *uuid.UUID, tripRequest models.TripDTO) (*models.TripDTO, *models.ExpenseServiceError) {
 	// Check if user accepted trip invite
 	if repoErr := tc.TripRepo.ValidateIfUserHasAccepted(tripID, ctx.Value(models.ExpenseContextKeyUserID).(*uuid.UUID)); repoErr != nil {
 		return nil, repoErr
@@ -128,16 +120,38 @@ func (tc *TripController) UpdateTripEntry(ctx context.Context, tripID *uuid.UUID
 		return nil, repoErr
 	}
 
-	return tc.buildTripResponse(trip)
+	return tc.mapTripToResponse(trip)
 }
 
-func (tc *TripController) GetTripDetails(_ context.Context, tripID *uuid.UUID) (*models.TripResponse, *models.ExpenseServiceError) {
+func (tc *TripController) GetTripEntries(ctx context.Context) ([]*models.TripDTO, *models.ExpenseServiceError) {
+	// Get trips from database
+	trips, repoErr := tc.TripRepo.GetTripsByUserId(ctx.Value(models.ExpenseContextKeyUserID).(*uuid.UUID))
+	if repoErr != nil {
+		return nil, repoErr
+	}
+
+	// Iterate over rows and create trip response
+	tripResponses := make([]*models.TripDTO, len(trips))
+	for i, trip := range trips {
+		// Append trip response to response array
+		var serviceErr *models.ExpenseServiceError
+		if tripResponses[i], serviceErr = tc.mapTripToResponse(trip); serviceErr != nil {
+			return nil, serviceErr
+		}
+	}
+
+	return tripResponses, nil
+}
+
+func (tc *TripController) GetTripDetails(_ context.Context, tripID *uuid.UUID) (*models.TripDTO, *models.ExpenseServiceError) {
 	// Get trip from database
 	trip, repoErr := tc.TripRepo.GetTripById(tripID)
 	if repoErr != nil {
 		return nil, repoErr
 	}
-	return tc.buildTripResponse(trip)
+
+	return tc.mapTripToResponse(trip)
+
 }
 
 func (tc *TripController) DeleteTripEntry(ctx context.Context, tripID *uuid.UUID) *models.ExpenseServiceError {
@@ -150,7 +164,7 @@ func (tc *TripController) DeleteTripEntry(ctx context.Context, tripID *uuid.UUID
 	return tc.TripRepo.DeleteTrip(tripID)
 }
 
-func (tc *TripController) InviteUserToTrip(ctx context.Context, tripId *uuid.UUID, inviteUserRequest models.InviteUserRequest) (*models.TripResponse, *models.ExpenseServiceError) {
+func (tc *TripController) InviteUserToTrip(ctx context.Context, tripId *uuid.UUID, inviteUserRequest models.UserDto) (*models.TripDTO, *models.ExpenseServiceError) {
 	// Check if user accepted trip invite
 	if repoErr := tc.TripRepo.ValidateIfUserHasAccepted(tripId, ctx.Value(models.ExpenseContextKeyUserID).(*uuid.UUID)); repoErr != nil {
 		return nil, repoErr
@@ -158,7 +172,7 @@ func (tc *TripController) InviteUserToTrip(ctx context.Context, tripId *uuid.UUI
 
 	// Get invitedUser data from invite
 	invitedUser := &models.UserSchema{
-		Email:    inviteUserRequest.EMail,
+		Email:    inviteUserRequest.Email,
 		Username: inviteUserRequest.Username,
 	}
 
@@ -178,14 +192,79 @@ func (tc *TripController) InviteUserToTrip(ctx context.Context, tripId *uuid.UUI
 		return nil, repoErr
 	}
 
-	return tc.buildTripResponse(trip)
+	return tc.mapTripToResponse(trip)
 }
 
-func (tc *TripController) AcceptTripInvite(ctx context.Context, tripId *uuid.UUID) *models.ExpenseServiceError {
-	return tc.TripRepo.AcceptTripInvite(tripId, ctx.Value(models.ExpenseContextKeyUserID).(*uuid.UUID))
+func (tc *TripController) AcceptTripInvite(ctx context.Context, tripId *uuid.UUID, acceptRequest models.TripParticipationDTO) (*models.TripDTO, *models.ExpenseServiceError) {
+	// Get invited user from database
+	invitedUser, repoErr := tc.UserRepo.GetUserById(ctx.Value(models.ExpenseContextKeyUserID).(*uuid.UUID))
+	if repoErr != nil {
+		return nil, repoErr
+	}
+
+	// Geld old trip participant data from database
+	tripParticipant, repoErr := tc.TripRepo.GetTripParticipant(tripId, invitedUser.UserID)
+	if repoErr != nil {
+		return nil, repoErr
+	}
+
+	// Check if user has already accepted the invite
+	if tripParticipant.HasAccepted {
+		return nil, expense_errors.EXPENSE_BAD_REQUEST
+	}
+
+	// Update trip participant data
+	tripParticipant.HasAccepted = true
+
+	// Get trip data from database
+	trip, repoErr := tc.TripRepo.GetTripById(tripId)
+	if repoErr != nil {
+		return nil, repoErr
+	}
+
+	// Update trip participant data
+	if acceptRequest.PresenceStartDate != "" {
+		newPresenceStartDate, _ := time.Parse(time.DateOnly, acceptRequest.PresenceStartDate)
+		if newPresenceStartDate.Before(*trip.StartDate) || newPresenceStartDate.After(*trip.EndDate) {
+			return nil, expense_errors.EXPENSE_BAD_REQUEST
+		}
+		*tripParticipant.PresenceStartDate = newPresenceStartDate
+	}
+
+	if acceptRequest.PresenceEndDate != "" {
+		newPresenceEndDate, _ := time.Parse(time.DateOnly, acceptRequest.PresenceEndDate)
+		if newPresenceEndDate.Before(*trip.StartDate) || newPresenceEndDate.After(*trip.EndDate) {
+			return nil, expense_errors.EXPENSE_BAD_REQUEST
+		}
+		*tripParticipant.PresenceEndDate = newPresenceEndDate
+	}
+
+	// Update invited user data in trip participants table
+	repoErr = tc.TripRepo.UpdateTripParticipant(tripParticipant)
+	if repoErr != nil {
+		return nil, repoErr
+	}
+
+	return tc.mapTripToResponse(trip)
 }
 
-func (tc *TripController) buildTripResponse(trip *models.TripSchema) (*models.TripResponse, *models.ExpenseServiceError) {
+func (tc *TripController) DeclineTripInvite(ctx context.Context, tripId *uuid.UUID) *models.ExpenseServiceError {
+	// Get participant data from database
+	tripParticipant, repoErr := tc.TripRepo.GetTripParticipant(tripId, ctx.Value(models.ExpenseContextKeyUserID).(*uuid.UUID))
+	if repoErr != nil {
+		return repoErr
+	}
+
+	// Check if user has already accepted the invite
+	if tripParticipant.HasAccepted {
+		return expense_errors.EXPENSE_BAD_REQUEST
+	}
+
+	// Delete trip participant data from database
+	return tc.TripRepo.DeclineTripInvite(tripId, ctx.Value(models.ExpenseContextKeyUserID).(*uuid.UUID))
+}
+
+func (tc *TripController) mapTripToResponse(trip *models.TripSchema) (*models.TripDTO, *models.ExpenseServiceError) {
 	// Get trip participants from database
 	participants, repoErr := tc.TripRepo.GetTripParticipants(trip.TripID)
 	if repoErr != nil {
@@ -193,14 +272,14 @@ func (tc *TripController) buildTripResponse(trip *models.TripSchema) (*models.Tr
 	}
 
 	// Build participant responses
-	participationResponses := make([]models.TripParticipantResponse, len(participants))
+	participationResponses := make([]models.TripParticipationDTO, len(participants))
 	for i, participant := range participants {
 		user, repoErr := tc.UserRepo.GetUserById(participant.UserID)
 		if repoErr != nil {
 			return nil, repoErr
 		}
 
-		participationResponses[i] = models.TripParticipantResponse{
+		participationResponses[i] = models.TripParticipationDTO{
 			Username:          user.Username,
 			HasAcceptedInvite: participant.HasAccepted,
 			PresenceStartDate: participant.PresenceStartDate.Format(time.DateOnly),
@@ -241,7 +320,7 @@ func (tc *TripController) buildTripResponse(trip *models.TripSchema) (*models.Tr
 	}
 
 	// Build trip response
-	return &models.TripResponse{
+	return &models.TripDTO{
 		TripID:         trip.TripID,
 		Name:           trip.Name,
 		Description:    trip.Description,

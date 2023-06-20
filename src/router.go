@@ -127,6 +127,7 @@ func createRouter(dbConnection *sql.DB) *gin.Engine {
 	securedTripApiv1.Handle(http.MethodDelete, "", handlers.DeleteTripEntryHandler(controller.TripController))
 	securedTripApiv1.Handle(http.MethodPost, "/invite", handlers.InviteUserToTripHandler(controller.TripController))
 	securedTripApiv1.Handle(http.MethodPost, "/accept", handlers.AcceptTripInviteHandler(controller.TripController))
+	securedTripApiv1.Handle(http.MethodPost, "/decline", handlers.DeclineTripInviteHandler(controller.TripController))
 
 	// Cost Category Routes
 	securedTripApiv1.Handle(http.MethodPost, "/cost-categories", handlers.CreateCostCategoryEntryHandler(controller.CostCategoryController))

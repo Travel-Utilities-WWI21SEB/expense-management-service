@@ -19,6 +19,7 @@ type TripRepo interface {
 
 	AddUserToTrip(trip *models.TripSchema, invitedUserId *uuid.UUID, isCreator bool) *models.ExpenseServiceError
 	AcceptTripInvite(tripId *uuid.UUID, userId *uuid.UUID) *models.ExpenseServiceError
+	DeclineTripInvite(tripId *uuid.UUID, userId *uuid.UUID) *models.ExpenseServiceError
 
 	ValidateIfTripExists(tripId *uuid.UUID) *models.ExpenseServiceError
 	ValidateIfUserHasAccepted(tripId *uuid.UUID, userId *uuid.UUID) *models.ExpenseServiceError
@@ -119,6 +120,21 @@ func (tr *TripRepository) AcceptTripInvite(tripId *uuid.UUID, userId *uuid.UUID)
 	}
 
 	// If no rows were affected, User already accepted the invite
+	if rowsAffected, _ := result.RowsAffected(); rowsAffected == 0 {
+		return expense_errors.EXPENSE_CONFLICT
+	}
+
+	return nil
+}
+
+func (tr *TripRepository) DeclineTripInvite(tripId *uuid.UUID, userId *uuid.UUID) *models.ExpenseServiceError {
+	result, err := tr.DatabaseMgr.ExecuteStatement("DELETE FROM user_trip_association WHERE id_user = $1 AND id_trip = $2", userId, tripId)
+	if err != nil {
+		log.Printf("Error while deleting user_trip_association: %v", err)
+		return expense_errors.EXPENSE_INTERNAL_ERROR
+	}
+
+	// If no rows were affected, User already declined the invite
 	if rowsAffected, _ := result.RowsAffected(); rowsAffected == 0 {
 		return expense_errors.EXPENSE_CONFLICT
 	}
