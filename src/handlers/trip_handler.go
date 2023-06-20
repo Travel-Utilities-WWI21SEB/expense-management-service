@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"net/http"
+	"time"
 
 	"github.com/Travel-Utilities-WWI21SEB/expense-management-service/src/controllers"
 	"github.com/Travel-Utilities-WWI21SEB/expense-management-service/src/expense_errors"
@@ -15,7 +16,7 @@ func CreateTripEntryHandler(tripCtl controllers.TripCtl) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		ctx := c.Request.Context()
 
-		var tripRequest models.CreateTripRequest
+		var tripRequest models.TripDTO
 
 		if err := c.ShouldBindJSON(&tripRequest); err != nil {
 			utils.HandleErrorAndAbort(c, *expense_errors.EXPENSE_BAD_REQUEST)
@@ -76,7 +77,7 @@ func UpdateTripEntryHandler(TripCtl controllers.TripCtl) gin.HandlerFunc {
 		// Get the tripId from the path
 		tripId := uuid.MustParse(c.Param(models.ExpenseParamKeyTripId))
 
-		var tripUpdateRequest models.UpdateTripRequest
+		var tripUpdateRequest models.TripDTO
 		if err := c.ShouldBindJSON(&tripUpdateRequest); err != nil {
 			utils.HandleErrorAndAbort(c, *expense_errors.EXPENSE_BAD_REQUEST)
 			return
@@ -116,14 +117,15 @@ func InviteUserToTripHandler(TripCtl controllers.TripCtl) gin.HandlerFunc {
 		// Get the tripId from the path
 		tripId := uuid.MustParse(c.Param(models.ExpenseParamKeyTripId))
 
-		var inviteUserRequest models.InviteUserRequest
+		var inviteUserRequest models.UserDto
 		if err := c.ShouldBindJSON(&inviteUserRequest); err != nil {
 			utils.HandleErrorAndAbort(c, *expense_errors.EXPENSE_BAD_REQUEST)
 			return
 		}
 
-		if utils.ContainsEmptyString(inviteUserRequest.Username) && utils.ContainsEmptyString(inviteUserRequest.EMail) {
+		if utils.ContainsEmptyString(inviteUserRequest.Username) && utils.ContainsEmptyString(inviteUserRequest.Email) {
 			utils.HandleErrorAndAbort(c, *expense_errors.EXPENSE_BAD_REQUEST)
+			return
 		}
 
 		response, serviceErr := TripCtl.InviteUserToTrip(ctx, &tripId, inviteUserRequest)
@@ -141,13 +143,51 @@ func AcceptTripInviteHandler(TripCtl controllers.TripCtl) gin.HandlerFunc {
 		ctx := c.Request.Context()
 
 		// Get the tripId from the path
+		tripId := uuid.MustParse(c.Param(models.ExpenseParamKeyTripId))
+
+		var acceptTripInviteRequest models.TripParticipationDTO
+		if err := c.ShouldBindJSON(&acceptTripInviteRequest); err != nil {
+			utils.HandleErrorAndAbort(c, *expense_errors.EXPENSE_BAD_REQUEST)
+			return
+		}
+
+		// Check if PresenceStartDate and PresenceEndDate are valid if they are not empty
+		if !utils.ContainsEmptyString(acceptTripInviteRequest.PresenceStartDate) {
+			if _, err := time.Parse(time.DateOnly, acceptTripInviteRequest.PresenceStartDate); err != nil {
+				utils.HandleErrorAndAbort(c, *expense_errors.EXPENSE_BAD_REQUEST)
+				return
+			}
+		}
+
+		if !utils.ContainsEmptyString(acceptTripInviteRequest.PresenceEndDate) {
+			if _, err := time.Parse(time.DateOnly, acceptTripInviteRequest.PresenceEndDate); err != nil {
+				utils.HandleErrorAndAbort(c, *expense_errors.EXPENSE_BAD_REQUEST)
+				return
+			}
+		}
+
+		response, serviceErr := TripCtl.AcceptTripInvite(ctx, &tripId, acceptTripInviteRequest)
+		if serviceErr != nil {
+			utils.HandleErrorAndAbort(c, *serviceErr)
+			return
+		}
+
+		c.JSON(http.StatusOK, response)
+	}
+}
+
+func DeclineTripInviteHandler(TripCtl controllers.TripCtl) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		ctx := c.Request.Context()
+
+		// Get the tripId from the path
 		tripId, err := uuid.Parse(c.Param(models.ExpenseParamKeyTripId))
 		if err != nil {
 			utils.HandleErrorAndAbort(c, *expense_errors.EXPENSE_BAD_REQUEST)
 			return
 		}
 
-		serviceErr := TripCtl.AcceptTripInvite(ctx, &tripId)
+		serviceErr := TripCtl.DeclineTripInvite(ctx, &tripId)
 		if serviceErr != nil {
 			utils.HandleErrorAndAbort(c, *serviceErr)
 			return
