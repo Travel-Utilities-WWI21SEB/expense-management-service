@@ -1,7 +1,7 @@
 _id: req_ec6a947a97764187989b53b2f4c84e1c
 type: Request
 parentId: fld_d83c1d0d5e75433c97b1979a5f600fb4
-modified: 1687091321717
+modified: 1687293955856
 created: 1684749711277
 url: "{{ _.api_url }}/{{ _.route }}/{% prompt 'TripId', '', _.last_trip_id,
   'tripid', false, true %}/invite"
@@ -91,7 +91,7 @@ body:
   mimeType: application/json
   text: |-
     {
-    	"invitedUsername": "testUser2"
+    	"username": "testUser3"
     }
 parameters: []
 headers:

@@ -1,7 +1,7 @@
 _id: req_3185450b69244ed4ab184790c6e80ceb
 type: Request
 parentId: fld_377a889e84744fad9aa37e60971a9815
-modified: 1687079802678
+modified: 1687294165036
 created: 1684746860492
 url: "{{ _.api_url }}/{{ _.route }}/login"
 name: Login
@@ -153,7 +153,7 @@ body:
   mimeType: application/json
   text: |-
     {
-    	"email": "testEmail",
+    	"email": "testEmail3",
     	"password": "abcdef"
     }
 parameters: []
