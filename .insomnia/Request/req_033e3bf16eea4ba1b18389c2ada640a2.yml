@@ -1,7 +1,7 @@
 _id: req_033e3bf16eea4ba1b18389c2ada640a2
 type: Request
 parentId: fld_fb964101ac2d4651a16e19aa1fefe039
-modified: 1687122742809
+modified: 1687384181257
 created: 1684747930513
 url: "{{ _.api_url }}/{{ _.route }}/{% prompt 'TripId', '', _.last_trip_id,
   'tripid', false, true %}/{{ _.subRoute }}"
@@ -92,7 +92,7 @@ body:
   text: |-
     {
     	"costCategoryId": "cdab1692-1c24-4ea9-b773-f5bb0001b48e",
-    	"amount": "9.3866",
+    	"amount": "9.32866",
     	"currency": "EUR",
     	"description": "TEsting",
     	"deductedAt": "2023-06-07T17:53:16+02:00",

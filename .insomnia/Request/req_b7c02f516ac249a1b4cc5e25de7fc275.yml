@@ -1,11 +1,11 @@
 _id: req_b7c02f516ac249a1b4cc5e25de7fc275
 type: Request
 parentId: fld_fb964101ac2d4651a16e19aa1fefe039
-modified: 1684922381365
+modified: 1687384277657
 created: 1684747946042
-url: "{{ _.localUrl }}/{{ _.route }}/{% prompt 'TripId', '', 'TripId', 'tripid',
-  false, true %}/{{ _.subRoute }}/{% prompt 'CostId', '', 'costId', 'costid',
-  false, true %}"
+url: "{{ _.api_url }}/{{ _.route }}/{% prompt 'TripId', '', _.last_trip_id,
+  'tripid', false, true %}/{{ _.subRoute }}/{% prompt 'CostId', '', 'costId',
+  'costid', false, true %}"
 name: Update Cost
 description: >
   This endpoint is used to login a user in our webapplication with given
@@ -88,10 +88,34 @@ description: >
 
   ```
 method: PATCH
-body: {}
+body:
+  mimeType: application/json
+  text: |-
+    {
+    	"amount": "222",
+    	"currency": "EUR",
+    	"description": "TEsting",
+    	"deductedAt": "2023-06-07T17:53:16+02:00",
+    	"creditor": "testUser3",
+    	"contributors": [
+    		{
+    			"username": "testUser",
+    			"amount": ""
+    		},
+    		{
+    			"username": "testUser3",
+    			"amount": "123.32"
+    		}
+    	]
+    }
 parameters: []
-headers: []
-authentication: {}
+headers:
+  - name: Content-Type
+    value: application/json
+authentication:
+  type: bearer
+  token: "{{ _.token }}"
+  prefix: Bearer
 metaSortKey: -1684747894568
 isPrivate: false
 settingStoreCookies: true
