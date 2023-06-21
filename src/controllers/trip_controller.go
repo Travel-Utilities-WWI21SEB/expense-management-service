@@ -239,6 +239,11 @@ func (tc *TripController) AcceptTripInvite(ctx context.Context, tripId *uuid.UUI
 		*tripParticipant.PresenceEndDate = newPresenceEndDate
 	}
 
+	// Check if presence start date is before presence end date
+	if tripParticipant.PresenceStartDate.After(*tripParticipant.PresenceEndDate) {
+		return nil, expense_errors.EXPENSE_BAD_REQUEST
+	}
+
 	// Update invited user data in trip participants table
 	repoErr = tc.TripRepo.UpdateTripParticipant(tripParticipant)
 	if repoErr != nil {

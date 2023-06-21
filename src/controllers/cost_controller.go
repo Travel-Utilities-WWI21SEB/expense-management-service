@@ -16,11 +16,11 @@ import (
 type CostCtl interface {
 	CreateCostEntry(ctx context.Context, createCostRequest models.CostDTO) (*models.CostDTO, *models.ExpenseServiceError)
 	GetCostDetails(ctx context.Context, costId *uuid.UUID) (*models.CostDTO, *models.ExpenseServiceError)
-	// GetCostEntriesByTrip(ctx context.Context, tripId *uuid.UUID) (*models.CostDTO, *models.ExpenseServiceError)
+	GetCostEntriesByTrip(ctx context.Context, tripId *uuid.UUID) (*[]models.CostDTO, *models.ExpenseServiceError)
 	// GetCostEntriesByCostCategory(ctx context.Context, costCategoryId *uuid.UUID) (*models.CostDTO, *models.ExpenseServiceError)
 	// GetCostEntriesByContext(ctx context.Context) (*[]models.CostDTO, *models.ExpenseServiceError)
 	PatchCostEntry(ctx context.Context, costId *uuid.UUID, request models.CostDTO) (*models.CostDTO, *models.ExpenseServiceError)
-	DeleteCostEntry(ctx context.Context) *models.ExpenseServiceError
+	DeleteCostEntry(ctx context.Context, costId *uuid.UUID) *models.ExpenseServiceError
 }
 
 // CostController Cost Controller structure
@@ -91,7 +91,7 @@ func (cc *CostController) CreateCostEntry(_ context.Context, createCostRequest m
 
 		contributors[i] = &models.Contributor{Username: contributor.Username, Amount: contributor.Amount}
 	}
-	return cc.mapCostToResponse(costEntry, contributors), nil
+	return cc.mapCostToResponse(costEntry), nil
 }
 
 func (cc *CostController) GetCostDetails(_ context.Context, costId *uuid.UUID) (*models.CostDTO, *models.ExpenseServiceError) {
@@ -100,15 +100,26 @@ func (cc *CostController) GetCostDetails(_ context.Context, costId *uuid.UUID) (
 	if repoErr != nil {
 		return nil, repoErr
 	}
-	return cc.mapCostToResponse(cost, nil), nil
+	return cc.mapCostToResponse(cost), nil
 }
 
-func (cc *CostController) GetCostEntriesByTrip(ctx context.Context, tripId *uuid.UUID) (*[]models.CostDTO, *models.ExpenseServiceError) {
-	// TO-DO
-	return nil, nil
+func (cc *CostController) GetCostEntriesByTrip(_ context.Context, tripId *uuid.UUID) (*[]models.CostDTO, *models.ExpenseServiceError) {
+	// Get costs from Trip
+	costs, repoErr := cc.CostRepo.GetCostsByTripID(tripId)
+	if repoErr != nil {
+		return nil, repoErr
+	}
+
+	// Map costs to response
+	costsResponse := make([]models.CostDTO, len(costs))
+	for i, cost := range costs {
+		costsResponse[i] = *cc.mapCostToResponse(cost)
+	}
+
+	return &costsResponse, nil
 }
 
-func (cc *CostController) PatchCostEntry(ctx context.Context, costId *uuid.UUID, request models.CostDTO) (*models.CostDTO, *models.ExpenseServiceError) {
+func (cc *CostController) PatchCostEntry(_ context.Context, costId *uuid.UUID, request models.CostDTO) (*models.CostDTO, *models.ExpenseServiceError) {
 	// Get cost entry from database
 	cost, repoErr := cc.CostRepo.GetCostByID(costId)
 	if repoErr != nil {
@@ -236,16 +247,15 @@ func (cc *CostController) PatchCostEntry(ctx context.Context, costId *uuid.UUID,
 		return nil, repoErr
 	}
 
-	return cc.mapCostToResponse(cost, request.Contributors), nil
+	return cc.mapCostToResponse(cost), nil
 }
 
-func (cc *CostController) DeleteCostEntry(ctx context.Context) *models.ExpenseServiceError {
-	// TO-DO
-	return nil
+func (cc *CostController) DeleteCostEntry(_ context.Context, costId *uuid.UUID) *models.ExpenseServiceError {
+	return cc.CostRepo.DeleteCostEntry(costId)
 }
 
 // You can add optional parameters with: func (cc *CostController) GetCostDetails(ctx context.Context, costId *uuid.UUID, optionalParam string) (*models.CostDTO, *models.ExpenseServiceError) {
-func (cc *CostController) mapCostToResponse(cost *models.CostSchema, contributors []*models.Contributor) *models.CostDTO {
+func (cc *CostController) mapCostToResponse(cost *models.CostSchema) *models.CostDTO {
 	response := &models.CostDTO{
 		CostID:         cost.CostID,
 		Amount:         cost.Amount.String(),
@@ -259,7 +269,6 @@ func (cc *CostController) mapCostToResponse(cost *models.CostSchema, contributor
 		response.EndDate = cost.EndDate.String()
 	}
 
-	// Else get contributors from database
 	contributions, _ := cc.CostRepo.GetCostContributors(cost.CostID)
 
 	response.Contributors = make([]*models.Contributor, len(contributions))
