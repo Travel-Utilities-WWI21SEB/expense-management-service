@@ -96,16 +96,18 @@ func UpdateCostEntryHandler(costCtl controllers.CostCtl) gin.HandlerFunc {
 
 func GetCostEntriesHandler(costCtl controllers.CostCtl) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		// TO-DO
-		// ctx := c.Request.Context()
+		ctx := c.Request.Context()
 
-		/*response, err := costCtl.GetTripCosts(ctx, nil)
+		// Get tripId from request params
+		tripId := uuid.MustParse(c.Param(models.ExpenseParamKeyTripId))
+
+		response, err := costCtl.GetCostEntriesByTrip(ctx, &tripId)
 		if err != nil {
 			utils.HandleErrorAndAbort(c, *err)
 			return
-		}*/
+		}
 
-		c.JSON(http.StatusOK, nil)
+		c.JSON(http.StatusOK, response)
 	}
 }
 
@@ -115,7 +117,6 @@ func GetCostDetailsHandler(costCtl controllers.CostCtl) gin.HandlerFunc {
 
 		// Get costId from request params
 		costId, err := uuid.Parse(c.Param(models.ExpenseParamKeyCostId))
-
 		if err != nil {
 			utils.HandleErrorAndAbort(c, *expense_errors.EXPENSE_BAD_REQUEST)
 			return
@@ -136,12 +137,18 @@ func DeleteCostEntryHandler(costCtl controllers.CostCtl) gin.HandlerFunc {
 		// TO-DO
 		ctx := c.Request.Context()
 
-		err := costCtl.DeleteCostEntry(ctx)
+		// Get costId from request params
+		costId, err := uuid.Parse(c.Param(models.ExpenseParamKeyCostId))
 		if err != nil {
-			utils.HandleErrorAndAbort(c, *err)
+			utils.HandleErrorAndAbort(c, *expense_errors.EXPENSE_BAD_REQUEST)
+		}
+
+		serviceErr := costCtl.DeleteCostEntry(ctx, &costId)
+		if err != nil {
+			utils.HandleErrorAndAbort(c, *serviceErr)
 			return
 		}
 
-		c.JSON(http.StatusOK, nil)
+		c.AbortWithStatus(http.StatusNoContent)
 	}
 }
