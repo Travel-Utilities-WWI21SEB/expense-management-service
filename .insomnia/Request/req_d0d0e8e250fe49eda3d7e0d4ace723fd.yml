@@ -1,11 +1,11 @@
 _id: req_d0d0e8e250fe49eda3d7e0d4ace723fd
 type: Request
 parentId: fld_fb964101ac2d4651a16e19aa1fefe039
-modified: 1687122852511
+modified: 1687382533593
 created: 1684754226862
 url: "{{ _.api_url }}/{{ _.route }}/{% prompt 'TripId', '', _.last_trip_id,
   'tripid', false, true %}/{{ _.subRoute }}"
-name: All Costs (toggle filter)
+name: All Costs
 description: >
   This endpoint is used to login a user in our webapplication with given
   credentials and set a JWT Header.
