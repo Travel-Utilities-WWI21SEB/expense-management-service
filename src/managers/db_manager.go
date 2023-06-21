@@ -1,6 +1,7 @@
 package managers
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
 	"log"
@@ -15,10 +16,22 @@ type DatabaseMgr interface {
 	ExecuteQuery(query string, args ...interface{}) (*sql.Rows, error)
 	ExecuteQueryRow(query string, args ...interface{}) *sql.Row
 	CheckIfExists(query string, args ...interface{}) (bool, error)
+	BeginTx(ctx context.Context) (*sql.Tx, error)
 }
 
 type DatabaseManager struct {
 	Connection *sql.DB
+}
+
+// BeginTx starts a transaction and returns a transaction object, this is helpful because we can pass the transaction object to the repositories
+// and they can use it to execute multiple statements in a single transaction
+// TODO: Use this in the repositories
+func (dm *DatabaseManager) BeginTx(ctx context.Context) (*sql.Tx, error) {
+	tx, err := dm.Connection.BeginTx(ctx, nil)
+	if err != nil {
+		return nil, err
+	}
+	return tx, nil
 }
 
 func (dm *DatabaseManager) ExecuteStatement(query string, args ...interface{}) (sql.Result, error) {
