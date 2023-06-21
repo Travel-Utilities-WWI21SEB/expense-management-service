@@ -139,8 +139,8 @@ func createRouter(dbConnection *sql.DB) *gin.Engine {
 	// Cost Routes
 	securedTripApiv1.Handle(http.MethodPost, "/costs", handlers.CreateCostEntryHandler(controller.CostController))
 	securedTripApiv1.Handle(http.MethodGet, "/costs", handlers.GetCostEntriesHandler(controller.CostController))
-	securedTripApiv1.Handle(http.MethodPatch, "/costs/:costId", handlers.UpdateCostEntryHandler(controller.CostController))
 	securedTripApiv1.Handle(http.MethodGet, "/costs/:costId", handlers.GetCostDetailsHandler(controller.CostController))
+	securedTripApiv1.Handle(http.MethodPatch, "/costs/:costId", handlers.UpdateCostEntryHandler(controller.CostController))
 	securedTripApiv1.Handle(http.MethodDelete, "/costs/:costId", handlers.DeleteCostEntryHandler(controller.CostController))
 
 	// Debts Routes

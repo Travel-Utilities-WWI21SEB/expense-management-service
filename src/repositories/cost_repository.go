@@ -25,12 +25,13 @@ type CostRepo interface {
 	GetCostContributors(costId *uuid.UUID) ([]*models.CostContributionSchema, *models.ExpenseServiceError)
 	AddCostContributor(contributor *models.CostContributionSchema) *models.ExpenseServiceError
 	UpdateCostContributor(contributor *models.CostContributionSchema) *models.ExpenseServiceError
-	RemoveCostContributor(costId *uuid.UUID, userId *uuid.UUID) *models.ExpenseServiceError
+	GetCostCreditor(id *uuid.UUID) (*models.UserSchema, *models.ExpenseServiceError)
 
 	GetTripByCostID(costId *uuid.UUID) (*models.TripSchema, *models.ExpenseServiceError)
 
 	GetTotalCostByTripID(tripId *uuid.UUID) (*decimal.Decimal, *models.ExpenseServiceError)
 	GetTotalCostByCostCategoryID(costCategoryId *uuid.UUID) (*decimal.Decimal, *models.ExpenseServiceError)
+	DeleteCostContributions(costId *uuid.UUID) *models.ExpenseServiceError
 }
 
 type CostRepository struct {
@@ -164,7 +165,7 @@ func (cr *CostRepository) GetCostContributors(costId *uuid.UUID) ([]*models.Cost
 		return nil, expense_errors.EXPENSE_INTERNAL_ERROR
 	}
 
-	var contributors []*models.CostContributionSchema
+	contributors := make([]*models.CostContributionSchema, 0)
 	for rows.Next() {
 		var contributor models.CostContributionSchema
 		err := rows.Scan(&contributor.UserID, &contributor.CostID, &contributor.IsCreditor, &contributor.Amount)
@@ -212,19 +213,26 @@ func (cr *CostRepository) UpdateCostContributor(contributor *models.CostContribu
 	return nil
 }
 
-// RemoveCostContributor removes a cost contributor from the database table user_cost_association
-func (cr *CostRepository) RemoveCostContributor(costId *uuid.UUID, userId *uuid.UUID) *models.ExpenseServiceError {
-	result, err := cr.DatabaseMgr.ExecuteStatement("DELETE FROM user_cost_association WHERE id_user = $1 AND id_cost = $2", userId, costId)
-	if err != nil {
-		log.Printf("Error while deleting cost contributor: %v", err)
+// DeleteCostContributions deletes all cost contributions associated with a cost
+func (cr *CostRepository) DeleteCostContributions(costId *uuid.UUID) *models.ExpenseServiceError {
+	if _, err := cr.DatabaseMgr.ExecuteStatement("DELETE FROM user_cost_association WHERE id_cost = $1", costId); err != nil {
+		log.Printf("Error while deleting cost contributions: %v", err)
 		return expense_errors.EXPENSE_INTERNAL_ERROR
 	}
 
-	if rowsAffected, _ := result.RowsAffected(); rowsAffected == 0 {
-		return expense_errors.EXPENSE_NOT_FOUND
+	return nil
+}
+
+func (cr *CostRepository) GetCostCreditor(id *uuid.UUID) (*models.UserSchema, *models.ExpenseServiceError) {
+	row := cr.DatabaseMgr.ExecuteQueryRow("SELECT u.id, u.username, u.email FROM user_cost_association uca INNER JOIN \"user\" u ON uca.id_user = u.id WHERE uca.id_cost = $1 AND uca.is_creditor = true", id)
+
+	var creditor models.UserSchema
+	if err := row.Scan(&creditor.UserID, &creditor.Username, &creditor.Email); err != nil {
+		log.Printf("Error while scanning row: %v", err)
+		return nil, expense_errors.EXPENSE_INTERNAL_ERROR
 	}
 
-	return nil
+	return &creditor, nil
 }
 
 //********************************************************************************************************************\\
