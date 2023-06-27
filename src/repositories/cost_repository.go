@@ -27,11 +27,10 @@ type CostRepo interface {
 	UpdateCostContributor(contributor *models.CostContributionSchema) *models.ExpenseServiceError
 	GetCostCreditor(id *uuid.UUID) (*models.UserSchema, *models.ExpenseServiceError)
 
-	GetTripByCostID(costId *uuid.UUID) (*models.TripSchema, *models.ExpenseServiceError)
-
 	GetTotalCostByTripID(tripId *uuid.UUID) (*decimal.Decimal, *models.ExpenseServiceError)
 	GetTotalCostByCostCategoryID(costCategoryId *uuid.UUID) (*decimal.Decimal, *models.ExpenseServiceError)
 	DeleteCostContributions(costId *uuid.UUID) *models.ExpenseServiceError
+	GetCostsByCostCategoryIDAndContributorID(costCategoryId *uuid.UUID, userId *uuid.UUID) ([]*models.CostSchema, *models.ExpenseServiceError)
 }
 
 type CostRepository struct {
@@ -134,6 +133,17 @@ func (cr *CostRepository) GetCostsByCostCategoryID(costCategoryId *uuid.UUID) ([
 // GetCostsByTripIDAndContributorID returns all costs associated with a trip and a contributor
 func (cr *CostRepository) GetCostsByTripIDAndContributorID(tripId *uuid.UUID, contributorId *uuid.UUID) ([]*models.CostSchema, *models.ExpenseServiceError) {
 	rows, err := cr.DatabaseMgr.ExecuteQuery("SELECT c.id, c.amount, c.description, c.created_at, c.deducted_at, c.end_date, c.id_cost_category FROM cost c INNER JOIN user_cost_association uca ON c.id = uca.id_cost INNER JOIN cost_category cc ON c.id_cost_category = cc.id WHERE cc.id_trip = $1 AND uca.id_user = $2", tripId, contributorId)
+	if err != nil {
+		log.Printf("Error while querying database: %v", err)
+		return nil, expense_errors.EXPENSE_INTERNAL_ERROR
+	}
+
+	return getCostsFromRows(rows)
+}
+
+// GetCostsByCostCategoryIDAndContributorID returns all costs associated with a cost category and a contributor
+func (cr *CostRepository) GetCostsByCostCategoryIDAndContributorID(costCategoryId *uuid.UUID, contributorId *uuid.UUID) ([]*models.CostSchema, *models.ExpenseServiceError) {
+	rows, err := cr.DatabaseMgr.ExecuteQuery("SELECT c.id, c.amount, c.description, c.created_at, c.deducted_at, c.end_date, c.id_cost_category FROM cost c INNER JOIN user_cost_association uca ON c.id = uca.id_cost WHERE c.id_cost_category = $1 AND uca.id_user = $2", costCategoryId, contributorId)
 	if err != nil {
 		log.Printf("Error while querying database: %v", err)
 		return nil, expense_errors.EXPENSE_INTERNAL_ERROR
@@ -272,25 +282,6 @@ func (cr *CostRepository) GetTotalCostByCostCategoryID(costCategoryId *uuid.UUID
 	}
 
 	return &totalCost, nil
-}
-
-//********************************************************************************************************************\\
-// Others  																											  \\
-//********************************************************************************************************************\\
-
-// GetTripByCostID returns the trip associated with a cost using costcategory table
-func (cr *CostRepository) GetTripByCostID(costId *uuid.UUID) (*models.TripSchema, *models.ExpenseServiceError) {
-	row, err := cr.DatabaseMgr.ExecuteQuery("SELECT cost_category.id_trip FROM cost_category INNER JOIN cost ON cost.id_cost_category = cost_category.id WHERE cost.id = $1", costId)
-	if err != nil {
-		log.Printf("Error while querying database: %v", err)
-		return nil, expense_errors.EXPENSE_INTERNAL_ERROR
-	}
-
-	if !row.Next() {
-		return nil, expense_errors.EXPENSE_NOT_FOUND // Cost not found
-	}
-
-	return nil, nil
 }
 
 //********************************************************************************************************************\\
