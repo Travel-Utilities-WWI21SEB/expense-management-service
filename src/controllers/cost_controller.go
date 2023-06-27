@@ -9,30 +9,30 @@ import (
 	"github.com/google/uuid"
 	"github.com/shopspring/decimal"
 	"log"
+	"strconv"
 	"time"
 )
 
 // CostCtl Exposed interface to the handler-package
 type CostCtl interface {
-	CreateCostEntry(ctx context.Context, createCostRequest models.CostDTO) (*models.CostDTO, *models.ExpenseServiceError)
+	CreateCostEntry(ctx context.Context, tripId *uuid.UUID, createCostRequest models.CostDTO) (*models.CostDTO, *models.ExpenseServiceError)
 	GetCostDetails(ctx context.Context, costId *uuid.UUID) (*models.CostDTO, *models.ExpenseServiceError)
-	GetCostEntriesByTrip(ctx context.Context, tripId *uuid.UUID) (*[]models.CostDTO, *models.ExpenseServiceError)
-	// GetCostEntriesByCostCategory(ctx context.Context, costCategoryId *uuid.UUID) (*models.CostDTO, *models.ExpenseServiceError)
-	// GetCostEntriesByContext(ctx context.Context) (*[]models.CostDTO, *models.ExpenseServiceError)
-	PatchCostEntry(ctx context.Context, costId *uuid.UUID, request models.CostDTO) (*models.CostDTO, *models.ExpenseServiceError)
+	GetCostEntries(ctx context.Context, params *models.CostQueryParams) (*[]models.CostDTO, *models.ExpenseServiceError)
+	PatchCostEntry(ctx context.Context, tripId *uuid.UUID, costId *uuid.UUID, request models.CostDTO) (*models.CostDTO, *models.ExpenseServiceError)
 	DeleteCostEntry(ctx context.Context, costId *uuid.UUID) *models.ExpenseServiceError
 }
 
 // CostController Cost Controller structure
 type CostController struct {
-	DatabaseMgr managers.DatabaseMgr
-	CostRepo    repositories.CostRepo
-	UserRepo    repositories.UserRepo
-	TripRepo    repositories.TripRepo
+	DatabaseMgr      managers.DatabaseMgr
+	CostRepo         repositories.CostRepo
+	UserRepo         repositories.UserRepo
+	TripRepo         repositories.TripRepo
+	CostCategoryRepo repositories.CostCategoryRepo
 }
 
 // CreateCostEntry Creates a cost entry and inserts it into the database
-func (cc *CostController) CreateCostEntry(_ context.Context, createCostRequest models.CostDTO) (*models.CostDTO, *models.ExpenseServiceError) {
+func (cc *CostController) CreateCostEntry(_ context.Context, tripId *uuid.UUID, createCostRequest models.CostDTO) (*models.CostDTO, *models.ExpenseServiceError) {
 	costId := uuid.New()
 	now := time.Now()
 
@@ -67,13 +67,35 @@ func (cc *CostController) CreateCostEntry(_ context.Context, createCostRequest m
 		return nil, repoErr
 	}
 
-	contributors := make([]*models.Contributor, len(createCostRequest.Contributors))
+	var deleteCostError *models.ExpenseServiceError
 
+	// Delete trip from database if user is not added to trip
+	defer func() {
+		if deleteCostError != nil {
+			cc.CostRepo.DeleteCostEntry(&costId)
+		}
+	}()
+
+	contributors := make([]*models.Contributor, len(createCostRequest.Contributors))
+	var creditorIsPartOfContributors bool
 	// Create cost contribution for contributors
 	for i, contributor := range createCostRequest.Contributors {
 		// Get user from database
 		user, repoErr := cc.UserRepo.GetUserBySchema(&models.UserSchema{Username: contributor.Username})
 		if repoErr != nil {
+			deleteCostError = repoErr
+			return nil, repoErr
+		}
+
+		// Check if creditor is part of contributors
+		if contributor.Username == createCostRequest.Creditor {
+			creditorIsPartOfContributors = true
+		}
+
+		// Check if user is part of the trip
+		repoErr = cc.TripRepo.ValidateIfUserHasAccepted(tripId, user.UserID)
+		if repoErr != nil {
+			deleteCostError = repoErr
 			return nil, repoErr
 		}
 
@@ -85,12 +107,24 @@ func (cc *CostController) CreateCostEntry(_ context.Context, createCostRequest m
 		}
 
 		// Insert cost contribution into database
-		if repoErr := cc.CostRepo.AddCostContributor(contribution); repoErr != nil {
+		if repoErr = cc.CostRepo.AddCostContributor(contribution); repoErr != nil {
+			deleteCostError = repoErr
 			return nil, repoErr
 		}
 
 		contributors[i] = &models.Contributor{Username: contributor.Username, Amount: contributor.Amount}
 	}
+
+	// Check if creditor is part of contributors
+	if !creditorIsPartOfContributors {
+		deleteCostError = expense_errors.EXPENSE_BAD_REQUEST
+		return nil, deleteCostError
+	}
+
+	if deleteCostError != nil {
+		return nil, deleteCostError
+	}
+
 	return cc.mapCostToResponse(costEntry), nil
 }
 
@@ -103,11 +137,124 @@ func (cc *CostController) GetCostDetails(_ context.Context, costId *uuid.UUID) (
 	return cc.mapCostToResponse(cost), nil
 }
 
-func (cc *CostController) GetCostEntriesByTrip(_ context.Context, tripId *uuid.UUID) (*[]models.CostDTO, *models.ExpenseServiceError) {
-	// Get costs from Trip
-	costs, repoErr := cc.CostRepo.GetCostsByTripID(tripId)
-	if repoErr != nil {
-		return nil, repoErr
+func (cc *CostController) GetCostEntries(_ context.Context, params *models.CostQueryParams) (*[]models.CostDTO, *models.ExpenseServiceError) {
+	// Mandatory parameters: tripId
+	// Optional parameters: costCategoryId, username
+	var costs []*models.CostSchema
+
+	var args []interface{}
+	query := `SELECT DISTINCT c.* FROM cost c INNER JOIN cost_category cc on c.id_cost_category = cc.id INNER JOIN user_cost_association uca on c.id = uca.id_cost WHERE id_trip = $1`
+	args = append(args, params.TripId)
+
+	if params.CostCategoryId != nil {
+		query += ` AND c.id_cost_category = $` + strconv.Itoa(len(args)+1) // returns ' AND id_cost_category = $2'
+		args = append(args, params.CostCategoryId)                         // returns ' AND id_cost_category = $2'
+	}
+
+	if params.CostCategoryName != nil {
+		costCategory, repoErr := cc.CostCategoryRepo.GetCostCategoryByTripIdAndName(params.TripId, *params.CostCategoryName)
+		if repoErr != nil {
+			return nil, repoErr
+		}
+
+		if costCategory == nil {
+			return nil, expense_errors.EXPENSE_BAD_REQUEST
+		}
+
+		query += ` AND c.id_cost_category = $` + strconv.Itoa(len(args)+1)
+		args = append(args, costCategory.CostCategoryID)
+	}
+
+	if params.UserId != nil {
+		query += ` AND uca.id_user = $` + strconv.Itoa(len(args)+1)
+		args = append(args, params.UserId)
+	}
+
+	if params.Username != nil {
+		user, repoErr := cc.UserRepo.GetUserBySchema(&models.UserSchema{Username: *params.Username})
+		if repoErr != nil {
+			return nil, repoErr
+		}
+
+		if user == nil {
+			return nil, expense_errors.EXPENSE_BAD_REQUEST
+		}
+
+		query += ` AND uca.id_user = $` + strconv.Itoa(len(args)+1)
+		args = append(args, user.UserID)
+	}
+
+	if params.MinAmount != nil {
+		query += ` AND c.amount >= $` + strconv.Itoa(len(args)+1)
+		args = append(args, params.MinAmount)
+	}
+
+	if params.MaxAmount != nil {
+		query += ` AND c.amount <= $` + strconv.Itoa(len(args)+1)
+		args = append(args, params.MaxAmount)
+	}
+
+	if params.MinDeductionDate != nil {
+		query += ` AND c.deducted_at >= $` + strconv.Itoa(len(args)+1)
+		args = append(args, params.MinDeductionDate)
+	}
+
+	if params.MaxDeductionDate != nil {
+		query += ` AND c.deducted_at <= $` + strconv.Itoa(len(args)+1)
+		args = append(args, params.MaxDeductionDate)
+	}
+
+	if params.MinCreationDate != nil {
+		query += ` AND c.created_at >= $` + strconv.Itoa(len(args)+1)
+		args = append(args, params.MinCreationDate)
+	}
+
+	if params.MaxCreationDate != nil {
+		query += ` AND c.created_at <= $` + strconv.Itoa(len(args)+1)
+		args = append(args, params.MaxCreationDate)
+	}
+
+	if params.MinEndDate != nil {
+		query += ` AND c.end_date >= $` + strconv.Itoa(len(args)+1)
+		args = append(args, params.MinEndDate)
+	}
+
+	if params.MaxEndDate != nil {
+		query += ` AND c.end_date <= $` + strconv.Itoa(len(args)+1)
+		args = append(args, params.MaxEndDate)
+	}
+
+	// Add order by clause
+	if params.SortBy != "" {
+		query += ` ORDER BY c.` + params.SortBy + ` ` + params.SortOrder
+		/*
+			Roses are red,
+			Code should be neat,
+			If not sanitized inputs,
+			Then "DROP TABLE" you'll meet.
+		*/
+	}
+
+	// Add limit and offset for pagination
+	if params.PageSize > 0 && params.Page > 0 {
+		query += ` LIMIT $` + strconv.Itoa(len(args)+1) + ` OFFSET $` + strconv.Itoa(len(args)+2)
+		args = append(args, params.PageSize, (params.Page-1)*params.PageSize)
+	}
+
+	log.Printf("Query: %v", query)
+	rows, err := cc.DatabaseMgr.ExecuteQuery(query, args...)
+	if err != nil {
+		log.Printf("Error while executing query: %v", err)
+		return nil, expense_errors.EXPENSE_INTERNAL_ERROR
+	}
+
+	for rows.Next() {
+		var cost models.CostSchema
+		err := rows.Scan(&cost.CostID, &cost.Amount, &cost.Description, &cost.CreationDate, &cost.DeductionDate, &cost.EndDate, &cost.CostCategoryID)
+		if err != nil {
+			return nil, expense_errors.EXPENSE_INTERNAL_ERROR
+		}
+		costs = append(costs, &cost)
 	}
 
 	// Map costs to response
@@ -119,7 +266,7 @@ func (cc *CostController) GetCostEntriesByTrip(_ context.Context, tripId *uuid.U
 	return &costsResponse, nil
 }
 
-func (cc *CostController) PatchCostEntry(_ context.Context, costId *uuid.UUID, request models.CostDTO) (*models.CostDTO, *models.ExpenseServiceError) {
+func (cc *CostController) PatchCostEntry(_ context.Context, tripId *uuid.UUID, costId *uuid.UUID, request models.CostDTO) (*models.CostDTO, *models.ExpenseServiceError) {
 	// Get cost entry from database
 	cost, repoErr := cc.CostRepo.GetCostByID(costId)
 	if repoErr != nil {
@@ -161,7 +308,11 @@ func (cc *CostController) PatchCostEntry(_ context.Context, costId *uuid.UUID, r
 
 	var creditor *models.UserSchema
 	if creditorChanged {
-		if creditor, repoErr = cc.UserRepo.GetUserBySchema(&models.UserSchema{Username: request.Creditor}); repoErr != nil {
+		creditor, repoErr = cc.UserRepo.GetUserBySchema(&models.UserSchema{Username: request.Creditor})
+		if repoErr != nil {
+			return nil, repoErr
+		}
+		if repoErr = cc.TripRepo.ValidateIfUserHasAccepted(tripId, creditor.UserID); repoErr != nil {
 			return nil, repoErr
 		}
 	} else {
@@ -182,63 +333,79 @@ func (cc *CostController) PatchCostEntry(_ context.Context, costId *uuid.UUID, r
 			}
 
 			request.Contributors = make([]*models.Contributor, len(contributions))
-
 			for i, contribution := range contributions {
 				user, err := cc.UserRepo.GetUserById(contribution.UserID)
 				if err != nil {
 					return nil, err
 				}
+
 				request.Contributors[i] = &models.Contributor{
 					Username: user.Username,
 					Amount:   "", // Algorithm will calculate new amount
 				}
 			}
 		}
+	}
 
-		// Check if creditor is in contributors
-		if !checkIfCreditorIsContributor(request.Creditor, request.Contributors) {
-			return nil, expense_errors.EXPENSE_BAD_REQUEST
+	// Check if creditor is in contributors
+	if !checkIfCreditorIsContributor(request.Creditor, request.Contributors) {
+		return nil, expense_errors.EXPENSE_BAD_REQUEST
+	}
+
+	// Distribute cost among contributors
+	if serviceErr := DistributeCosts(&request); serviceErr != nil {
+		return nil, serviceErr
+	}
+
+	// Validate contributor input
+	var creditorAvailable bool
+	for _, contributor := range request.Contributors {
+		if contributor.Username == request.Creditor {
+			creditorAvailable = true
 		}
 
-		// Distribute cost among contributors
-		if serviceErr := DistributeCosts(&request); serviceErr != nil {
-			return nil, serviceErr
-		}
-
-		// Delete cost contributions
-		if repoErr := cc.CostRepo.DeleteCostContributions(costId); repoErr != nil {
+		// Get user from database
+		tempCreditor, repoErr := cc.UserRepo.GetUserBySchema(&models.UserSchema{Username: contributor.Username})
+		if repoErr != nil {
 			return nil, repoErr
 		}
 
-		var creditorAvailable bool
+		if repoErr = cc.TripRepo.ValidateIfUserHasAccepted(tripId, tempCreditor.UserID); repoErr != nil {
+			return nil, repoErr
+		}
+	}
 
-		// Create cost contributions
-		for _, contributor := range request.Contributors {
-			// Get user from database
-			user, repoErr := cc.UserRepo.GetUserBySchema(&models.UserSchema{Username: contributor.Username})
-			if repoErr != nil {
-				return nil, repoErr
-			}
+	if !creditorAvailable {
+		return nil, expense_errors.EXPENSE_BAD_REQUEST
+	}
 
-			if creditor.Username == user.Username {
-				creditorAvailable = true
-			}
+	// Delete cost contributions
+	if repoErr := cc.CostRepo.DeleteCostContributions(costId); repoErr != nil {
+		return nil, repoErr
+	}
 
-			contribution := &models.CostContributionSchema{
-				CostID:     costId,
-				UserID:     user.UserID,
-				IsCreditor: contributor.Username == request.Creditor,
-				Amount:     decimal.RequireFromString(contributor.Amount),
-			}
-
-			// Insert cost contribution into database
-			if repoErr := cc.CostRepo.AddCostContributor(contribution); repoErr != nil {
-				return nil, repoErr
-			}
+	// Create cost contributions
+	for _, contributor := range request.Contributors {
+		// Get user from database
+		user, repoErr := cc.UserRepo.GetUserBySchema(&models.UserSchema{Username: contributor.Username})
+		if repoErr != nil {
+			return nil, repoErr
 		}
 
-		if !creditorAvailable {
-			return nil, expense_errors.EXPENSE_BAD_REQUEST
+		if creditor.Username == user.Username {
+			creditorAvailable = true
+		}
+
+		contribution := &models.CostContributionSchema{
+			CostID:     costId,
+			UserID:     user.UserID,
+			IsCreditor: contributor.Username == request.Creditor,
+			Amount:     decimal.RequireFromString(contributor.Amount),
+		}
+
+		// Insert cost contribution into database
+		if repoErr := cc.CostRepo.AddCostContributor(contribution); repoErr != nil {
+			return nil, repoErr
 		}
 	}
 
@@ -253,6 +420,10 @@ func (cc *CostController) PatchCostEntry(_ context.Context, costId *uuid.UUID, r
 func (cc *CostController) DeleteCostEntry(_ context.Context, costId *uuid.UUID) *models.ExpenseServiceError {
 	return cc.CostRepo.DeleteCostEntry(costId)
 }
+
+//**********************************************************************************************************************
+// Helper functions
+//**********************************************************************************************************************
 
 // You can add optional parameters with: func (cc *CostController) GetCostDetails(ctx context.Context, costId *uuid.UUID, optionalParam string) (*models.CostDTO, *models.ExpenseServiceError) {
 func (cc *CostController) mapCostToResponse(cost *models.CostSchema) *models.CostDTO {

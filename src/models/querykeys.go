@@ -5,4 +5,6 @@ const (
 	ExpenseQueryKeyQueryString = "q"
 	// ExpenseQueryKeyToken is the key for the token in the query
 	ExpenseQueryKeyToken = "token"
+	// ExpenseQueryParamKeyCostCategoryId is the key for the costCategoryId in the query
+	ExpenseQueryParamKeyCostCategoryId = "costCategoryId"
 )

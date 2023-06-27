@@ -16,6 +16,8 @@ type CostCategoryRepo interface {
 	GetCostCategoriesByTripID(uuid *uuid.UUID) ([]models.CostCategorySchema, *models.ExpenseServiceError)
 	UpdateCostCategory(costCategory *models.CostCategorySchema) *models.ExpenseServiceError
 	DeleteCostCategory(uuid *uuid.UUID) *models.ExpenseServiceError
+
+	GetCostCategoryByTripIdAndName(tripId *uuid.UUID, name string) (*models.CostCategorySchema, *models.ExpenseServiceError)
 }
 
 type CostCategoryRepository struct {
@@ -103,4 +105,21 @@ func (ccr *CostCategoryRepository) DeleteCostCategory(uuid *uuid.UUID) *models.E
 	}
 
 	return nil
+}
+
+func (ccr *CostCategoryRepository) GetCostCategoryByTripIdAndName(tripId *uuid.UUID, name string) (*models.CostCategorySchema, *models.ExpenseServiceError) {
+	schema := &models.CostCategorySchema{}
+
+	row := ccr.DatabaseMgr.ExecuteQueryRow("SELECT * FROM cost_category WHERE id_trip = $1 AND name = $2", tripId, name)
+	if err := row.Scan(&schema.CostCategoryID, &schema.Name, &schema.Description, &schema.Icon, &schema.Color, &schema.TripID); err != nil {
+		// Check if no cost category was found
+		if err == sql.ErrNoRows {
+			return nil, expense_errors.EXPENSE_NOT_FOUND
+		}
+
+		log.Printf("Error while scanning cost category from database: %v", err)
+		return nil, expense_errors.EXPENSE_INTERNAL_ERROR
+	}
+
+	return schema, nil
 }

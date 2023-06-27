@@ -11,9 +11,9 @@ type TripDTO struct {
 	Location       string                 `json:"location"`
 	StartDate      string                 `json:"startDate"`
 	EndDate        string                 `json:"endDate"`
-	TotalCost      string                 `json:"totalCost"`  // omitempty works
-	UserDebt       string                 `json:"userDebt"`   // How much the user owes
-	UserCredit     string                 `json:"userCredit"` // How much the user is owed
+	TotalCost      string                 `json:"totalCost,omitempty"`
+	UserDebt       string                 `json:"userDebt,omitempty"`   // How much the user owes
+	UserCredit     string                 `json:"userCredit,omitempty"` // How much the user is owed
 	CostCategories []CostCategoryResponse `json:"costCategories"`
 	Participants   []TripParticipationDTO `json:"participants"`
 }

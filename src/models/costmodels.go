@@ -20,3 +20,24 @@ type Contributor struct {
 	Username string `json:"username"`
 	Amount   string `json:"amount"`
 }
+
+// CostQueryParams Query parameters for cost entries
+type CostQueryParams struct {
+	TripId           *uuid.UUID
+	CostCategoryId   *uuid.UUID
+	CostCategoryName *string
+	UserId           *uuid.UUID
+	Username         *string
+	MinAmount        *string // MinAmount steht für die minimale Kostenhöhe
+	MaxAmount        *string // MinAmount steht für die maximale Kostenhöhe
+	MinDeductionDate *string // MinDeductionDate steht für das früheste Datum, an dem die Kosten abgezogen wurden
+	MaxDeductionDate *string // MaxDeductionDate steht für das späteste Datum, an dem die Kosten abgezogen wurden
+	MinEndDate       *string // MinEndDate steht für das früheste Datum, an dem die Kosten enden
+	MaxEndDate       *string // MaxEndDate steht für das späteste Datum, an dem die Kosten enden
+	MinCreationDate  *string // MinCreationDate steht für das früheste Datum, an dem die Kosten erstellt wurden
+	MaxCreationDate  *string // MaxCreationDate steht für das späteste Datum, an dem die Kosten erstellt wurden
+	Page             int     // Page wird für die Paginierung verwendet
+	PageSize         int     // PageSize steht für die Anzahl der Kosten, die pro Seite angezeigt werden
+	SortBy           string  // SortBy steht für die Spalte, nach der die Kosten sortiert werden sollen
+	SortOrder        string  // SortOrder steht für die Reihenfolge, in der die Kosten sortiert werden sollen
+}
