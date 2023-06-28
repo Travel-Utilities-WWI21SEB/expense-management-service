@@ -73,6 +73,10 @@ func createRouter(dbConnection *sql.DB) *gin.Engine {
 		DatabaseMgr: databaseMgr,
 	}
 
+	debtRepo := &repositories.DebtRepository{
+		DatabaseMgr: databaseMgr,
+	}
+
 	controller := Controllers{
 		UserController: &controllers.UserController{
 			MailMgr:     mailMgr,
@@ -85,6 +89,7 @@ func createRouter(dbConnection *sql.DB) *gin.Engine {
 			UserRepo:         userRepo,
 			CostRepo:         costRepo,
 			CostCategoryRepo: costCategoryRepo,
+			DebtRepo:         debtRepo,
 		},
 		CostCategoryController: &controllers.CostCategoryController{
 			DatabaseMgr:      databaseMgr,
@@ -150,10 +155,8 @@ func createRouter(dbConnection *sql.DB) *gin.Engine {
 	securedTripApiv1.Handle(http.MethodDelete, "/costs/:costId", handlers.DeleteCostEntryHandler(controller.CostController))
 
 	// Debts Routes
-	securedTripApiv1.Handle(http.MethodPost, "/debts", handlers.CreateDebtHandler(controller.DebtController))
 	securedTripApiv1.Handle(http.MethodGet, "/debts", handlers.GetDebtsHandler(controller.DebtController))
 	securedTripApiv1.Handle(http.MethodGet, "/debts/:debtId", handlers.GetDebtDetailsHandler(controller.DebtController))
-	securedTripApiv1.Handle(http.MethodPatch, "/debts", handlers.UpdateDebtHandler(controller.DebtController))
 
 	return router
 }

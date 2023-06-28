@@ -241,7 +241,6 @@ func (cc *CostController) GetCostEntries(_ context.Context, params *models.CostQ
 		args = append(args, params.PageSize, (params.Page-1)*params.PageSize)
 	}
 
-	log.Printf("Query: %v", query)
 	rows, err := cc.DatabaseMgr.ExecuteQuery(query, args...)
 	if err != nil {
 		log.Printf("Error while executing query: %v", err)
