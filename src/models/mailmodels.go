@@ -25,3 +25,9 @@ type ResetPasswordConfirmationMail struct {
 	Subject    string   `json:"subject"`
 	Recipients []string `json:"recipients"`
 }
+
+type SendContactMailRequest struct {
+	Email   string `json:"email"`
+	Name    string `json:"name"`
+	Message string `json:"message"`
+}

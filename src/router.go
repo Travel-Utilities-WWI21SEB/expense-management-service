@@ -19,6 +19,7 @@ type Controllers struct {
 	CostController         controllers.CostCtl
 	CostCategoryController controllers.CostCategoryCtl
 	DebtController         controllers.DebtCtl
+	MailController         controllers.MailCtl
 }
 
 func createRouter(dbConnection *sql.DB) *gin.Engine {
@@ -100,9 +101,13 @@ func createRouter(dbConnection *sql.DB) *gin.Engine {
 		DebtController: &controllers.DebtController{
 			DatabaseMgr: databaseMgr,
 		},
+		MailController: &controllers.MailController{
+			MailMgr: mailMgr,
+		},
 	}
 
 	router.Handle(http.MethodGet, "/lifecheck", handlers.LifeCheckHandler())
+	apiv1.Handle(http.MethodPost, "/send-email", handlers.SendContactMailHandler(controller.MailController))
 
 	// User Routes
 	apiv1.Handle(http.MethodPost, "/users/register", handlers.RegisterUserHandler(controller.UserController))

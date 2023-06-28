@@ -2,6 +2,7 @@ package managers
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"os"
 
@@ -16,6 +17,7 @@ type MailMgr interface {
 	SendConfirmationMail(ctx context.Context, mailData models.ConfirmationMail) *models.ExpenseServiceError
 	SendPasswordResetMail(ctx context.Context, mailData *models.PasswordResetMail) *models.ExpenseServiceError
 	SendResetPasswordConfirmationMail(ctx context.Context, mailData *models.ResetPasswordConfirmationMail) *models.ExpenseServiceError
+	SendContactMail(ctx context.Context, data *models.SendContactMailRequest) *models.ExpenseServiceError
 }
 
 type MailManager struct {
@@ -24,13 +26,14 @@ type MailManager struct {
 
 const retryMailCount = 3
 const emailSender = "Costventures Team <team@mail.costventures.works>"
+const emailReceiver = "team@mail.costventures.works"
 
 func (mm *MailManager) SendActivationMail(ctx context.Context, mailData models.ActivationMail) *models.ExpenseServiceError {
 	mailBody := utils.PrepareActivationMailBody(mailData.ActivationToken, mailData.Username)
 
 	// try sending mail 3 times
 	for i := 0; i < retryMailCount; i++ {
-		err := mm.sendMail(ctx, mailData.Recipients, mailData.Subject, mailBody)
+		err := mm.sendMail(ctx, mailData.Recipients, emailSender, mailData.Subject, mailBody)
 		if err == nil {
 			break
 		}
@@ -49,7 +52,7 @@ func (mm *MailManager) SendConfirmationMail(ctx context.Context, mailData models
 
 	// try sending mail 3 times
 	for i := 0; i < retryMailCount; i++ {
-		err := mm.sendMail(ctx, mailData.Recipients, mailData.Subject, mailBody)
+		err := mm.sendMail(ctx, mailData.Recipients, emailSender, mailData.Subject, mailBody)
 		if err == nil {
 			break
 		}
@@ -68,7 +71,7 @@ func (mm *MailManager) SendPasswordResetMail(ctx context.Context, mailData *mode
 
 	// try sending mail 3 times
 	for i := 0; i < retryMailCount; i++ {
-		err := mm.sendMail(ctx, mailData.Recipients, mailData.Subject, mailBody)
+		err := mm.sendMail(ctx, mailData.Recipients, emailSender, mailData.Subject, mailBody)
 		if err == nil {
 			break
 		}
@@ -87,7 +90,7 @@ func (mm *MailManager) SendResetPasswordConfirmationMail(ctx context.Context, ma
 
 	// try sending mail 3 times
 	for i := 0; i < retryMailCount; i++ {
-		err := mm.sendMail(ctx, mailData.Recipients, mailData.Subject, mailBody)
+		err := mm.sendMail(ctx, mailData.Recipients, emailSender, mailData.Subject, mailBody)
 		if err == nil {
 			break
 		}
@@ -101,8 +104,24 @@ func (mm *MailManager) SendResetPasswordConfirmationMail(ctx context.Context, ma
 	return nil
 }
 
-func (mm *MailManager) sendMail(ctx context.Context, to []string, subject string, body string) error {
-	message := mm.MailgunInstance.NewMessage(emailSender, subject, "", to...)
+func (mm *MailManager) SendContactMail(ctx context.Context, data *models.SendContactMailRequest) *models.ExpenseServiceError {
+	for i := 0; i < retryMailCount; i++ {
+		err := mm.sendMail(ctx, []string{emailReceiver}, data.Email, fmt.Sprintf("Support for %s", data.Name), data.Message)
+		if err == nil {
+			break
+		}
+
+		if i == retryMailCount-1 {
+			log.Printf("Error in MailManager.SendContactMail().SendMail(): %v", err.Error())
+			return expense_errors.EXPENSE_MAIL_NOT_SENT
+		}
+	}
+
+	return nil
+}
+
+func (mm *MailManager) sendMail(ctx context.Context, to []string, from, subject, body string) error {
+	message := mm.MailgunInstance.NewMessage(from, subject, "", to...)
 	message.AddHeader("Content-Type", "text/html")
 	message.SetHtml(body)
 
