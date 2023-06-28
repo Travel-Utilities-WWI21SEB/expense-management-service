@@ -2,7 +2,10 @@ package controllers
 
 import (
 	"context"
+	"database/sql"
 	"github.com/Travel-Utilities-WWI21SEB/expense-management-service/src/repositories"
+	"github.com/shopspring/decimal"
+	"log"
 	"time"
 
 	"github.com/Travel-Utilities-WWI21SEB/expense-management-service/src/expense_errors"
@@ -30,6 +33,7 @@ type TripController struct {
 	UserRepo         repositories.UserRepo
 	CostRepo         repositories.CostRepo
 	CostCategoryRepo repositories.CostCategoryRepo
+	DebtRepo         repositories.DebtRepo
 }
 
 func (tc *TripController) CreateTripEntry(ctx context.Context, tripRequest models.TripDTO) (*models.TripDTO, *models.ExpenseServiceError) {
@@ -196,6 +200,21 @@ func (tc *TripController) InviteUserToTrip(ctx context.Context, tripId *uuid.UUI
 }
 
 func (tc *TripController) AcceptTripInvite(ctx context.Context, tripId *uuid.UUID, acceptRequest models.TripParticipationDTO) (*models.TripDTO, *models.ExpenseServiceError) {
+	// Begin transaction
+	tx, err := tc.DatabaseMgr.BeginTx(ctx)
+	if err != nil {
+		log.Printf("Error while beginning transaction: %v", err)
+		return nil, expense_errors.EXPENSE_INTERNAL_ERROR
+	}
+
+	// Make sure to rollback the transaction if it fails
+	defer func(tx *sql.Tx) {
+		err := tx.Rollback()
+		if err != nil {
+			log.Printf("Error while rolling back transaction: %v", err)
+		}
+	}(tx)
+
 	// Get invited user from database
 	invitedUser, repoErr := tc.UserRepo.GetUserById(ctx.Value(models.ExpenseContextKeyUserID).(*uuid.UUID))
 	if repoErr != nil {
@@ -245,9 +264,55 @@ func (tc *TripController) AcceptTripInvite(ctx context.Context, tripId *uuid.UUI
 	}
 
 	// Update invited user data in trip participants table
-	repoErr = tc.TripRepo.UpdateTripParticipant(tripParticipant)
+	repoErr = tc.TripRepo.UpdateTripParticipantTx(tx, tripParticipant)
 	if repoErr != nil {
 		return nil, repoErr
+	}
+
+	// Get accepted trip participants
+	acceptedTripParticipants, repoErr := tc.TripRepo.GetAcceptedTripParticipants(trip.TripID)
+	if repoErr != nil {
+		return nil, repoErr
+	}
+
+	// Create and add debt for each accepted trip participant and invited user
+	createAndAddDebt := func(creditorId, debtorId *uuid.UUID) *models.ExpenseServiceError {
+		debtId := uuid.New()
+		creationDate := time.Now()
+
+		debt := models.DebtSchema{
+			DebtID:       &debtId,
+			CreditorId:   creditorId,
+			DebtorId:     debtorId,
+			TripId:       trip.TripID,
+			Amount:       decimal.Zero,
+			CurrencyCode: "EUR",
+			CreationDate: &creationDate,
+			UpdateDate:   &creationDate,
+		}
+
+		// Add debt to database
+		if repoErr := tc.DebtRepo.AddTx(tx, &debt); repoErr != nil {
+			return repoErr
+		}
+
+		return nil
+	}
+
+	for _, participant := range acceptedTripParticipants {
+		if err := createAndAddDebt(participant.UserID, invitedUser.UserID); err != nil {
+			return nil, err
+		}
+
+		if err := createAndAddDebt(invitedUser.UserID, participant.UserID); err != nil {
+			return nil, err
+		}
+	}
+
+	// If everything went well, commit the transaction
+	if err := tx.Commit(); err != nil {
+		log.Printf("Error while committing transaction: %v", err)
+		return nil, expense_errors.EXPENSE_INTERNAL_ERROR
 	}
 
 	return tc.mapTripToResponse(trip)

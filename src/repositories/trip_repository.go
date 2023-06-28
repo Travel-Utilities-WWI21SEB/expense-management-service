@@ -26,7 +26,9 @@ type TripRepo interface {
 
 	GetTripParticipant(tripId *uuid.UUID, userId *uuid.UUID) (*models.UserTripSchema, *models.ExpenseServiceError)
 	GetTripParticipants(tripId *uuid.UUID) ([]*models.UserTripSchema, *models.ExpenseServiceError)
+	GetAcceptedTripParticipants(tripId *uuid.UUID) ([]*models.UserTripSchema, *models.ExpenseServiceError)
 	UpdateTripParticipant(userTrip *models.UserTripSchema) *models.ExpenseServiceError
+	UpdateTripParticipantTx(tx *sql.Tx, userTrip *models.UserTripSchema) *models.ExpenseServiceError
 }
 
 type TripRepository struct {
@@ -217,6 +219,28 @@ func (tr *TripRepository) GetTripParticipants(tripId *uuid.UUID) ([]*models.User
 	return participants, nil
 }
 
+func (tr *TripRepository) GetAcceptedTripParticipants(tripId *uuid.UUID) ([]*models.UserTripSchema, *models.ExpenseServiceError) {
+	query := "SELECT id_user, id_trip, is_accepted, presence_start_date, presence_end_date FROM user_trip_association WHERE id_trip = $1 AND is_accepted = $2"
+	rows, err := tr.DatabaseMgr.ExecuteQuery(query, tripId, true)
+	if err != nil {
+		log.Printf("Error while querying user_trip_association: %v", err)
+		return nil, expense_errors.EXPENSE_INTERNAL_ERROR
+	}
+
+	participants := make([]*models.UserTripSchema, 0)
+	for rows.Next() {
+		var participant models.UserTripSchema
+		err := rows.Scan(&participant.UserID, &participant.TripID, &participant.HasAccepted, &participant.PresenceStartDate, &participant.PresenceEndDate)
+		if err != nil {
+			log.Printf("Error while scanning user_trip_association: %v", err)
+			return nil, expense_errors.EXPENSE_INTERNAL_ERROR
+		}
+		participants = append(participants, &participant)
+	}
+
+	return participants, nil
+}
+
 func (tr *TripRepository) UpdateTripParticipant(userTrip *models.UserTripSchema) *models.ExpenseServiceError {
 	// Update user_trip_association
 	result, err := tr.DatabaseMgr.ExecuteStatement("UPDATE user_trip_association SET is_accepted = $1, presence_start_date = $2, presence_end_date = $3 WHERE id_user = $4 AND id_trip = $5", userTrip.HasAccepted, userTrip.PresenceStartDate, userTrip.PresenceEndDate, userTrip.UserID, userTrip.TripID)
@@ -232,6 +256,21 @@ func (tr *TripRepository) UpdateTripParticipant(userTrip *models.UserTripSchema)
 
 	return nil
 }
+
+func (tr *TripRepository) UpdateTripParticipantTx(tx *sql.Tx, userTrip *models.UserTripSchema) *models.ExpenseServiceError {
+	query := "UPDATE user_trip_association SET is_accepted = $1, presence_start_date = $2, presence_end_date = $3 WHERE id_user = $4 AND id_trip = $5"
+	_, err := tx.Exec(query, userTrip.HasAccepted, userTrip.PresenceStartDate, userTrip.PresenceEndDate, userTrip.UserID, userTrip.TripID)
+	if err != nil {
+		log.Printf("Error while updating user_trip_association: %v", err)
+		return expense_errors.EXPENSE_INTERNAL_ERROR
+	}
+
+	return nil
+}
+
+// ************************************************************
+// ********************* Helper Functions *********************
+// ************************************************************
 
 // rowToTripSchema converts a row to a TripSchema
 func rowToTripSchema(row *sql.Row) (*models.TripSchema, *models.ExpenseServiceError) {

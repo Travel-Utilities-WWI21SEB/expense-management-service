@@ -69,11 +69,23 @@ type UserTripSchema struct {
 	PresenceEndDate   *time.Time `json:"endDate" db:"presence_end_date"`
 }
 
-type Transaction struct {
-	TransactionID *uuid.UUID `json:"transactionId" db:"id"`
-	Amount        float32    `json:"amount" db:"amount"`
-	CurrencyCode  string     `json:"currencyCode" db:"currency"`
-	TransactionAt string     `json:"transactionAt" db:"transaction_at"`
-	Sender        *uuid.UUID `json:"senderId" db:"sender_id"`
-	Receiver      *uuid.UUID `json:"receiverId" db:"receiver_id"`
+type DebtSchema struct {
+	DebtID       *uuid.UUID      `json:"debtId" db:"id"`
+	CreditorId   *uuid.UUID      `json:"creditorId" db:"id_creditor"`
+	DebtorId     *uuid.UUID      `json:"debtorId" db:"id_debtor"`
+	TripId       *uuid.UUID      `json:"tripId" db:"id_trip"`
+	Amount       decimal.Decimal `json:"amount" db:"amount"`
+	CurrencyCode string          `json:"currency" db:"currency_code"`
+	CreationDate *time.Time      `json:"createdAt" db:"created_at"`
+	UpdateDate   *time.Time      `json:"updatedAt" db:"updated_at"`
+}
+
+type TransactionSchema struct {
+	TransactionId *uuid.UUID      `json:"transactionId" db:"id"`
+	CreditorId    *uuid.UUID      `json:"creditorId" db:"id_creditor"`
+	DebtorId      *uuid.UUID      `json:"debtorId" db:"id_debtor"`
+	TripId        *uuid.UUID      `json:"tripId" db:"id_trip"`
+	Amount        decimal.Decimal `json:"amount" db:"amount"`
+	CreationDate  *time.Time      `json:"createdAt" db:"created_at"`
+	CurrencyCode  string          `json:"currency" db:"currency_code"`
 }

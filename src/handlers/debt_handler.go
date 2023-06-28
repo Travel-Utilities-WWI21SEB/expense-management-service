@@ -16,15 +16,3 @@ func GetDebtDetailsHandler(DebtCtl controllers.DebtCtl) gin.HandlerFunc {
 		// TO-DO
 	}
 }
-
-func CreateDebtHandler(DebtCtl controllers.DebtCtl) gin.HandlerFunc {
-	return func(c *gin.Context) {
-		// TO-DO
-	}
-}
-
-func UpdateDebtHandler(DebtCtl controllers.DebtCtl) gin.HandlerFunc {
-	return func(c *gin.Context) {
-		// TO-DO
-	}
-}

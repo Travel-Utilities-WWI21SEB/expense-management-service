@@ -111,13 +111,33 @@ DROP TABLE IF EXISTS public.transaction CASCADE;
 CREATE TABLE public.transaction
 (
     id          uuid NOT NULL DEFAULT uuid_generate_v4(),
-    sender_id   uuid,
-    receiver_id uuid,
+    id_creditor uuid,
+    id_debtor   uuid,
+    id_trip     uuid,
     amount      numeric,
-    currency    character varying,
+    created_at  timestamp with time zone,
+    currency_code    character varying,
     CONSTRAINT transaction_pk PRIMARY KEY (id)
 );
 -- ddl-end --
+
+-- object: public.debt | type: TABLE --
+DROP TABLE IF EXISTS public.debt CASCADE;
+CREATE TABLE public.debt
+(
+    id          uuid NOT NULL DEFAULT uuid_generate_v4(),
+    id_creditor uuid,
+    id_debtor   uuid,
+    id_trip     uuid,
+    amount      numeric,
+    created_at timestamp with time zone,
+    updated_at  timestamp with time zone,
+    currency_code    character varying,
+    CONSTRAINT debt_pk PRIMARY KEY (id),
+    CONSTRAINT debt_un UNIQUE (id_creditor, id_debtor, id_trip)
+);
+-- ddl-end --
+
 
 -- object: user_fk | type: CONSTRAINT --
 -- ALTER TABLE public.token DROP CONSTRAINT IF EXISTS user_fk CASCADE;
@@ -178,7 +198,7 @@ ALTER TABLE public.user_cost_association
 -- object: debitor_fk | type: CONSTRAINT --
 -- ALTER TABLE public.transaction DROP CONSTRAINT IF EXISTS debitor_fk CASCADE;
 ALTER TABLE public.transaction
-    ADD CONSTRAINT debitor_fk FOREIGN KEY (sender_id)
+    ADD CONSTRAINT debtor_fk FOREIGN KEY (id_creditor)
         REFERENCES public."user" (id) MATCH SIMPLE
         ON DELETE SET NULL ON UPDATE CASCADE;
 -- ddl-end --
@@ -186,10 +206,40 @@ ALTER TABLE public.transaction
 -- object: creditor_fk | type: CONSTRAINT --
 -- ALTER TABLE public.transaction DROP CONSTRAINT IF EXISTS creditor_fk CASCADE;
 ALTER TABLE public.transaction
-    ADD CONSTRAINT creditor_fk FOREIGN KEY (receiver_id)
+    ADD CONSTRAINT creditor_fk FOREIGN KEY (id_debtor)
         REFERENCES public."user" (id) MATCH SIMPLE
         ON DELETE SET NULL ON UPDATE CASCADE;
 -- ddl-end --
+
+-- object: trip_fk | type: CONSTRAINT --
+-- ALTER TABLE public.transaction DROP CONSTRAINT IF EXISTS trip_fk CASCADE;
+ALTER TABLE public.transaction
+    ADD CONSTRAINT trip_fk FOREIGN KEY (id_trip)
+        REFERENCES public.trip (id) MATCH FULL
+        ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- object: trip_fk | type: CONSTRAINT --
+-- ALTER TABLE public.debt DROP CONSTRAINT IF EXISTS trip_fk CASCADE;
+ALTER TABLE public.debt
+    ADD CONSTRAINT trip_fk FOREIGN KEY (id_trip)
+        REFERENCES public.trip (id) MATCH FULL
+        ON DELETE CASCADE ON UPDATE CASCADE;
+-- ddl-end --
+
+-- object: creditor_fk | type: CONSTRAINT --
+-- ALTER TABLE public.debt DROP CONSTRAINT IF EXISTS creditor_fk CASCADE;
+ALTER TABLE public.debt
+    ADD CONSTRAINT creditor_fk FOREIGN KEY (id_creditor)
+        REFERENCES public."user" (id) MATCH FULL
+        ON DELETE CASCADE ON UPDATE CASCADE;
+-- ddl-end --
+
+-- object: debitor_fk | type: CONSTRAINT --
+-- ALTER TABLE public.debt DROP CONSTRAINT IF EXISTS debitor_fk CASCADE;
+ALTER TABLE public.debt
+    ADD CONSTRAINT debitor_fk FOREIGN KEY (id_debtor)
+        REFERENCES public."user" (id) MATCH FULL
+        ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- object: "grant_CU_26541e8cda" | type: PERMISSION --
 GRANT CREATE, USAGE
