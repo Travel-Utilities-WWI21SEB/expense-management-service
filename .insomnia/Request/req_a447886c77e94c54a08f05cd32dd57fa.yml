@@ -1,13 +1,14 @@
-_id: req_93d1fd1e9ca246318a66111cc29937cf
+_id: req_a447886c77e94c54a08f05cd32dd57fa
 type: Request
 parentId: fld_eb05ed6abb0d45e2b9ef90c680d09136
-modified: 1688064474771
-created: 1684761345887
+modified: 1688066970906
+created: 1688066961540
 url: "{{ _.api_url }}/{{ _.route }}/{% prompt 'TripId', '', _.last_trip_id,
-  'tripid', false, true %}/{{ _.subRoute }}"
-name: All Transactions
+  'tripid', false, true %}/{{ _.subRoute
+  }}/0528fd7d-18aa-410e-a4bb-885533105d00"
+name: Delete Transaction
 description: ""
-method: GET
+method: DELETE
 body: {}
 parameters: []
 headers: []
@@ -15,7 +16,7 @@ authentication:
   type: bearer
   token: "{{ _.token }}"
   prefix: Bearer
-metaSortKey: -1684750212090.5
+metaSortKey: -1684749071301.75
 isPrivate: false
 settingStoreCookies: true
 settingSendCookies: true

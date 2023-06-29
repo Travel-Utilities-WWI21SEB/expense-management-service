@@ -1,9 +1,10 @@
 _id: req_d8b2c15d05c846c09c765ca7fbb5c157
 type: Request
 parentId: fld_eb05ed6abb0d45e2b9ef90c680d09136
-modified: 1684760767690
+modified: 1688067331535
 created: 1684760183707
-url: "{{ _.localUrl }}/{{ _.route }}/create"
+url: "{{ _.api_url }}/{{ _.route }}/{% prompt 'TripId', '', _.last_trip_id,
+  'tripid', false, true %}/{{ _.subRoute }}"
 name: Create Transaction
 description: >
   This endpoint is used to login a user in our webapplication with given
@@ -90,16 +91,19 @@ body:
   mimeType: application/json
   text: |-
     {
-    	"senderId": "",
-    	"receiverId": "",
-    	"amount": ""
+    	"debtorId": "3f4a57e8-7fe1-420a-affc-32d8f47f5833",
+    	"amount": "100.23",
+    	"currencyCode": "EUR"
     }
 parameters: []
 headers:
   - name: Content-Type
     value: application/json
-authentication: {}
-metaSortKey: -1684746500875
+authentication:
+  type: bearer
+  token: "{{ _.token }}"
+  prefix: Bearer
+metaSortKey: -1684753923356
 isPrivate: false
 settingStoreCookies: true
 settingSendCookies: true
