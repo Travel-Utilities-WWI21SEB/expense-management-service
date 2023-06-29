@@ -38,6 +38,7 @@ type CostRepo interface {
 	GetTotalCostByCostCategoryID(costCategoryId *uuid.UUID) (*decimal.Decimal, *models.ExpenseServiceError)
 	DeleteCostContributions(costId *uuid.UUID) *models.ExpenseServiceError
 	GetCostsByCostCategoryIDAndContributorID(costCategoryId *uuid.UUID, userId *uuid.UUID) ([]*models.CostSchema, *models.ExpenseServiceError)
+	GetCostOverview(userId *uuid.UUID) (*models.CostOverviewDTO, *models.ExpenseServiceError)
 }
 
 type CostRepository struct {
@@ -47,6 +48,131 @@ type CostRepository struct {
 //********************************************************************************************************************\\
 // Cost																												  \\
 //********************************************************************************************************************\\
+
+// GetCostOverview returns an overview of all costs
+func (cr *CostRepository) GetCostOverview(userId *uuid.UUID) (*models.CostOverviewDTO, *models.ExpenseServiceError) {
+	response := &models.CostOverviewDTO{}
+	var tripDistribution []*models.TripDistributionDTO
+	var costDistribution []*models.CostDistributionDTO
+	var mostExpensiveTrip *models.TripNameToIdDTO
+	var leastExpensiveTrip *models.TripNameToIdDTO
+	totalTripCosts := decimal.NewFromInt(0)
+	allCosts := decimal.NewFromInt(0)
+
+	// Get every trip the user is part of
+	rows, err := cr.DatabaseMgr.ExecuteQuery("SELECT id, name FROM trip WHERE id IN (SELECT id_trip FROM user_trip_association WHERE id_user = $1)", userId)
+	if err != nil {
+		log.Printf("Error while executing query: %v", err)
+		return nil, expense_errors.EXPENSE_INTERNAL_ERROR
+	}
+
+	// Iterate over every trip
+	for rows.Next() {
+		// Get trip costs for every trip and cost categories respectively
+		tripId := uuid.UUID{}
+		var name string
+		var tripCosts decimal.Decimal
+
+		if err := rows.Scan(&tripId, &name); err != nil {
+			log.Printf("Error while scanning row: %v", err)
+			return nil, expense_errors.EXPENSE_INTERNAL_ERROR
+		}
+
+		// Get total costs for trip
+		// The outer COALESCE is needed because the inner COALESCE returns NULL if there are no costs for the trip
+		queryString := "SELECT COALESCE(SUM(COALESCE(amount, 0.0)), 0.0) FROM cost WHERE id_cost_category IN (SELECT id FROM cost_category WHERE id_trip = $1)"
+		row := cr.DatabaseMgr.ExecuteQueryRow(queryString, tripId)
+
+		var allCostsForTrip decimal.Decimal
+		if err := row.Scan(&allCostsForTrip); err != nil {
+			log.Printf("Error while scanning row: %v", err)
+			return nil, expense_errors.EXPENSE_INTERNAL_ERROR
+		}
+		allCosts = allCosts.Add(allCostsForTrip)
+
+		// Get total costs for trip that the user is a part of grouped by the cost category
+		// The outer COALESCE is needed because the inner COALESCE returns NULL if there are no costs for the trip
+		queryString = "SELECT COALESCE(SUM(COALESCE(amount, 0.0)), 0.0), id_cost_category FROM cost WHERE id_cost_category IN (SELECT id FROM cost_category WHERE id_trip = $1) AND id IN (SELECT id_cost FROM user_cost_association WHERE id_user = $2) GROUP BY id_cost_category"
+		costRow, costErr := cr.DatabaseMgr.ExecuteQuery(queryString, tripId, userId)
+
+		if costErr != nil {
+			log.Printf("Error while executing query: %v", costErr)
+			return nil, expense_errors.EXPENSE_INTERNAL_ERROR
+		}
+
+		for costRow.Next() {
+			var costCategoryCosts decimal.Decimal
+			var costCategoryID uuid.UUID
+
+			if err := costRow.Scan(&costCategoryCosts, &costCategoryID); err != nil {
+				log.Printf("Error while scanning row: %v", err)
+				return nil, expense_errors.EXPENSE_INTERNAL_ERROR
+			}
+
+			queryString := "SELECT name FROM cost_category WHERE id = $1"
+			nameRow := cr.DatabaseMgr.ExecuteQueryRow(queryString, costCategoryID)
+			if err != nil {
+				log.Printf("Error while executing query: %v", err)
+				return nil, expense_errors.EXPENSE_INTERNAL_ERROR
+			}
+
+			var costCategoryName string
+			if err := nameRow.Scan(&costCategoryName); err != nil {
+				log.Printf("Error while scanning row: %v", err)
+				return nil, expense_errors.EXPENSE_INTERNAL_ERROR
+			}
+
+			tripCosts = tripCosts.Add(costCategoryCosts)
+
+			// Add cost category to cost distribution
+			costDistribution = append(costDistribution, &models.CostDistributionDTO{
+				CostCategoryName: costCategoryName,
+				Amount:           costCategoryCosts.String(),
+			})
+		}
+
+		// Add trip to trip distribution
+		tripDistribution = append(tripDistribution, &models.TripDistributionDTO{
+			TripName: name,
+			Amount:   tripCosts.String(),
+		})
+		totalTripCosts = totalTripCosts.Add(tripCosts)
+
+		// Check if trip is most expensive trip
+		if mostExpensiveTrip == nil || tripCosts.GreaterThan(decimal.RequireFromString(mostExpensiveTrip.Amount)) {
+			mostExpensiveTrip = &models.TripNameToIdDTO{
+				TripID:   tripId,
+				TripName: name,
+				Amount:   tripCosts.String(),
+			}
+		}
+
+		// Check if trip is least expensive trip
+		if leastExpensiveTrip == nil || tripCosts.LessThan(decimal.RequireFromString(leastExpensiveTrip.Amount)) {
+			leastExpensiveTrip = &models.TripNameToIdDTO{
+				TripID:   tripId,
+				TripName: name,
+				Amount:   tripCosts.String(),
+			}
+		}
+	}
+
+	response.TripDistribution = tripDistribution
+	response.CostDistribution = costDistribution
+	response.MostExpensiveTrip = mostExpensiveTrip
+	response.LeastExpensiveTrip = leastExpensiveTrip
+	response.TotalCosts = totalTripCosts.String()
+
+	if !totalTripCosts.IsZero() {
+		response.AverageTripCosts = totalTripCosts.Div(decimal.NewFromInt(int64(len(tripDistribution)))).String()
+		response.AverageContributionPercentage = totalTripCosts.Div(allCosts).Mul(decimal.NewFromInt(100)).String()
+	} else {
+		response.AverageTripCosts = "0"
+		response.AverageContributionPercentage = "0"
+	}
+
+	return response, nil
+}
 
 // CreateCost Creates a new cost in the database
 func (cr *CostRepository) CreateCost(cost *models.CostSchema) *models.ExpenseServiceError {
