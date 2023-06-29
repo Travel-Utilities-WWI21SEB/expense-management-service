@@ -26,6 +26,8 @@ DROP TABLE IF EXISTS public.trip CASCADE;
 CREATE TABLE public.trip
 (
     id         uuid NOT NULL DEFAULT uuid_generate_v4(),
+    name       character varying,
+    description character varying,
     location   character varying,
     start_date date NOT NULL,
     end_date   date NOT NULL,
@@ -99,6 +101,7 @@ CREATE TABLE public.user_cost_association
     id_user     uuid    NOT NULL,
     id_cost     uuid    NOT NULL,
     is_creditor boolean NOT NULL,
+    amount      numeric NOT NULL,
     CONSTRAINT many_user_has_many_cost_pk PRIMARY KEY (id_user, id_cost)
 );
 -- ddl-end --

@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"time"
 
 	"github.com/Travel-Utilities-WWI21SEB/expense-management-service/src/managers"
 	"github.com/joho/godotenv"
@@ -33,8 +34,9 @@ func main() {
 
 	// CREATE CONTEXT
 	server := &http.Server{
-		Addr:    ":8080",
-		Handler: router,
+		Addr:              ":8080",
+		Handler:           router,
+		ReadHeaderTimeout: 3 * time.Second,
 	}
 
 	// CREATE CHANNEL TO HANDLE OS SIGNALS

@@ -79,13 +79,16 @@ func createRouter(dbConnection *sql.DB) *gin.Engine {
 			UserRepo:    userRepo,
 		},
 		TripController: &controllers.TripController{
-			DatabaseMgr: databaseMgr,
-			TripRepo:    tripRepo,
-			UserRepo:    userRepo,
+			DatabaseMgr:      databaseMgr,
+			TripRepo:         tripRepo,
+			UserRepo:         userRepo,
+			CostRepo:         costRepo,
+			CostCategoryRepo: costCategoryRepo,
 		},
 		CostCategoryController: &controllers.CostCategoryController{
 			DatabaseMgr:      databaseMgr,
 			CostCategoryRepo: costCategoryRepo,
+			CostRepo:         costRepo,
 		},
 		CostController: &controllers.CostController{
 			DatabaseMgr: databaseMgr,
@@ -124,6 +127,7 @@ func createRouter(dbConnection *sql.DB) *gin.Engine {
 	securedTripApiv1.Handle(http.MethodDelete, "", handlers.DeleteTripEntryHandler(controller.TripController))
 	securedTripApiv1.Handle(http.MethodPost, "/invite", handlers.InviteUserToTripHandler(controller.TripController))
 	securedTripApiv1.Handle(http.MethodPost, "/accept", handlers.AcceptTripInviteHandler(controller.TripController))
+	securedTripApiv1.Handle(http.MethodPost, "/decline", handlers.DeclineTripInviteHandler(controller.TripController))
 
 	// Cost Category Routes
 	securedTripApiv1.Handle(http.MethodPost, "/cost-categories", handlers.CreateCostCategoryEntryHandler(controller.CostCategoryController))
@@ -135,8 +139,8 @@ func createRouter(dbConnection *sql.DB) *gin.Engine {
 	// Cost Routes
 	securedTripApiv1.Handle(http.MethodPost, "/costs", handlers.CreateCostEntryHandler(controller.CostController))
 	securedTripApiv1.Handle(http.MethodGet, "/costs", handlers.GetCostEntriesHandler(controller.CostController))
-	securedTripApiv1.Handle(http.MethodPatch, "/costs/:costId", handlers.UpdateCostEntryHandler(controller.CostController))
 	securedTripApiv1.Handle(http.MethodGet, "/costs/:costId", handlers.GetCostDetailsHandler(controller.CostController))
+	securedTripApiv1.Handle(http.MethodPatch, "/costs/:costId", handlers.UpdateCostEntryHandler(controller.CostController))
 	securedTripApiv1.Handle(http.MethodDelete, "/costs/:costId", handlers.DeleteCostEntryHandler(controller.CostController))
 
 	// Debts Routes

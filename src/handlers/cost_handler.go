@@ -7,9 +7,9 @@ import (
 	"github.com/Travel-Utilities-WWI21SEB/expense-management-service/src/utils"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
-	"github.com/shopspring/decimal"
 	"log"
 	"net/http"
+	"time"
 )
 
 func CreateCostEntryHandler(costCtl controllers.CostCtl) gin.HandlerFunc {
@@ -17,7 +17,7 @@ func CreateCostEntryHandler(costCtl controllers.CostCtl) gin.HandlerFunc {
 		ctx := c.Request.Context()
 
 		// Get cost entry from request body
-		var costData models.CreateCostRequest
+		var costData models.CostDTO
 		if err := c.ShouldBindJSON(&costData); err != nil {
 			log.Printf("Error while binding JSON: %v", err)
 			utils.HandleErrorAndAbort(c, *expense_errors.EXPENSE_BAD_REQUEST)
@@ -25,20 +25,13 @@ func CreateCostEntryHandler(costCtl controllers.CostCtl) gin.HandlerFunc {
 		}
 
 		// Check if cost entry already has empty fields
-		if utils.ContainsEmptyString(costData.Amount, costData.CurrencyCode) {
+		if utils.ContainsEmptyString(costData.Amount, costData.CurrencyCode, costData.Creditor, costData.CostCategoryID.String()) {
 			utils.HandleErrorAndAbort(c, *expense_errors.EXPENSE_BAD_REQUEST)
 			return
 		}
 
-		// Convert amount to decimal
-		amount, err := decimal.NewFromString(costData.Amount)
-		if err != nil {
-			utils.HandleErrorAndAbort(c, *expense_errors.EXPENSE_BAD_REQUEST)
-			return
-		}
-
-		// Check if amount is negative
-		if amount.IsNegative() {
+		// Check if dates are valid
+		if !utils.IsValidDate(time.RFC3339, costData.DeductionDate, costData.EndDate) {
 			utils.HandleErrorAndAbort(c, *expense_errors.EXPENSE_BAD_REQUEST)
 			return
 		}
@@ -62,12 +55,38 @@ func CreateCostEntryHandler(costCtl controllers.CostCtl) gin.HandlerFunc {
 
 func UpdateCostEntryHandler(costCtl controllers.CostCtl) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		// TO-DO
 		ctx := c.Request.Context()
 
-		response, err := costCtl.PatchCostEntry(ctx)
+		// Get costId from request params
+		costId, err := uuid.Parse(c.Param(models.ExpenseParamKeyCostId))
 		if err != nil {
-			utils.HandleErrorAndAbort(c, *err)
+			utils.HandleErrorAndAbort(c, *expense_errors.EXPENSE_BAD_REQUEST)
+			return
+		}
+
+		// Get cost entry from request body
+		var costData models.CostDTO
+		if err := c.ShouldBindJSON(&costData); err != nil {
+			log.Printf("Error while binding JSON: %v", err)
+			utils.HandleErrorAndAbort(c, *expense_errors.EXPENSE_BAD_REQUEST)
+			return
+		}
+
+		// Check if dates are valid
+		if !utils.IsValidDate(time.RFC3339, costData.DeductionDate, costData.EndDate) {
+			utils.HandleErrorAndAbort(c, *expense_errors.EXPENSE_BAD_REQUEST)
+			return
+		}
+
+		// Check if currency code is valid
+		if !utils.ContainsEmptyString(costData.CurrencyCode) && !utils.IsValidCurrencyCode(costData.CurrencyCode) {
+			utils.HandleErrorAndAbort(c, *expense_errors.EXPENSE_BAD_REQUEST)
+			return
+		}
+
+		response, serviceErr := costCtl.PatchCostEntry(ctx, &costId, costData)
+		if serviceErr != nil {
+			utils.HandleErrorAndAbort(c, *serviceErr)
 			return
 		}
 
@@ -77,16 +96,18 @@ func UpdateCostEntryHandler(costCtl controllers.CostCtl) gin.HandlerFunc {
 
 func GetCostEntriesHandler(costCtl controllers.CostCtl) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		// TO-DO
-		// ctx := c.Request.Context()
+		ctx := c.Request.Context()
 
-		/*response, err := costCtl.GetTripCosts(ctx, nil)
+		// Get tripId from request params
+		tripId := uuid.MustParse(c.Param(models.ExpenseParamKeyTripId))
+
+		response, err := costCtl.GetCostEntriesByTrip(ctx, &tripId)
 		if err != nil {
 			utils.HandleErrorAndAbort(c, *err)
 			return
-		}*/
+		}
 
-		c.JSON(http.StatusOK, nil)
+		c.JSON(http.StatusOK, response)
 	}
 }
 
@@ -96,7 +117,6 @@ func GetCostDetailsHandler(costCtl controllers.CostCtl) gin.HandlerFunc {
 
 		// Get costId from request params
 		costId, err := uuid.Parse(c.Param(models.ExpenseParamKeyCostId))
-
 		if err != nil {
 			utils.HandleErrorAndAbort(c, *expense_errors.EXPENSE_BAD_REQUEST)
 			return
@@ -117,12 +137,18 @@ func DeleteCostEntryHandler(costCtl controllers.CostCtl) gin.HandlerFunc {
 		// TO-DO
 		ctx := c.Request.Context()
 
-		err := costCtl.DeleteCostEntry(ctx)
+		// Get costId from request params
+		costId, err := uuid.Parse(c.Param(models.ExpenseParamKeyCostId))
 		if err != nil {
-			utils.HandleErrorAndAbort(c, *err)
+			utils.HandleErrorAndAbort(c, *expense_errors.EXPENSE_BAD_REQUEST)
+		}
+
+		serviceErr := costCtl.DeleteCostEntry(ctx, &costId)
+		if err != nil {
+			utils.HandleErrorAndAbort(c, *serviceErr)
 			return
 		}
 
-		c.JSON(http.StatusOK, nil)
+		c.AbortWithStatus(http.StatusNoContent)
 	}
 }

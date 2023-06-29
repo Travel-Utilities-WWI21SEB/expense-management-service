@@ -44,6 +44,13 @@ type VerifyPasswordResetTokenRequest struct {
 	Token string `json:"token"`
 }
 
+type UserDto struct {
+	UserID   *uuid.UUID `json:"userId,omitempty"`
+	Username string     `json:"username,omitempty"`
+	Email    string     `json:"email,omitempty"`
+	Password string     `json:"password,omitempty"`
+}
+
 type ResetPasswordRequest struct {
 	Email    string `json:"email"`
 	Password string `json:"password"`
