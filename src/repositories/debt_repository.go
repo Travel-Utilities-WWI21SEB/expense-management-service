@@ -6,7 +6,9 @@ import (
 	"github.com/Travel-Utilities-WWI21SEB/expense-management-service/src/managers"
 	"github.com/Travel-Utilities-WWI21SEB/expense-management-service/src/models"
 	"github.com/google/uuid"
+	"github.com/shopspring/decimal"
 	"log"
+	"time"
 )
 
 type DebtRepo interface {
@@ -19,6 +21,8 @@ type DebtRepo interface {
 	GetDebtByCreditorId(creditorId *uuid.UUID) (*models.DebtSchema, *models.ExpenseServiceError)
 	GetDebtByCreditorIdAndDebtorIdAndTripId(creditorId *uuid.UUID, debtorId *uuid.UUID, tripId *uuid.UUID) (*models.DebtSchema, *models.ExpenseServiceError)
 	GetDebtEntriesByTripId(tripId *uuid.UUID) ([]*models.DebtSchema, *models.ExpenseServiceError)
+
+	CalculateDebt(tx *sql.Tx, creditorId *uuid.UUID, debtorId *uuid.UUID, tripId *uuid.UUID, amountToAdd decimal.Decimal) *models.ExpenseServiceError
 }
 
 type DebtRepository struct {
@@ -26,7 +30,7 @@ type DebtRepository struct {
 }
 
 func (dr *DebtRepository) GetDebtById(debtId *uuid.UUID) (*models.DebtSchema, *models.ExpenseServiceError) {
-	query := "SELECT * FROM debt WHERE id = $1"
+	query := "SELECT id, id_creditor, id_debtor, id_trip, amount, currency_code, created_at, updated_at FROM debt WHERE id = $1"
 	row := dr.DatabaseMgr.ExecuteQueryRow(query, debtId)
 	debt := &models.DebtSchema{}
 
@@ -136,4 +140,39 @@ func (dr *DebtRepository) GetDebtEntriesByTripId(tripId *uuid.UUID) ([]*models.D
 	}
 
 	return debts, nil
+}
+
+func (dr *DebtRepository) CalculateDebt(tx *sql.Tx, creditorId *uuid.UUID, debtorId *uuid.UUID, tripId *uuid.UUID, amountToAdd decimal.Decimal) *models.ExpenseServiceError {
+	// Check if creditor and debtor are the same
+	if creditorId.String() == debtorId.String() {
+		return nil
+	}
+
+	now := time.Now()
+	debt, repoErr := dr.GetDebtByCreditorIdAndDebtorIdAndTripId(creditorId, debtorId, tripId)
+	if repoErr != nil {
+		return repoErr
+	}
+
+	debt.Amount = debt.Amount.Add(amountToAdd)
+	debt.UpdateDate = &now
+	repoErr = dr.UpdateTx(tx, debt)
+	if repoErr != nil {
+		return repoErr
+	}
+
+	otherDebt, repoErr := dr.GetDebtByCreditorIdAndDebtorIdAndTripId(debtorId, creditorId, tripId)
+	if repoErr != nil {
+		return repoErr
+	}
+
+	// Update existing debt
+	otherDebt.Amount = otherDebt.Amount.Sub(amountToAdd)
+	otherDebt.UpdateDate = &now
+	repoErr = dr.UpdateTx(tx, otherDebt)
+	if repoErr != nil {
+		return repoErr
+	}
+
+	return nil
 }

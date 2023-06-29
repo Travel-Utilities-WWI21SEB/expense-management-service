@@ -145,7 +145,7 @@ func GetCostEntriesHandler(costCtl controllers.CostCtl) gin.HandlerFunc {
 			MaxCreationDate:  nil,
 			Page:             0,
 			PageSize:         0,
-			SortBy:           "created_at",
+			SortBy:           "deducted_at",
 			SortOrder:        "DESC",
 		}
 

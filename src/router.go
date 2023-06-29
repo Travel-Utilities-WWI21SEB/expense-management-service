@@ -20,6 +20,7 @@ type Controllers struct {
 	CostCategoryController controllers.CostCategoryCtl
 	DebtController         controllers.DebtCtl
 	MailController         controllers.MailCtl
+	TransactionController  controllers.TransactionCtl
 }
 
 func createRouter(dbConnection *sql.DB) *gin.Engine {
@@ -77,6 +78,10 @@ func createRouter(dbConnection *sql.DB) *gin.Engine {
 		DatabaseMgr: databaseMgr,
 	}
 
+	transactionRepo := &repositories.TransactionRepository{
+		DatabaseMgr: databaseMgr,
+	}
+
 	controller := Controllers{
 		UserController: &controllers.UserController{
 			MailMgr:     mailMgr,
@@ -109,6 +114,13 @@ func createRouter(dbConnection *sql.DB) *gin.Engine {
 			DebtRepo:    debtRepo,
 			UserRepo:    userRepo,
 			TripRepo:    tripRepo,
+		},
+		TransactionController: &controllers.TransactionController{
+			DatabaseMgr:     databaseMgr,
+			TransactionRepo: transactionRepo,
+			UserRepo:        userRepo,
+			TripRepo:        tripRepo,
+			DebtRepo:        debtRepo,
 		},
 		MailController: &controllers.MailController{
 			MailMgr: mailMgr,
@@ -161,8 +173,12 @@ func createRouter(dbConnection *sql.DB) *gin.Engine {
 
 	// Debts Routes
 	securedTripApiv1.Handle(http.MethodGet, "/debts", handlers.GetDebtsHandler(controller.DebtController))
-	/*	securedTripApiv1.Handle(http.MethodGet, "/debts/:debtId", handlers.GetDebtDetailsHandler(controller.DebtController))
-	 */
+	securedTripApiv1.Handle(http.MethodGet, "/debts/:debtId", handlers.GetDebtDetailsHandler(controller.DebtController))
 
+	// Transaction Routes
+	securedTripApiv1.Handle(http.MethodPost, "/transactions", handlers.CreateTransactionHandler(controller.TransactionController))
+	securedTripApiv1.Handle(http.MethodGet, "/transactions", handlers.GetTransactionsHandler(controller.TransactionController))
+	securedTripApiv1.Handle(http.MethodGet, "/transactions/:transactionId", handlers.GetTransactionDetailsHandler(controller.TransactionController))
+	securedTripApiv1.Handle(http.MethodDelete, "/transactions/:transactionId", handlers.DeleteTransactionHandler(controller.TransactionController))
 	return router
 }

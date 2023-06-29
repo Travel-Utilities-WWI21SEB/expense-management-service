@@ -175,7 +175,7 @@ func (cc *CostController) CreateCostEntry(ctx context.Context, tripId *uuid.UUID
 
 		// Calculate debt
 		if contributorUser.Username != creditorUser.Username {
-			if serviceErr := cc.calculateDebt(tx, creditorUser, contributorUser, tripId, contribution.Amount); serviceErr != nil {
+			if serviceErr := cc.DebtRepo.CalculateDebt(tx, creditorUser.UserID, contributorUser.UserID, tripId, contribution.Amount); serviceErr != nil {
 				return nil, serviceErr
 			}
 		}
@@ -474,19 +474,13 @@ func (cc *CostController) PatchCostEntry(ctx context.Context, tripId *uuid.UUID,
 		return nil, repoErr
 	}
 	for _, contributor := range contributors {
-		// Get user from database
-		user, repoErr := cc.UserRepo.GetUserById(contributor.UserID)
-		if repoErr != nil {
-			return nil, repoErr
-		}
-
 		// Delete cost contribution from database
-		if repoErr := cc.CostRepo.DeleteCostContributionTx(tx, user.UserID); repoErr != nil {
+		if repoErr := cc.CostRepo.DeleteCostContributionTx(tx, contributor.UserID); repoErr != nil {
 			return nil, repoErr
 		}
 
 		// Subtract debt from user
-		if repoErr := cc.calculateDebt(tx, creditor, user, tripId, contributor.Amount.Neg()); repoErr != nil {
+		if repoErr := cc.DebtRepo.CalculateDebt(tx, creditor.UserID, contributor.UserID, tripId, contributor.Amount.Neg()); repoErr != nil {
 			return nil, repoErr
 		}
 	}
@@ -516,7 +510,7 @@ func (cc *CostController) PatchCostEntry(ctx context.Context, tripId *uuid.UUID,
 		}
 
 		// Add debt to user
-		if repoErr := cc.calculateDebt(tx, creditor, user, tripId, contribution.Amount); repoErr != nil {
+		if repoErr := cc.DebtRepo.CalculateDebt(tx, creditor.UserID, user.UserID, tripId, contribution.Amount); repoErr != nil {
 			return nil, repoErr
 		}
 	}
@@ -568,15 +562,8 @@ func (cc *CostController) DeleteCostEntry(ctx context.Context, tripId *uuid.UUID
 		if contribution.IsCreditor {
 			continue
 		}
-
-		// Get user from database
-		user, repoErr := cc.UserRepo.GetUserById(contribution.UserID)
-		if repoErr != nil {
-			return repoErr
-		}
-
 		// Subtract debt from user
-		cc.calculateDebt(tx, creditor, user, tripId, contribution.Amount.Neg())
+		cc.DebtRepo.CalculateDebt(tx, creditor.UserID, contribution.UserID, tripId, contribution.Amount.Neg())
 	}
 
 	repoErr = cc.CostRepo.DeleteTx(tx, costId)
@@ -747,39 +734,4 @@ func checkIfCreditorIsContributor(creditor string, contributors []*models.Contri
 		}
 	}
 	return false
-}
-
-func (cc *CostController) calculateDebt(tx *sql.Tx, creditor *models.UserSchema, debtor *models.UserSchema, tripId *uuid.UUID, amountToAdd decimal.Decimal) *models.ExpenseServiceError {
-	if creditor.Username == debtor.Username {
-		return nil
-	}
-	now := time.Now()
-	// Check if debt already exists
-	debt, repoErr := cc.DebtRepo.GetDebtByCreditorIdAndDebtorIdAndTripId(creditor.UserID, debtor.UserID, tripId)
-	if repoErr != nil {
-		return repoErr
-	}
-
-	// Update existing debt
-	debt.Amount = debt.Amount.Add(amountToAdd)
-	debt.UpdateDate = &now
-	repoErr = cc.DebtRepo.UpdateTx(tx, debt)
-	if repoErr != nil {
-		return repoErr
-	}
-
-	otherDebt, repoErr := cc.DebtRepo.GetDebtByCreditorIdAndDebtorIdAndTripId(debtor.UserID, creditor.UserID, tripId)
-	if repoErr != nil {
-		return repoErr
-	}
-
-	// Update existing debt
-	otherDebt.Amount = otherDebt.Amount.Sub(amountToAdd)
-	otherDebt.UpdateDate = &now
-	repoErr = cc.DebtRepo.UpdateTx(tx, otherDebt)
-	if repoErr != nil {
-		return repoErr
-	}
-
-	return nil
 }

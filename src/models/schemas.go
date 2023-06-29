@@ -88,4 +88,5 @@ type TransactionSchema struct {
 	Amount        decimal.Decimal `json:"amount" db:"amount"`
 	CreationDate  *time.Time      `json:"createdAt" db:"created_at"`
 	CurrencyCode  string          `json:"currency" db:"currency_code"`
+	IsConfirmed   bool            `json:"isConfirmed" db:"is_confirmed"`
 }

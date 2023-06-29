@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"github.com/Travel-Utilities-WWI21SEB/expense-management-service/src/controllers"
+	"github.com/Travel-Utilities-WWI21SEB/expense-management-service/src/expense_errors"
 	"github.com/Travel-Utilities-WWI21SEB/expense-management-service/src/models"
 	"github.com/Travel-Utilities-WWI21SEB/expense-management-service/src/utils"
 	"github.com/gin-gonic/gin"
@@ -29,6 +30,22 @@ func GetDebtsHandler(DebtCtl controllers.DebtCtl) gin.HandlerFunc {
 
 func GetDebtDetailsHandler(DebtCtl controllers.DebtCtl) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		// TO-DO
+		ctx := c.Request.Context()
+
+		// Get debtId from request params
+		debtId, err := uuid.Parse(c.Param(models.ExpenseParamKeyDebtId))
+		if err != nil {
+			utils.HandleErrorAndAbort(c, *expense_errors.EXPENSE_BAD_REQUEST)
+			return
+		}
+
+		// Get debts
+		response, serviceErr := DebtCtl.GetDebtDetails(ctx, &debtId)
+		if serviceErr != nil {
+			utils.HandleErrorAndAbort(c, *serviceErr)
+			return
+		}
+
+		c.JSON(http.StatusOK, response)
 	}
 }
