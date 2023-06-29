@@ -10,7 +10,6 @@ type DebtDTO struct {
 	TripId       *uuid.UUID `json:"tripId"`
 	Amount       string     `json:"amount"`
 	CurrencyCode string     `json:"currency"`
-	Description  string     `json:"description"`
 	CreationDate string     `json:"createdAt"`
 	UpdateDate   string     `json:"updatedAt"`
 }

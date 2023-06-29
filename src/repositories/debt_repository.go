@@ -6,6 +6,7 @@ import (
 	"github.com/Travel-Utilities-WWI21SEB/expense-management-service/src/managers"
 	"github.com/Travel-Utilities-WWI21SEB/expense-management-service/src/models"
 	"github.com/google/uuid"
+	"log"
 )
 
 type DebtRepo interface {
@@ -14,6 +15,9 @@ type DebtRepo interface {
 	AddTx(tx *sql.Tx, debt *models.DebtSchema) *models.ExpenseServiceError
 	UpdateTx(tx *sql.Tx, debt *models.DebtSchema) *models.ExpenseServiceError
 	DeleteTx(tx *sql.Tx, debtId *uuid.UUID) *models.ExpenseServiceError
+
+	GetDebtByCreditorId(creditorId *uuid.UUID) (*models.DebtSchema, *models.ExpenseServiceError)
+	GetDebtByCreditorIdAndDebtorIdAndTripId(creditorId *uuid.UUID, debtorId *uuid.UUID, tripId *uuid.UUID) (*models.DebtSchema, *models.ExpenseServiceError)
 }
 
 type DebtRepository struct {
@@ -82,4 +86,31 @@ func (dr *DebtRepository) DeleteTx(tx *sql.Tx, debtId *uuid.UUID) *models.Expens
 	}
 
 	return nil
+}
+
+func (dr *DebtRepository) GetDebtByCreditorId(creditorId *uuid.UUID) (*models.DebtSchema, *models.ExpenseServiceError) {
+	query := "SELECT * FROM debt WHERE id_creditor = $1"
+	row := dr.DatabaseMgr.ExecuteQueryRow(query, creditorId)
+	debt := &models.DebtSchema{}
+
+	err := row.Scan(&debt.DebtID, &debt.CreditorId, &debt.DebtorId, &debt.TripId, &debt.Amount, &debt.CurrencyCode, &debt.CreationDate, &debt.UpdateDate)
+	if err != nil {
+		return nil, expense_errors.EXPENSE_BAD_REQUEST
+	}
+
+	return debt, nil
+}
+
+func (dr *DebtRepository) GetDebtByCreditorIdAndDebtorIdAndTripId(creditorId *uuid.UUID, debtorId *uuid.UUID, tripId *uuid.UUID) (*models.DebtSchema, *models.ExpenseServiceError) {
+	log.Printf("creditorId: %v, debtorId: %v, tripId: %v", creditorId, debtorId, tripId)
+	query := "SELECT id, id_creditor, id_debtor, id_trip, amount, currency_code, created_at, updated_at FROM debt WHERE id_creditor = $1 AND id_debtor = $2 AND id_trip = $3"
+	row := dr.DatabaseMgr.ExecuteQueryRow(query, creditorId, debtorId, tripId)
+	debt := &models.DebtSchema{}
+
+	err := row.Scan(&debt.DebtID, &debt.CreditorId, &debt.DebtorId, &debt.TripId, &debt.Amount, &debt.CurrencyCode, &debt.CreationDate, &debt.UpdateDate)
+	if err != nil {
+		return nil, expense_errors.EXPENSE_BAD_REQUEST
+	}
+
+	return debt, nil
 }
