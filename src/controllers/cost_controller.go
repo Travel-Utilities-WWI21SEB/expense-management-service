@@ -35,52 +35,15 @@ type CostController struct {
 }
 
 func (cc *CostController) GetCostOverview(ctx context.Context) (*models.CostOverviewDTO, *models.ExpenseServiceError) {
-	response := &models.CostOverviewDTO{
-		TotalCosts:       "1321,23",
-		AverageTripCosts: "123,23",
-		MostExpensiveTrip: &models.TripNameToIdDTO{
-			TripName: "Trip to Berlin",
-			Amount:   "18321,23",
-			TripId:   uuid.New(),
-		},
-		LeastExpensiveTrip: &models.TripNameToIdDTO{
-			TripName: "Trip to Palo Alto",
-			Amount:   "923,23",
-			TripId:   uuid.New(),
-		},
-		AverageContributionPercentage: "23,23",
-		TripDistribution: []*models.TripDistributionDTO{
-			{
-				TripName: "Trip to Berlin",
-				Amount:   "18321,23",
-			},
-			{
-				TripName: "Trip to Palo Alto",
-				Amount:   "923,23",
-			},
-			{
-				TripName: "Trip to San Francisco",
-				Amount:   "1234,23",
-			},
-			{
-				TripName: "Trip to New York",
-				Amount:   "12312,23",
-			},
-		},
-		CostDistribution: []*models.CostDistributionDTO{
-			{
-				CostCategoryName: "Food",
-				Amount:           "2123,23",
-			},
-			{
-				CostCategoryName: "Accommodation",
-				Amount:           "142,23",
-			},
-			{
-				CostCategoryName: "Transportation",
-				Amount:           "2312,23",
-			},
-		},
+	// Get user id from context
+	userId, ok := ctx.Value(models.ExpenseContextKeyUserID).(*uuid.UUID)
+	if !ok {
+		return nil, expense_errors.EXPENSE_INTERNAL_ERROR
+	}
+
+	response, err := cc.CostRepo.GetCostOverview(userId)
+	if err != nil {
+		return nil, err
 	}
 
 	return response, nil

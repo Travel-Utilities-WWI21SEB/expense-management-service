@@ -29,7 +29,7 @@ type TripDistributionDTO struct {
 type TripNameToIdDTO struct {
 	TripName string    `json:"tripName"`
 	Amount   string    `json:"amount"`
-	TripId   uuid.UUID `json:"tripId"`
+	TripID   uuid.UUID `json:"tripId"`
 }
 
 // CostOverviewDTO Data transfer object for cost overview
