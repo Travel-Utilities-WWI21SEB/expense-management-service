@@ -24,3 +24,12 @@ type TripParticipationDTO struct {
 	PresenceStartDate string `json:"presenceStartDate"`
 	PresenceEndDate   string `json:"presenceEndDate"`
 }
+
+type SlimTripDTO struct {
+	TripID      *uuid.UUID `json:"tripId"`
+	Name        string     `json:"name"`
+	Description string     `json:"description"`
+	Location    string     `json:"location"`
+	StartDate   string     `json:"startDate"`
+	EndDate     string     `json:"endDate"`
+}

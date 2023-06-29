@@ -18,6 +18,7 @@ type DebtRepo interface {
 
 	GetDebtByCreditorId(creditorId *uuid.UUID) (*models.DebtSchema, *models.ExpenseServiceError)
 	GetDebtByCreditorIdAndDebtorIdAndTripId(creditorId *uuid.UUID, debtorId *uuid.UUID, tripId *uuid.UUID) (*models.DebtSchema, *models.ExpenseServiceError)
+	GetDebtEntriesByTripId(tripId *uuid.UUID) ([]*models.DebtSchema, *models.ExpenseServiceError)
 }
 
 type DebtRepository struct {
@@ -70,6 +71,7 @@ func (dr *DebtRepository) AddTx(tx *sql.Tx, debt *models.DebtSchema) *models.Exp
 
 func (dr *DebtRepository) UpdateTx(tx *sql.Tx, debt *models.DebtSchema) *models.ExpenseServiceError {
 	query := "UPDATE debt SET id_creditor = $1, id_debtor = $2, id_trip = $3, amount = $4, currency_code = $5, updated_at = $6 WHERE id = $7"
+	log.Printf("Debt: %v \t time: %v", debt.DebtID.String(), debt.UpdateDate)
 	_, err := tx.Exec(query, debt.CreditorId, debt.DebtorId, debt.TripId, debt.Amount, debt.CurrencyCode, debt.UpdateDate, debt.DebtID)
 	if err != nil {
 		return expense_errors.EXPENSE_BAD_REQUEST
@@ -102,7 +104,6 @@ func (dr *DebtRepository) GetDebtByCreditorId(creditorId *uuid.UUID) (*models.De
 }
 
 func (dr *DebtRepository) GetDebtByCreditorIdAndDebtorIdAndTripId(creditorId *uuid.UUID, debtorId *uuid.UUID, tripId *uuid.UUID) (*models.DebtSchema, *models.ExpenseServiceError) {
-	log.Printf("creditorId: %v, debtorId: %v, tripId: %v", creditorId, debtorId, tripId)
 	query := "SELECT id, id_creditor, id_debtor, id_trip, amount, currency_code, created_at, updated_at FROM debt WHERE id_creditor = $1 AND id_debtor = $2 AND id_trip = $3"
 	row := dr.DatabaseMgr.ExecuteQueryRow(query, creditorId, debtorId, tripId)
 	debt := &models.DebtSchema{}
@@ -113,4 +114,26 @@ func (dr *DebtRepository) GetDebtByCreditorIdAndDebtorIdAndTripId(creditorId *uu
 	}
 
 	return debt, nil
+}
+
+func (dr *DebtRepository) GetDebtEntriesByTripId(tripId *uuid.UUID) ([]*models.DebtSchema, *models.ExpenseServiceError) {
+	query := "SELECT id, id_creditor, id_debtor, id_trip, amount, currency_code, created_at, updated_at FROM debt WHERE id_trip = $1"
+	rows, err := dr.DatabaseMgr.ExecuteQuery(query, tripId)
+	if err != nil {
+		log.Printf("Error while getting debt entries by trip id: %v", err)
+		return nil, expense_errors.EXPENSE_INTERNAL_ERROR
+	}
+
+	var debts []*models.DebtSchema
+	for rows.Next() {
+		debt := &models.DebtSchema{}
+		err := rows.Scan(&debt.DebtID, &debt.CreditorId, &debt.DebtorId, &debt.TripId, &debt.Amount, &debt.CurrencyCode, &debt.CreationDate, &debt.UpdateDate)
+		if err != nil {
+			return nil, expense_errors.EXPENSE_BAD_REQUEST
+		}
+
+		debts = append(debts, debt)
+	}
+
+	return debts, nil
 }

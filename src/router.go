@@ -106,6 +106,9 @@ func createRouter(dbConnection *sql.DB) *gin.Engine {
 		},
 		DebtController: &controllers.DebtController{
 			DatabaseMgr: databaseMgr,
+			DebtRepo:    debtRepo,
+			UserRepo:    userRepo,
+			TripRepo:    tripRepo,
 		},
 		MailController: &controllers.MailController{
 			MailMgr: mailMgr,
@@ -158,7 +161,8 @@ func createRouter(dbConnection *sql.DB) *gin.Engine {
 
 	// Debts Routes
 	securedTripApiv1.Handle(http.MethodGet, "/debts", handlers.GetDebtsHandler(controller.DebtController))
-	securedTripApiv1.Handle(http.MethodGet, "/debts/:debtId", handlers.GetDebtDetailsHandler(controller.DebtController))
+	/*	securedTripApiv1.Handle(http.MethodGet, "/debts/:debtId", handlers.GetDebtDetailsHandler(controller.DebtController))
+	 */
 
 	return router
 }

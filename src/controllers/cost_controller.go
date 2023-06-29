@@ -175,7 +175,6 @@ func (cc *CostController) CreateCostEntry(ctx context.Context, tripId *uuid.UUID
 
 		// Calculate debt
 		if contributorUser.Username != creditorUser.Username {
-			log.Printf("Calculating debt for user %v and creditor %v", contributorUser.Username, creditorUser.Username)
 			if serviceErr := cc.calculateDebt(tx, creditorUser, contributorUser, tripId, contribution.Amount); serviceErr != nil {
 				return nil, serviceErr
 			}
@@ -754,8 +753,8 @@ func (cc *CostController) calculateDebt(tx *sql.Tx, creditor *models.UserSchema,
 	if creditor.Username == debtor.Username {
 		return nil
 	}
+	now := time.Now()
 	// Check if debt already exists
-	log.Printf("Debug: Creditor: %v, Debtor: %v, TripId: %v, Amount: %v", creditor.UserID, debtor.UserID, tripId, amountToAdd)
 	debt, repoErr := cc.DebtRepo.GetDebtByCreditorIdAndDebtorIdAndTripId(creditor.UserID, debtor.UserID, tripId)
 	if repoErr != nil {
 		return repoErr
@@ -763,6 +762,7 @@ func (cc *CostController) calculateDebt(tx *sql.Tx, creditor *models.UserSchema,
 
 	// Update existing debt
 	debt.Amount = debt.Amount.Add(amountToAdd)
+	debt.UpdateDate = &now
 	repoErr = cc.DebtRepo.UpdateTx(tx, debt)
 	if repoErr != nil {
 		return repoErr
@@ -775,6 +775,7 @@ func (cc *CostController) calculateDebt(tx *sql.Tx, creditor *models.UserSchema,
 
 	// Update existing debt
 	otherDebt.Amount = otherDebt.Amount.Sub(amountToAdd)
+	otherDebt.UpdateDate = &now
 	repoErr = cc.DebtRepo.UpdateTx(tx, otherDebt)
 	if repoErr != nil {
 		return repoErr
