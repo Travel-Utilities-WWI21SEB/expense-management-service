@@ -12,4 +12,10 @@ const (
 
 	// ParamKeyCostId is the key for the id in the params
 	ExpenseParamKeyCostId = "costId"
+
+	// ParamKeyTransactionId is the key for the id in the params
+	ExpenseParamKeyTransactionId = "transactionId"
+
+	// ParamKeyDebtId is the key for the id in the params
+	ExpenseParamKeyDebtId = "debtId"
 )
