@@ -11,6 +11,7 @@
 *.sln.docstates
 .DS_Store
 .env
+/.idea/*
 
 # User-specific files (MonoDevelop/Xamarin Studio)
 *.userprefs
@@ -315,7 +316,7 @@ node_modules/
 **/*.Server/ModelManifest.xml
 _Pvt_Extensions
 
-# Paket dependency manager
+# Paket dependency managers
 .paket/paket.exe
 paket-files/
 
@@ -398,3 +399,8 @@ FodyWeavers.xsd
 
 # JetBrains Rider
 *.sln.iml
+/.idea/dataSources.xml
+/.idea/modules.xml
+/.idea/vcs.xml
+/.idea/expense-management-service.iml
+/.idea/sqldialects.xml

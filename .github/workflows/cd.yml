@@ -30,8 +30,10 @@ jobs:
         with:
           context: .
           push: true
-          tags: 930c/expense-management-service:latest
-      
+          tags: |
+            930c/expense-management-service:${{ github.sha }}
+            930c/expense-management-service:latest
+
   start-service:
     runs-on: ubuntu-latest
     needs: push-docker
