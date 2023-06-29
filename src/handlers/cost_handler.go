@@ -14,6 +14,21 @@ import (
 	"time"
 )
 
+func GetCostOverviewHandler(costCtl controllers.CostCtl) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		ctx := c.Request.Context()
+
+		// Get cost overview
+		response, serviceErr := costCtl.GetCostOverview(ctx)
+		if serviceErr != nil {
+			utils.HandleErrorAndAbort(c, *serviceErr)
+			return
+		}
+
+		c.JSON(http.StatusOK, response)
+	}
+}
+
 func CreateCostEntryHandler(costCtl controllers.CostCtl) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		ctx := c.Request.Context()

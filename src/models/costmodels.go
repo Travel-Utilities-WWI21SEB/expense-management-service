@@ -16,6 +16,33 @@ type CostDTO struct {
 	Contributors   []*Contributor `json:"contributors"`
 }
 
+type CostDistributionDTO struct {
+	CostCategoryName string `json:"costCategoryName"`
+	Amount           string `json:"amount"`
+}
+
+type TripDistributionDTO struct {
+	TripName string `json:"tripName"`
+	Amount   string `json:"amount"`
+}
+
+type TripNameToIdDTO struct {
+	TripName string    `json:"tripName"`
+	Amount   string    `json:"amount"`
+	TripId   uuid.UUID `json:"tripId"`
+}
+
+// CostOverviewDTO Data transfer object for cost overview
+type CostOverviewDTO struct {
+	TotalCosts                    string                 `json:"totalCosts"`
+	AverageTripCosts              string                 `json:"averageTripCosts"`
+	MostExpensiveTrip             *TripNameToIdDTO       `json:"mostExpensiveTrip"`
+	LeastExpensiveTrip            *TripNameToIdDTO       `json:"leastExpensiveTrip"`
+	AverageContributionPercentage string                 `json:"averageContributionPercentage"`
+	TripDistribution              []*TripDistributionDTO `json:"tripDistribution"`
+	CostDistribution              []*CostDistributionDTO `json:"costDistribution"`
+}
+
 type Contributor struct {
 	Username string `json:"username"`
 	Amount   string `json:"amount"`
