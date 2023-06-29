@@ -17,6 +17,10 @@ type CostRepo interface {
 	UpdateCost(cost *models.CostSchema) *models.ExpenseServiceError
 	DeleteCostEntry(costId *uuid.UUID) *models.ExpenseServiceError
 
+	AddTx(tx *sql.Tx, cost *models.CostSchema) *models.ExpenseServiceError
+	UpdateTx(tx *sql.Tx, cost *models.CostSchema) *models.ExpenseServiceError
+	DeleteTx(tx *sql.Tx, costId *uuid.UUID) *models.ExpenseServiceError
+
 	GetCostsByTripID(tripId *uuid.UUID) ([]*models.CostSchema, *models.ExpenseServiceError)
 	GetCostsByTripIDAndContributorID(tripId *uuid.UUID, contributorId *uuid.UUID) ([]*models.CostSchema, *models.ExpenseServiceError)
 	GetCostsByContributorID(contributorId *uuid.UUID) ([]*models.CostSchema, *models.ExpenseServiceError)
@@ -26,6 +30,9 @@ type CostRepo interface {
 	AddCostContributor(contributor *models.CostContributionSchema) *models.ExpenseServiceError
 	UpdateCostContributor(contributor *models.CostContributionSchema) *models.ExpenseServiceError
 	GetCostCreditor(id *uuid.UUID) (*models.UserSchema, *models.ExpenseServiceError)
+
+	AddCostContributorTx(tx *sql.Tx, contributor *models.CostContributionSchema) *models.ExpenseServiceError
+	DeleteCostContributionTx(tx *sql.Tx, contributorId *uuid.UUID) *models.ExpenseServiceError
 
 	GetTotalCostByTripID(tripId *uuid.UUID) (*decimal.Decimal, *models.ExpenseServiceError)
 	GetTotalCostByCostCategoryID(costCategoryId *uuid.UUID) (*decimal.Decimal, *models.ExpenseServiceError)
@@ -96,6 +103,54 @@ func (cr *CostRepository) UpdateCost(cost *models.CostSchema) *models.ExpenseSer
 // DeleteCostEntry deletes a cost from the database
 func (cr *CostRepository) DeleteCostEntry(costId *uuid.UUID) *models.ExpenseServiceError {
 	result, err := cr.DatabaseMgr.ExecuteStatement("DELETE FROM cost WHERE id = $1", costId)
+	if err != nil {
+		log.Printf("Error while deleting cost from database: %v", err)
+		return expense_errors.EXPENSE_INTERNAL_ERROR
+	}
+
+	if rowsAffected, _ := result.RowsAffected(); rowsAffected == 0 {
+		return expense_errors.EXPENSE_NOT_FOUND
+	}
+
+	return nil
+}
+
+func (cr *CostRepository) AddTx(tx *sql.Tx, cost *models.CostSchema) *models.ExpenseServiceError {
+	query := "INSERT INTO cost (id, amount, description, created_at, deducted_at, end_date, id_cost_category) VALUES ($1, $2, $3, $4, $5, $6, $7)"
+	_, err := tx.Exec(query, cost.CostID, cost.Amount, cost.Description, cost.CreationDate, cost.DeductionDate, cost.EndDate, cost.CostCategoryID)
+	if err != nil {
+		if pqErr := err.(*pq.Error); pqErr.Code.Name() == "foreign_key_violation" {
+			return expense_errors.EXPENSE_NOT_FOUND // CostCategory not found
+		}
+
+		log.Printf("Error while inserting cost into database: %v", err)
+		return expense_errors.EXPENSE_INTERNAL_ERROR
+	}
+	return nil
+}
+
+func (cr *CostRepository) UpdateTx(tx *sql.Tx, cost *models.CostSchema) *models.ExpenseServiceError {
+	query := "UPDATE cost SET amount = $1, description = $2, deducted_at = $3, end_date = $4, id_cost_category = $5 WHERE id = $6"
+	result, err := tx.Exec(query, cost.Amount, cost.Description, cost.DeductionDate, cost.EndDate, cost.CostCategoryID, cost.CostID)
+	if err != nil {
+		if pqErr := err.(*pq.Error); pqErr.Code.Name() == "foreign_key_violation" {
+			return expense_errors.EXPENSE_NOT_FOUND // CostCategory not found
+		}
+
+		log.Printf("Error while updating cost in database: %v", err)
+		return expense_errors.EXPENSE_INTERNAL_ERROR
+	}
+
+	if rowsAffected, _ := result.RowsAffected(); rowsAffected == 0 {
+		return expense_errors.EXPENSE_NOT_FOUND
+	}
+
+	return nil
+}
+
+func (cr *CostRepository) DeleteTx(tx *sql.Tx, costId *uuid.UUID) *models.ExpenseServiceError {
+	query := "DELETE FROM cost WHERE id = $1"
+	result, err := tx.Exec(query, costId)
 	if err != nil {
 		log.Printf("Error while deleting cost from database: %v", err)
 		return expense_errors.EXPENSE_INTERNAL_ERROR
@@ -243,6 +298,30 @@ func (cr *CostRepository) GetCostCreditor(id *uuid.UUID) (*models.UserSchema, *m
 	}
 
 	return &creditor, nil
+}
+
+func (cr *CostRepository) AddCostContributorTx(tx *sql.Tx, contributor *models.CostContributionSchema) *models.ExpenseServiceError {
+	query := "INSERT INTO user_cost_association (id_user, id_cost, is_creditor, amount) VALUES ($1, $2, $3, $4)"
+	_, err := tx.Exec(query, contributor.UserID, contributor.CostID, contributor.IsCreditor, contributor.Amount)
+	if err != nil {
+		if pqErr := err.(*pq.Error); pqErr.Code.Name() == "foreign_key_violation" {
+			return expense_errors.EXPENSE_NOT_FOUND // Cost or User not found
+		}
+
+		log.Printf("Error while inserting cost into database: %v", err)
+		return expense_errors.EXPENSE_INTERNAL_ERROR
+	}
+	return nil
+}
+
+func (cr *CostRepository) DeleteCostContributionTx(tx *sql.Tx, contributorId *uuid.UUID) *models.ExpenseServiceError {
+	_, err := tx.Exec("DELETE FROM user_cost_association WHERE id_user = $1", contributorId)
+	if err != nil {
+		log.Printf("Error while deleting cost contribution: %v", err)
+		return expense_errors.EXPENSE_INTERNAL_ERROR
+	}
+
+	return nil
 }
 
 //********************************************************************************************************************\\

@@ -313,13 +313,16 @@ func DeleteCostEntryHandler(costCtl controllers.CostCtl) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		ctx := c.Request.Context()
 
+		// Get tripId from request params
+		tripId := uuid.MustParse(c.Param(models.ExpenseParamKeyTripId))
+
 		// Get costId from request params
 		costId, err := uuid.Parse(c.Param(models.ExpenseParamKeyCostId))
 		if err != nil {
 			utils.HandleErrorAndAbort(c, *expense_errors.EXPENSE_BAD_REQUEST)
 		}
 
-		serviceErr := costCtl.DeleteCostEntry(ctx, &costId)
+		serviceErr := costCtl.DeleteCostEntry(ctx, &tripId, &costId)
 		if err != nil {
 			utils.HandleErrorAndAbort(c, *serviceErr)
 			return
