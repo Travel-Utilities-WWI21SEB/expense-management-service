@@ -49,6 +49,7 @@ func (dr *DebtRepository) GetDebts(ctx context.Context) ([]*models.DebtSchema, *
 	if err != nil {
 		return nil, expense_errors.EXPENSE_BAD_REQUEST
 	}
+	defer rows.Close()
 
 	var debts []*models.DebtSchema
 	for rows.Next() {
@@ -64,7 +65,7 @@ func (dr *DebtRepository) GetDebts(ctx context.Context) ([]*models.DebtSchema, *
 	return debts, nil
 }
 
-func (dr *DebtRepository) AddTx(ctx context.Context, tx pgx.Tx, debt *models.DebtSchema) *models.ExpenseServiceError {
+func (*DebtRepository) AddTx(ctx context.Context, tx pgx.Tx, debt *models.DebtSchema) *models.ExpenseServiceError {
 	query := "INSERT INTO debt (id, id_creditor, id_debtor, id_trip, amount, currency_code, created_at, updated_at) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)"
 	_, err := tx.Exec(ctx, query, debt.DebtID, debt.CreditorId, debt.DebtorId, debt.TripId, debt.Amount, debt.CurrencyCode, debt.CreationDate, debt.UpdateDate)
 	if err != nil {
@@ -74,9 +75,8 @@ func (dr *DebtRepository) AddTx(ctx context.Context, tx pgx.Tx, debt *models.Deb
 	return nil
 }
 
-func (dr *DebtRepository) UpdateTx(ctx context.Context, tx pgx.Tx, debt *models.DebtSchema) *models.ExpenseServiceError {
+func (*DebtRepository) UpdateTx(ctx context.Context, tx pgx.Tx, debt *models.DebtSchema) *models.ExpenseServiceError {
 	query := "UPDATE debt SET id_creditor = $1, id_debtor = $2, id_trip = $3, amount = $4, currency_code = $5, updated_at = $6 WHERE id = $7"
-	log.Printf("Debt: %v \t time: %v", debt.DebtID.String(), debt.UpdateDate)
 	_, err := tx.Exec(ctx, query, debt.CreditorId, debt.DebtorId, debt.TripId, debt.Amount, debt.CurrencyCode, debt.UpdateDate, debt.DebtID)
 	if err != nil {
 		return expense_errors.EXPENSE_BAD_REQUEST
@@ -85,7 +85,7 @@ func (dr *DebtRepository) UpdateTx(ctx context.Context, tx pgx.Tx, debt *models.
 	return nil
 }
 
-func (dr *DebtRepository) DeleteTx(ctx context.Context, tx pgx.Tx, debtId *uuid.UUID) *models.ExpenseServiceError {
+func (*DebtRepository) DeleteTx(ctx context.Context, tx pgx.Tx, debtId *uuid.UUID) *models.ExpenseServiceError {
 	query := "DELETE FROM debt WHERE id = $1"
 	_, err := tx.Exec(ctx, query, debtId)
 	if err != nil {
@@ -128,6 +128,7 @@ func (dr *DebtRepository) GetDebtEntriesByTripId(ctx context.Context, tripId *uu
 		log.Printf("Error while getting debt entries by trip id: %v", err)
 		return nil, expense_errors.EXPENSE_INTERNAL_ERROR
 	}
+	defer rows.Close()
 
 	var debts []*models.DebtSchema
 	for rows.Next() {

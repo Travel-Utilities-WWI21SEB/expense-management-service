@@ -356,6 +356,7 @@ func (tc *TripController) mapTripToResponse(ctx context.Context, trip *models.Tr
 		}
 
 		participationResponses[i] = models.TripParticipationDTO{
+			UserID:            user.UserID,
 			Username:          user.Username,
 			HasAcceptedInvite: participant.HasAccepted,
 			PresenceStartDate: participant.PresenceStartDate.Format(time.DateOnly),

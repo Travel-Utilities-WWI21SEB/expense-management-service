@@ -12,7 +12,6 @@ import (
 
 func TripValidationMiddleware(databaseMgr managers.DatabaseMgr) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		log.Printf("TripValidationMiddleware: %v", c.Request.URL)
 		// Get tripId from path
 		tripIdParam := c.Param("tripId")
 		tripId, err := uuid.Parse(tripIdParam)

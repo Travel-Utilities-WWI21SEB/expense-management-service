@@ -117,6 +117,7 @@ CREATE TABLE public.transaction
     amount      numeric,
     created_at  timestamp with time zone,
     currency_code    character varying,
+    is_confirmed boolean NOT NULL,
     CONSTRAINT transaction_pk PRIMARY KEY (id)
 );
 -- ddl-end --
@@ -152,7 +153,7 @@ ALTER TABLE public.token
 ALTER TABLE public.user_trip_association
     ADD CONSTRAINT user_fk FOREIGN KEY (id_user)
         REFERENCES public."user" (id) MATCH FULL
-        ON DELETE NO ACTION ON UPDATE CASCADE;
+        ON DELETE CASCADE ON UPDATE CASCADE;
 -- ddl-end --
 
 -- object: trip_fk | type: CONSTRAINT --
@@ -168,7 +169,7 @@ ALTER TABLE public.user_trip_association
 ALTER TABLE public.cost_category
     ADD CONSTRAINT trip_fk FOREIGN KEY (id_trip)
         REFERENCES public.trip (id) MATCH FULL
-        ON DELETE SET NULL ON UPDATE CASCADE;
+        ON DELETE CASCADE ON UPDATE CASCADE;
 -- ddl-end --
 
 -- object: cost_category_fk | type: CONSTRAINT --
@@ -176,7 +177,7 @@ ALTER TABLE public.cost_category
 ALTER TABLE public.cost
     ADD CONSTRAINT cost_category_fk FOREIGN KEY (id_cost_category)
         REFERENCES public.cost_category (id) MATCH FULL
-        ON DELETE RESTRICT ON UPDATE CASCADE;
+        ON DELETE CASCADE ON UPDATE CASCADE;
 -- ddl-end --
 
 -- object: user_fk | type: CONSTRAINT --
@@ -200,7 +201,7 @@ ALTER TABLE public.user_cost_association
 ALTER TABLE public.transaction
     ADD CONSTRAINT debtor_fk FOREIGN KEY (id_creditor)
         REFERENCES public."user" (id) MATCH SIMPLE
-        ON DELETE SET NULL ON UPDATE CASCADE;
+        ON DELETE CASCADE ON UPDATE CASCADE;
 -- ddl-end --
 
 -- object: creditor_fk | type: CONSTRAINT --
@@ -208,7 +209,7 @@ ALTER TABLE public.transaction
 ALTER TABLE public.transaction
     ADD CONSTRAINT creditor_fk FOREIGN KEY (id_debtor)
         REFERENCES public."user" (id) MATCH SIMPLE
-        ON DELETE SET NULL ON UPDATE CASCADE;
+        ON DELETE CASCADE ON UPDATE CASCADE;
 -- ddl-end --
 
 -- object: trip_fk | type: CONSTRAINT --

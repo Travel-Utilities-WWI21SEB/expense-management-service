@@ -2,7 +2,6 @@ package repositories
 
 import (
 	"context"
-	"database/sql"
 	"errors"
 	"github.com/Travel-Utilities-WWI21SEB/expense-management-service/src/expense_errors"
 	"github.com/Travel-Utilities-WWI21SEB/expense-management-service/src/managers"
@@ -49,6 +48,7 @@ func (tr *TripRepository) GetTripsByUserId(ctx context.Context, userId *uuid.UUI
 		log.Printf("Error while querying trips: %v", err)
 		return nil, expense_errors.EXPENSE_INTERNAL_ERROR
 	}
+	defer rows.Close()
 	return rowsToTripSchema(rows)
 }
 
@@ -72,7 +72,8 @@ func (tr *TripRepository) UpdateTrip(ctx context.Context, trip *models.TripSchem
 	// https://stackoverflow.com/questions/17267417/how-to-upsert-merge-insert-on-duplicate-update-in-postgresql
 
 	// Update trip
-	result, err := tr.DatabaseMgr.ExecuteStatement(ctx, "UPDATE trip SET location = $1, start_date = $2, end_date = $3 WHERE id = $4", trip.Location, trip.StartDate, trip.EndDate, trip.TripID)
+	updateString := "UPDATE trip SET name = $1, description = $2, location = $3, start_date = $4, end_date = $5 WHERE id = $6"
+	result, err := tr.DatabaseMgr.ExecuteStatement(ctx, updateString, trip.Name, trip.Description, trip.Location, trip.StartDate, trip.EndDate, trip.TripID)
 	if err != nil {
 		log.Printf("Error while updating trip: %v", err)
 		return expense_errors.EXPENSE_INTERNAL_ERROR
@@ -154,6 +155,7 @@ func (tr *TripRepository) ValidateIfTripExists(ctx context.Context, tripId *uuid
 		log.Printf("Error while querying trip: %v", err)
 		return expense_errors.EXPENSE_INTERNAL_ERROR
 	}
+	defer rows.Close()
 
 	if rows.Next() {
 		return nil
@@ -168,6 +170,7 @@ func (tr *TripRepository) ValidateIfUserHasAccepted(ctx context.Context, tripId 
 		log.Printf("Error while querying user_trip_association: %v", err)
 		return expense_errors.EXPENSE_INTERNAL_ERROR
 	}
+	defer rows.Close()
 
 	if rows.Next() {
 		return nil
@@ -182,6 +185,7 @@ func (tr *TripRepository) CheckIfUserIsInvited(ctx context.Context, tripId *uuid
 		log.Printf("Error while querying user_trip_association: %v", err)
 		return false, expense_errors.EXPENSE_INTERNAL_ERROR
 	}
+	defer rows.Close()
 
 	if rows.Next() {
 		return true, nil
@@ -191,10 +195,10 @@ func (tr *TripRepository) CheckIfUserIsInvited(ctx context.Context, tripId *uuid
 }
 
 func (tr *TripRepository) GetTripParticipant(ctx context.Context, tripId *uuid.UUID, userId *uuid.UUID) (*models.UserTripSchema, *models.ExpenseServiceError) {
-	rows := tr.DatabaseMgr.ExecuteQueryRow(ctx, "SELECT id_user, id_trip, is_accepted, presence_start_date, presence_end_date FROM user_trip_association WHERE id_user = $1 AND id_trip = $2", userId, tripId)
+	row := tr.DatabaseMgr.ExecuteQueryRow(ctx, "SELECT id_user, id_trip, is_accepted, presence_start_date, presence_end_date FROM user_trip_association WHERE id_user = $1 AND id_trip = $2", userId, tripId)
 
 	var participant models.UserTripSchema
-	if err := rows.Scan(&participant.UserID, &participant.TripID, &participant.HasAccepted, &participant.PresenceStartDate, &participant.PresenceEndDate); err != nil {
+	if err := row.Scan(&participant.UserID, &participant.TripID, &participant.HasAccepted, &participant.PresenceStartDate, &participant.PresenceEndDate); err != nil {
 		log.Printf("Error while scanning user_trip_association: %v", err)
 		return nil, expense_errors.EXPENSE_INTERNAL_ERROR
 	}
@@ -208,6 +212,7 @@ func (tr *TripRepository) GetTripParticipants(ctx context.Context, tripId *uuid.
 		log.Printf("Error while querying user_trip_association: %v", err)
 		return nil, expense_errors.EXPENSE_INTERNAL_ERROR
 	}
+	defer rows.Close()
 
 	var participants []*models.UserTripSchema
 	for rows.Next() {
@@ -230,6 +235,7 @@ func (tr *TripRepository) GetAcceptedTripParticipants(ctx context.Context, tripI
 		log.Printf("Error while querying user_trip_association: %v", err)
 		return nil, expense_errors.EXPENSE_INTERNAL_ERROR
 	}
+	defer rows.Close()
 
 	participants := make([]*models.UserTripSchema, 0)
 	for rows.Next() {
@@ -261,7 +267,7 @@ func (tr *TripRepository) UpdateTripParticipant(ctx context.Context, userTrip *m
 	return nil
 }
 
-func (tr *TripRepository) UpdateTripParticipantTx(ctx context.Context, tx pgx.Tx, userTrip *models.UserTripSchema) *models.ExpenseServiceError {
+func (*TripRepository) UpdateTripParticipantTx(ctx context.Context, tx pgx.Tx, userTrip *models.UserTripSchema) *models.ExpenseServiceError {
 	query := "UPDATE user_trip_association SET is_accepted = $1, presence_start_date = $2, presence_end_date = $3 WHERE id_user = $4 AND id_trip = $5"
 	_, err := tx.Exec(ctx, query, userTrip.HasAccepted, userTrip.PresenceStartDate, userTrip.PresenceEndDate, userTrip.UserID, userTrip.TripID)
 	if err != nil {
@@ -280,7 +286,7 @@ func (tr *TripRepository) UpdateTripParticipantTx(ctx context.Context, tx pgx.Tx
 func rowToTripSchema(row pgx.Row) (*models.TripSchema, *models.ExpenseServiceError) {
 	trip := models.TripSchema{}
 	if err := row.Scan(&trip.TripID, &trip.Name, &trip.Description, &trip.Location, &trip.StartDate, &trip.EndDate); err != nil {
-		if err == sql.ErrNoRows {
+		if err == pgx.ErrNoRows {
 			return nil, expense_errors.EXPENSE_TRIP_NOT_FOUND
 		}
 

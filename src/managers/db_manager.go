@@ -6,8 +6,8 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
-	"log"
 	"os"
+	"time"
 
 	"github.com/Travel-Utilities-WWI21SEB/expense-management-service/src/utils"
 )
@@ -63,7 +63,7 @@ func (dm *DatabaseManager) CheckIfExists(ctx context.Context, query string, args
 	return count > 0, nil
 }
 
-func InitializeDatabaseConnection(ctx context.Context) *pgxpool.Pool {
+func InitializeDatabaseConnection(ctx context.Context) (*pgxpool.Pool, error) {
 	// Check if environment variables are set
 	var environment = os.Getenv("ENVIRONMENT")
 
@@ -76,19 +76,31 @@ func InitializeDatabaseConnection(ctx context.Context) *pgxpool.Pool {
 	)
 
 	if utils.ContainsEmptyString(dbHost, dbPort, dbUser, dbPassword, dbName) {
-		log.Fatalf("Required environment variables are not set")
+		return nil, fmt.Errorf("error initializing database connection: environment variables not set")
 	}
 
 	// CONNECT TO DATABASE
 	psqlInfo := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=disable", dbHost, dbPort, dbUser, dbPassword, dbName)
-	pool, err := pgxpool.New(ctx, psqlInfo)
+	config, err := pgxpool.ParseConfig(psqlInfo)
 	if err != nil {
-		log.Fatalf(err.Error())
+		return nil, fmt.Errorf("error parsing config: %v", err)
+	}
+
+	config.MinConns = 5
+	config.MaxConns = 30
+	config.MaxConnLifetime = time.Minute * 30
+	config.MaxConnIdleTime = time.Minute * 5
+	config.HealthCheckPeriod = time.Minute * 1
+
+	pool, err := pgxpool.NewWithConfig(ctx, config)
+	// pool, err := pgxpool.New(ctx, psqlInfo)
+	if err != nil {
+		return nil, fmt.Errorf("error creating new pool: %v", err)
 	}
 
 	if err = pool.Ping(ctx); err != nil {
-		log.Fatalf("Error pinging database: %v", err)
+		return nil, fmt.Errorf("error pinging database: %v", err)
 	}
 
-	return pool
+	return pool, nil
 }

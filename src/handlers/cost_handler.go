@@ -48,7 +48,7 @@ func CreateCostEntryHandler(costCtl controllers.CostCtl) gin.HandlerFunc {
 			return
 		}
 
-		// Check if cost entry already has empty fields
+		// Check if cost entry has empty fields
 		if utils.ContainsEmptyString(costData.Amount, costData.CurrencyCode, costData.Creditor, costData.CostCategoryID.String()) {
 			utils.HandleErrorAndAbort(c, *expense_errors.EXPENSE_BAD_REQUEST)
 			return
