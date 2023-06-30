@@ -2,12 +2,12 @@ package controllers
 
 import (
 	"context"
-	"database/sql"
 	"github.com/Travel-Utilities-WWI21SEB/expense-management-service/src/expense_errors"
 	"github.com/Travel-Utilities-WWI21SEB/expense-management-service/src/managers"
 	"github.com/Travel-Utilities-WWI21SEB/expense-management-service/src/models"
 	"github.com/Travel-Utilities-WWI21SEB/expense-management-service/src/repositories"
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
 	"github.com/shopspring/decimal"
 	"log"
 	"time"
@@ -32,14 +32,14 @@ func (tc *TransactionController) GetTransactionEntries(ctx context.Context, trip
 	// Get user id from context
 	userId := ctx.Value(models.ExpenseContextKeyUserID).(*uuid.UUID)
 
-	transactions, repoErr := tc.TransactionRepo.GetTransactionsByTripIdAndUserId(tripId, userId)
+	transactions, repoErr := tc.TransactionRepo.GetTransactionsByTripIdAndUserId(ctx, tripId, userId)
 	if repoErr != nil {
 		return nil, repoErr
 	}
 
 	transactionDTOs := make([]*models.TransactionDTO, 0)
 	for _, transaction := range transactions {
-		transactionDto, repoErr := tc.mapTransactionToDto(transaction)
+		transactionDto, repoErr := tc.mapTransactionToDto(ctx, transaction)
 		if repoErr != nil {
 			return nil, repoErr
 		}
@@ -54,7 +54,7 @@ func (tc *TransactionController) GetTransactionDetails(ctx context.Context, tran
 	// Get user id from context
 	userId := ctx.Value(models.ExpenseContextKeyUserID).(*uuid.UUID)
 
-	transaction, repoErr := tc.TransactionRepo.GetTransactionById(transactionId)
+	transaction, repoErr := tc.TransactionRepo.GetTransactionById(ctx, transactionId)
 	if repoErr != nil {
 		return nil, repoErr
 	}
@@ -64,7 +64,7 @@ func (tc *TransactionController) GetTransactionDetails(ctx context.Context, tran
 		return nil, expense_errors.EXPENSE_FORBIDDEN
 	}
 
-	transactionDto, repoErr := tc.mapTransactionToDto(transaction)
+	transactionDto, repoErr := tc.mapTransactionToDto(ctx, transaction)
 	if repoErr != nil {
 		return nil, repoErr
 	}
@@ -81,8 +81,8 @@ func (tc *TransactionController) CreateTransactionEntry(ctx context.Context, tri
 	}
 
 	// Make sure to rollback the transaction if it fails
-	defer func(tx *sql.Tx) {
-		err := tx.Rollback()
+	defer func(tx pgx.Tx) {
+		err := tx.Rollback(ctx)
 		if err != nil {
 			log.Printf("Error while rolling back transaction: %v", err)
 		}
@@ -92,24 +92,24 @@ func (tc *TransactionController) CreateTransactionEntry(ctx context.Context, tri
 	userId := ctx.Value(models.ExpenseContextKeyUserID).(*uuid.UUID)
 	log.Printf("User id: %v", userId)
 	// Get creditor from request
-	creditor, repoErr := tc.UserRepo.GetUserById(userId)
+	creditor, repoErr := tc.UserRepo.GetUserById(ctx, userId)
 	if repoErr != nil {
 		return nil, repoErr
 	}
 
 	// Check if user is part of trip
-	if repoErr := tc.TripRepo.ValidateIfUserHasAccepted(tripId, userId); repoErr != nil {
+	if repoErr := tc.TripRepo.ValidateIfUserHasAccepted(ctx, tripId, userId); repoErr != nil {
 		return nil, repoErr
 	}
 
 	// Get debtor from request
-	debtor, repoErr := tc.UserRepo.GetUserById(transactionRequest.DebtorId)
+	debtor, repoErr := tc.UserRepo.GetUserById(ctx, transactionRequest.DebtorId)
 	if repoErr != nil {
 		return nil, repoErr
 	}
 
 	// Check if debtor is part of trip
-	if repoErr = tc.TripRepo.ValidateIfUserHasAccepted(tripId, transactionRequest.DebtorId); repoErr != nil {
+	if repoErr = tc.TripRepo.ValidateIfUserHasAccepted(ctx, tripId, transactionRequest.DebtorId); repoErr != nil {
 		return nil, repoErr
 	}
 
@@ -128,22 +128,22 @@ func (tc *TransactionController) CreateTransactionEntry(ctx context.Context, tri
 		IsConfirmed:   false,
 	}
 
-	if repoErr := tc.TransactionRepo.AddTx(tx, transaction); repoErr != nil {
+	if repoErr := tc.TransactionRepo.AddTx(ctx, tx, transaction); repoErr != nil {
 		return nil, repoErr
 	}
 
 	// Add debt to debtor
-	if repoErr := tc.DebtRepo.CalculateDebt(tx, debtor.UserID, creditor.UserID, tripId, transaction.Amount); repoErr != nil {
+	if repoErr := tc.DebtRepo.CalculateDebt(ctx, tx, debtor.UserID, creditor.UserID, tripId, transaction.Amount); repoErr != nil {
 		return nil, repoErr
 	}
 
 	// Commit transaction
-	if err := tx.Commit(); err != nil {
+	if err := tx.Commit(ctx); err != nil {
 		log.Printf("Error while committing transaction: %v", err)
 		return nil, expense_errors.EXPENSE_INTERNAL_ERROR
 	}
 
-	response, repoErr := tc.mapTransactionToDto(transaction)
+	response, repoErr := tc.mapTransactionToDto(ctx, transaction)
 	if repoErr != nil {
 		return nil, repoErr
 	}
@@ -151,7 +151,7 @@ func (tc *TransactionController) CreateTransactionEntry(ctx context.Context, tri
 	return response, nil
 }
 
-func (tc *TransactionController) mapTransactionToDto(transaction *models.TransactionSchema) (*models.TransactionDTO, *models.ExpenseServiceError) {
+func (tc *TransactionController) mapTransactionToDto(ctx context.Context, transaction *models.TransactionSchema) (*models.TransactionDTO, *models.ExpenseServiceError) {
 	response := &models.TransactionDTO{
 		TransactionId: transaction.TransactionId,
 		Creditor:      nil,
@@ -163,7 +163,7 @@ func (tc *TransactionController) mapTransactionToDto(transaction *models.Transac
 	}
 
 	// Get creditor from database
-	creditor, repoErr := tc.UserRepo.GetUserById(transaction.CreditorId)
+	creditor, repoErr := tc.UserRepo.GetUserById(ctx, transaction.CreditorId)
 	if repoErr != nil {
 		return nil, repoErr
 	}
@@ -177,7 +177,7 @@ func (tc *TransactionController) mapTransactionToDto(transaction *models.Transac
 	response.Creditor = &creditorDto
 
 	// Get debtor from database
-	debtor, repoErr := tc.UserRepo.GetUserById(transaction.DebtorId)
+	debtor, repoErr := tc.UserRepo.GetUserById(ctx, transaction.DebtorId)
 	if repoErr != nil {
 		return nil, repoErr
 	}
@@ -191,7 +191,7 @@ func (tc *TransactionController) mapTransactionToDto(transaction *models.Transac
 	response.Debtor = &debtorDto
 
 	// Get trip from database
-	trip, repoErr := tc.TripRepo.GetTripById(transaction.TripId)
+	trip, repoErr := tc.TripRepo.GetTripById(ctx, transaction.TripId)
 	if repoErr != nil {
 		return nil, repoErr
 	}
@@ -218,8 +218,8 @@ func (tc *TransactionController) DeleteTransactionEntry(ctx context.Context, tra
 	}
 
 	// Make sure to rollback the transaction if it fails
-	defer func(tx *sql.Tx) {
-		err := tx.Rollback()
+	defer func(tx pgx.Tx) {
+		err := tx.Rollback(ctx)
 		if err != nil {
 			log.Printf("Error while rolling back transaction: %v", err)
 		}
@@ -229,7 +229,7 @@ func (tc *TransactionController) DeleteTransactionEntry(ctx context.Context, tra
 	userId := ctx.Value(models.ExpenseContextKeyUserID).(*uuid.UUID)
 
 	// Get transaction from database
-	transaction, repoErr := tc.TransactionRepo.GetTransactionById(transactionId)
+	transaction, repoErr := tc.TransactionRepo.GetTransactionById(ctx, transactionId)
 	if repoErr != nil {
 		return repoErr
 	}
@@ -240,17 +240,17 @@ func (tc *TransactionController) DeleteTransactionEntry(ctx context.Context, tra
 	}
 
 	// Delete transaction
-	if repoErr := tc.TransactionRepo.DeleteTx(tx, transactionId); repoErr != nil {
+	if repoErr := tc.TransactionRepo.DeleteTx(ctx, tx, transactionId); repoErr != nil {
 		return repoErr
 	}
 
 	// Delete debt
-	if repoErr := tc.DebtRepo.CalculateDebt(tx, transaction.CreditorId, transaction.DebtorId, transaction.TripId, transaction.Amount.Neg()); repoErr != nil {
+	if repoErr := tc.DebtRepo.CalculateDebt(ctx, tx, transaction.CreditorId, transaction.DebtorId, transaction.TripId, transaction.Amount.Neg()); repoErr != nil {
 		return repoErr
 	}
 
 	// Commit transaction
-	if err := tx.Commit(); err != nil {
+	if err := tx.Commit(ctx); err != nil {
 		log.Printf("Error while committing transaction: %v", err)
 		return expense_errors.EXPENSE_INTERNAL_ERROR
 	}

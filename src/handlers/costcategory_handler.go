@@ -30,7 +30,8 @@ func CreateCostCategoryEntryHandler(costCategoryCtl controllers.CostCategoryCtl)
 		}
 
 		// Create cost category entry
-		response, serviceErr := costCategoryCtl.CreateCostCategory(&tripId, costCategoryData)
+		ctx := c.Request.Context()
+		response, serviceErr := costCategoryCtl.CreateCostCategory(ctx, &tripId, costCategoryData)
 		if serviceErr != nil {
 			utils.HandleErrorAndAbort(c, *serviceErr)
 			return
@@ -53,7 +54,8 @@ func UpdateCostCategoryEntryHandler(costCategoryCtl controllers.CostCategoryCtl)
 		}
 
 		// Update cost category entry
-		response, serviceErr := costCategoryCtl.PatchCostCategory(&costCategoryId, costCategoryData)
+		ctx := c.Request.Context()
+		response, serviceErr := costCategoryCtl.PatchCostCategory(ctx, &costCategoryId, costCategoryData)
 		if serviceErr != nil {
 			utils.HandleErrorAndAbort(c, *serviceErr)
 			return
@@ -69,7 +71,8 @@ func GetCostCategoryDetailsHandler(costCategoryCtl controllers.CostCategoryCtl) 
 		costCategoryId := uuid.MustParse(c.Param(models.ExpenseParamKeyCostCategoryId))
 
 		// Get cost category entry
-		response, serviceErr := costCategoryCtl.GetCostCategoryDetails(&costCategoryId)
+		ctx := c.Request.Context()
+		response, serviceErr := costCategoryCtl.GetCostCategoryDetails(ctx, &costCategoryId)
 		if serviceErr != nil {
 			utils.HandleErrorAndAbort(c, *serviceErr)
 			return
@@ -85,7 +88,8 @@ func DeleteCostCategoryEntryHandler(costCategoryCtl controllers.CostCategoryCtl)
 		costCategoryId := uuid.MustParse(c.Param(models.ExpenseParamKeyCostCategoryId))
 
 		// Delete cost category entry
-		serviceErr := costCategoryCtl.DeleteCostCategory(&costCategoryId)
+		ctx := c.Request.Context()
+		serviceErr := costCategoryCtl.DeleteCostCategory(ctx, &costCategoryId)
 		if serviceErr != nil {
 			utils.HandleErrorAndAbort(c, *serviceErr)
 			return
@@ -101,7 +105,8 @@ func GetCostCategoryEntriesHandler(costCategoryCtl controllers.CostCategoryCtl) 
 		tripId := uuid.MustParse(c.Param(models.ExpenseParamKeyTripId))
 
 		// Get cost category entries
-		response, serviceErr := costCategoryCtl.GetCostCategoryEntries(&tripId)
+		ctx := c.Request.Context()
+		response, serviceErr := costCategoryCtl.GetCostCategoryEntries(ctx, &tripId)
 		if serviceErr != nil {
 			utils.HandleErrorAndAbort(c, *serviceErr)
 			return

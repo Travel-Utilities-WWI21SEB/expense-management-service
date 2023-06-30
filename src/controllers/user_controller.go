@@ -67,12 +67,12 @@ func (uc *UserController) RegisterUser(ctx context.Context, registrationData mod
 	}
 
 	// Insert user into database
-	if repoErr := uc.UserRepo.CreateUser(user); repoErr != nil {
+	if repoErr := uc.UserRepo.CreateUser(ctx, user); repoErr != nil {
 		return repoErr
 	}
 
 	// Insert token into database
-	token, repoErr := uc.UserRepo.CreateTokenByUserIdAndType(user.UserID, activationToken)
+	token, repoErr := uc.UserRepo.CreateTokenByUserIdAndType(ctx, user.UserID, activationToken)
 	if repoErr != nil {
 		return repoErr
 	}
@@ -94,7 +94,7 @@ func (uc *UserController) LoginUser(ctx context.Context, loginData models.LoginR
 	}
 
 	// Get user from database
-	user, repoErr := uc.UserRepo.GetUserBySchema(user)
+	user, repoErr := uc.UserRepo.GetUserBySchema(ctx, user)
 	if repoErr != nil {
 		return nil, repoErr
 	}
@@ -105,7 +105,7 @@ func (uc *UserController) LoginUser(ctx context.Context, loginData models.LoginR
 	}
 
 	// Check if user is activated
-	if repoErr := uc.UserRepo.ValidateIfUserIsActivated(user.UserID); repoErr != nil {
+	if repoErr := uc.UserRepo.ValidateIfUserIsActivated(ctx, user.UserID); repoErr != nil {
 		return nil, repoErr
 	}
 
@@ -124,7 +124,7 @@ func (uc *UserController) LoginUser(ctx context.Context, loginData models.LoginR
 
 func (uc *UserController) RefreshToken(ctx context.Context, userId *uuid.UUID) (*models.RefreshTokenResponse, *models.ExpenseServiceError) {
 	// Check if user exists
-	if repoErr := uc.UserRepo.ValidateIfUserExists(userId); repoErr != nil {
+	if repoErr := uc.UserRepo.ValidateIfUserExists(ctx, userId); repoErr != nil {
 		return nil, repoErr
 	}
 
@@ -147,18 +147,18 @@ func (uc *UserController) ForgotPassword(ctx context.Context, email string) *mod
 	}
 
 	// Get user from database
-	user, repoErr := uc.UserRepo.GetUserBySchema(user)
+	user, repoErr := uc.UserRepo.GetUserBySchema(ctx, user)
 	if repoErr != nil {
 		return repoErr
 	}
 
 	// Delete old token
-	if _, repoErr := uc.UserRepo.DeleteTokenByUserIdAndType(user.UserID, resetPasswordToken); repoErr != nil {
+	if _, repoErr := uc.UserRepo.DeleteTokenByUserIdAndType(ctx, user.UserID, resetPasswordToken); repoErr != nil {
 		return repoErr
 	}
 
 	// Insert token into database
-	token, repoErr := uc.UserRepo.CreateTokenByUserIdAndType(user.UserID, resetPasswordToken)
+	token, repoErr := uc.UserRepo.CreateTokenByUserIdAndType(ctx, user.UserID, resetPasswordToken)
 	if repoErr != nil {
 		return repoErr
 	}
@@ -175,13 +175,13 @@ func (uc *UserController) ForgotPassword(ctx context.Context, email string) *mod
 
 func (uc *UserController) VerifyPasswordResetToken(ctx context.Context, email, token string) *models.ExpenseServiceError {
 	// Get token from database
-	tokenSchema, repoErr := uc.UserRepo.GetTokenByTokenAndType(token, resetPasswordToken)
+	tokenSchema, repoErr := uc.UserRepo.GetTokenByTokenAndType(ctx, token, resetPasswordToken)
 	if repoErr != nil {
 		return repoErr
 	}
 
 	// Get user email from database
-	user, repoErr := uc.UserRepo.GetUserById(tokenSchema.UserID)
+	user, repoErr := uc.UserRepo.GetUserById(ctx, tokenSchema.UserID)
 	if repoErr != nil {
 		return repoErr
 	}
@@ -196,13 +196,13 @@ func (uc *UserController) VerifyPasswordResetToken(ctx context.Context, email, t
 
 func (uc *UserController) ResetPassword(ctx context.Context, email, password, token string) *models.ExpenseServiceError {
 	// Get token from database
-	tokenSchema, repoErr := uc.UserRepo.GetTokenByTokenAndType(token, resetPasswordToken)
+	tokenSchema, repoErr := uc.UserRepo.GetTokenByTokenAndType(ctx, token, resetPasswordToken)
 	if repoErr != nil {
 		return repoErr
 	}
 
 	// Get user from database
-	user, repoErr := uc.UserRepo.GetUserById(tokenSchema.UserID)
+	user, repoErr := uc.UserRepo.GetUserById(ctx, tokenSchema.UserID)
 	if repoErr != nil {
 		return repoErr
 	}
@@ -220,7 +220,7 @@ func (uc *UserController) ResetPassword(ctx context.Context, email, password, to
 	}
 
 	// Update password
-	if repoErr := uc.UserRepo.UpdatePassword(user.UserID, hashedPassword); repoErr != nil {
+	if repoErr := uc.UserRepo.UpdatePassword(ctx, user.UserID, hashedPassword); repoErr != nil {
 		return repoErr
 	}
 
@@ -241,7 +241,7 @@ func (uc *UserController) ResendToken(ctx context.Context, email string) *models
 	}
 
 	// Get user from database
-	user, repoErr := uc.UserRepo.GetUserBySchema(user)
+	user, repoErr := uc.UserRepo.GetUserBySchema(ctx, user)
 	if repoErr != nil {
 		return repoErr
 	}
@@ -252,12 +252,12 @@ func (uc *UserController) ResendToken(ctx context.Context, email string) *models
 	}
 
 	// Delete old token
-	if _, repoErr := uc.UserRepo.DeleteTokenByUserIdAndType(user.UserID, activationToken); repoErr != nil {
+	if _, repoErr := uc.UserRepo.DeleteTokenByUserIdAndType(ctx, user.UserID, activationToken); repoErr != nil {
 		return repoErr
 	}
 
 	// Insert token into database
-	token, repoErr := uc.UserRepo.CreateTokenByUserIdAndType(user.UserID, activationToken)
+	token, repoErr := uc.UserRepo.CreateTokenByUserIdAndType(ctx, user.UserID, activationToken)
 	if repoErr != nil {
 		return repoErr
 	}
@@ -286,7 +286,7 @@ func (uc *UserController) UpdateUser(ctx context.Context, request *models.Update
 	}
 
 	// Check if user is activated
-	if repoErr := uc.UserRepo.ValidateIfUserIsActivated(user.UserID); repoErr != nil {
+	if repoErr := uc.UserRepo.ValidateIfUserIsActivated(ctx, user.UserID); repoErr != nil {
 		return nil, repoErr
 	}
 
@@ -307,7 +307,7 @@ func (uc *UserController) UpdateUser(ctx context.Context, request *models.Update
 		user.Password = hashedPassword
 	}
 
-	if repoErr = uc.UserRepo.UpdateUser(user); repoErr != nil {
+	if repoErr = uc.UserRepo.UpdateUser(ctx, user); repoErr != nil {
 		return nil, repoErr
 	}
 
@@ -315,23 +315,28 @@ func (uc *UserController) UpdateUser(ctx context.Context, request *models.Update
 }
 
 func (uc *UserController) DeleteUser(ctx context.Context) *models.ExpenseServiceError {
-	return uc.UserRepo.DeleteUser(ctx.Value(models.ExpenseContextKeyUserID).(*uuid.UUID))
+	userId, ok := ctx.Value(models.ExpenseContextKeyUserID).(*uuid.UUID)
+	if !ok {
+		return expense_errors.EXPENSE_INTERNAL_ERROR
+	}
+
+	return uc.UserRepo.DeleteUser(ctx, userId)
 }
 
 func (uc *UserController) ActivateUser(ctx context.Context, tokenString string) (*models.ActivationResponse, *models.ExpenseServiceError) {
 	// Get UserID from token
-	token, repoErr := uc.UserRepo.GetTokenByTokenAndType(tokenString, activationToken)
+	token, repoErr := uc.UserRepo.GetTokenByTokenAndType(ctx, tokenString, activationToken)
 	if repoErr != nil {
 		return nil, repoErr
 	}
 
 	// Activate user
-	if repoErr := uc.UserRepo.ActivateUser(token.UserID); repoErr != nil {
+	if repoErr := uc.UserRepo.ActivateUser(ctx, token.UserID); repoErr != nil {
 		return nil, repoErr
 	}
 
 	// Confirm token
-	if repoErr := uc.UserRepo.ConfirmTokenByType(token.UserID, activationToken); repoErr != nil {
+	if repoErr := uc.UserRepo.ConfirmTokenByType(ctx, token.UserID, activationToken); repoErr != nil {
 		return nil, repoErr
 	}
 
@@ -343,7 +348,7 @@ func (uc *UserController) ActivateUser(ctx context.Context, tokenString string) 
 	}
 
 	// Get user from database
-	user, repoErr := uc.UserRepo.GetUserById(token.UserID)
+	user, repoErr := uc.UserRepo.GetUserById(ctx, token.UserID)
 	if repoErr != nil {
 		return nil, repoErr
 	}
@@ -379,7 +384,7 @@ func (uc *UserController) GetUserDetails(ctx context.Context) (*models.UserDetai
 
 func (uc *UserController) SuggestUsers(ctx context.Context, query string) (*[]models.UserSuggestion, *models.ExpenseServiceError) {
 	// Find users like query
-	users, repoErr := uc.UserRepo.FindUsersLikeUsername(query)
+	users, repoErr := uc.UserRepo.FindUsersLikeUsername(ctx, query)
 	if repoErr != nil {
 		return nil, repoErr
 	}
@@ -395,12 +400,12 @@ func (uc *UserController) SuggestUsers(ctx context.Context, query string) (*[]mo
 	return &userSuggestionsResponse, nil
 }
 
-func (uc *UserController) CheckEmail(_ context.Context, email string) *models.ExpenseServiceError {
-	return uc.UserRepo.ValidateEmailExistence(email)
+func (uc *UserController) CheckEmail(ctx context.Context, email string) *models.ExpenseServiceError {
+	return uc.UserRepo.ValidateEmailExistence(ctx, email)
 }
 
 func (uc *UserController) CheckUsername(ctx context.Context, username string) *models.ExpenseServiceError {
-	return uc.UserRepo.ValidateUsernameExistence(username)
+	return uc.UserRepo.ValidateUsernameExistence(ctx, username)
 }
 
 // UTITLITY FUNCTIONS

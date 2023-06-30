@@ -30,7 +30,8 @@ func TripValidationMiddleware(databaseMgr managers.DatabaseMgr) gin.HandlerFunc 
 		}
 
 		// Check if trip exists
-		exists, err := databaseMgr.CheckIfExists("SELECT COUNT(*) FROM trip WHERE id = $1", &tripId)
+		ctx := c.Request.Context()
+		exists, err := databaseMgr.CheckIfExists(ctx, "SELECT COUNT(*) FROM trip WHERE id = $1", &tripId)
 
 		if err != nil {
 			log.Printf("Error while checking if trip %s exists", tripId.String())
@@ -45,7 +46,7 @@ func TripValidationMiddleware(databaseMgr managers.DatabaseMgr) gin.HandlerFunc 
 		}
 
 		// Check if user is part of trip
-		exists, err = databaseMgr.CheckIfExists("SELECT COUNT(*) FROM user_trip_association WHERE id_trip = $1 AND id_user = $2", &tripId, &userId)
+		exists, err = databaseMgr.CheckIfExists(ctx, "SELECT COUNT(*) FROM user_trip_association WHERE id_trip = $1 AND id_user = $2", &tripId, &userId)
 
 		if err != nil {
 			log.Printf("Error while checking if user %s is part of trip %s", userId.String(), tripId.String())

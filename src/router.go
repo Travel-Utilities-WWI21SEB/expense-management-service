@@ -1,8 +1,8 @@
 package main
 
 import (
-	"database/sql"
 	"github.com/Travel-Utilities-WWI21SEB/expense-management-service/src/repositories"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"net/http"
 
 	"github.com/Travel-Utilities-WWI21SEB/expense-management-service/src/controllers"
@@ -23,7 +23,7 @@ type Controllers struct {
 	TransactionController  controllers.TransactionCtl
 }
 
-func createRouter(dbConnection *sql.DB) *gin.Engine {
+func createRouter(dbConnection *pgxpool.Pool) *gin.Engine {
 	router := gin.New()
 
 	// Attach logger middleware
