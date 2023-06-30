@@ -22,7 +22,7 @@ type TransactionRepository struct {
 	DatabaseMgr managers.DatabaseMgr
 }
 
-func (tr *TransactionRepository) AddTx(ctx context.Context, tx pgx.Tx, transaction *models.TransactionSchema) *models.ExpenseServiceError {
+func (*TransactionRepository) AddTx(ctx context.Context, tx pgx.Tx, transaction *models.TransactionSchema) *models.ExpenseServiceError {
 	query := "INSERT INTO transaction (id, id_creditor, id_debtor, id_trip, amount, created_at, currency_code, is_confirmed) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)"
 	_, err := tx.Exec(ctx, query, transaction.TransactionId, transaction.CreditorId, transaction.DebtorId, transaction.TripId, transaction.Amount, transaction.CreationDate, transaction.CurrencyCode, transaction.IsConfirmed)
 	if err != nil {
@@ -32,7 +32,7 @@ func (tr *TransactionRepository) AddTx(ctx context.Context, tx pgx.Tx, transacti
 	return nil
 }
 
-func (tr *TransactionRepository) DeleteTx(ctx context.Context, tx pgx.Tx, transactionId *uuid.UUID) *models.ExpenseServiceError {
+func (*TransactionRepository) DeleteTx(ctx context.Context, tx pgx.Tx, transactionId *uuid.UUID) *models.ExpenseServiceError {
 	query := "DELETE FROM transaction WHERE id = $1"
 	_, err := tx.Exec(ctx, query, transactionId)
 	if err != nil {
@@ -63,6 +63,7 @@ func (tr *TransactionRepository) GetTransactionsByTripIdAndUserId(ctx context.Co
 		log.Printf("Error while executing query: %v", err)
 		return nil, expense_errors.EXPENSE_INTERNAL_ERROR
 	}
+	defer rows.Close()
 
 	transactions := make([]*models.TransactionSchema, 0)
 	for rows.Next() {

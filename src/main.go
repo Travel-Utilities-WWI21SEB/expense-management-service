@@ -26,7 +26,11 @@ func main() {
 	log.Println("Initializing database connection...")
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
-	dbConnection := managers.InitializeDatabaseConnection(ctx)
+	dbConnection, err := managers.InitializeDatabaseConnection(ctx)
+	if err != nil {
+		log.Printf("Error initializing database connection:: %v", err)
+		return
+	}
 	defer dbConnection.Close()
 
 	// CREATE ROUTER
@@ -50,7 +54,6 @@ func main() {
 		log.Println("Starting server on port 8080...")
 		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			log.Fatalf("Error starting or closing listener:: %v", err)
-			os.Exit(0)
 		}
 	}()
 

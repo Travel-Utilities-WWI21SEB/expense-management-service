@@ -11,7 +11,6 @@ import (
 
 func JwtAuthMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		log.Printf("JwtAuthMiddleware: %v", c.Request.URL)
 		// Check if Authorization header is set
 		authHeader := c.GetHeader("Authorization")
 		if authHeader == "" {

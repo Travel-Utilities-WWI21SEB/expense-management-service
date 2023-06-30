@@ -133,7 +133,7 @@ func (tc *TransactionController) CreateTransactionEntry(ctx context.Context, tri
 	}
 
 	// Add debt to debtor
-	if repoErr := tc.DebtRepo.CalculateDebt(ctx, tx, debtor.UserID, creditor.UserID, tripId, transaction.Amount); repoErr != nil {
+	if repoErr := tc.DebtRepo.CalculateDebt(ctx, tx, creditor.UserID, debtor.UserID, tripId, transaction.Amount); repoErr != nil {
 		return nil, repoErr
 	}
 
