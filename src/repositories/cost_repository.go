@@ -2,7 +2,6 @@ package repositories
 
 import (
 	"context"
-	"database/sql"
 	"errors"
 	"github.com/Travel-Utilities-WWI21SEB/expense-management-service/src/expense_errors"
 	"github.com/Travel-Utilities-WWI21SEB/expense-management-service/src/managers"
@@ -15,10 +14,7 @@ import (
 )
 
 type CostRepo interface {
-	CreateCost(ctx context.Context, cost *models.CostSchema) *models.ExpenseServiceError
 	GetCostByID(ctx context.Context, costId *uuid.UUID) (*models.CostSchema, *models.ExpenseServiceError)
-	UpdateCost(ctx context.Context, cost *models.CostSchema) *models.ExpenseServiceError
-	DeleteCostEntry(ctx context.Context, costId *uuid.UUID) *models.ExpenseServiceError
 
 	AddTx(ctx context.Context, tx pgx.Tx, cost *models.CostSchema) *models.ExpenseServiceError
 	UpdateTx(ctx context.Context, tx pgx.Tx, cost *models.CostSchema) *models.ExpenseServiceError
@@ -35,7 +31,7 @@ type CostRepo interface {
 	GetCostCreditor(ctx context.Context, id *uuid.UUID) (*models.UserSchema, *models.ExpenseServiceError)
 
 	AddCostContributorTx(ctx context.Context, tx pgx.Tx, contributor *models.CostContributionSchema) *models.ExpenseServiceError
-	DeleteCostContributionTx(ctx context.Context, tx pgx.Tx, contributorId *uuid.UUID) *models.ExpenseServiceError
+	DeleteCostContributionTx(ctx context.Context, tx pgx.Tx, contributorId *uuid.UUID, costId *uuid.UUID) *models.ExpenseServiceError
 
 	GetTotalCostByTripID(ctx context.Context, tripId *uuid.UUID) (*decimal.Decimal, *models.ExpenseServiceError)
 	GetTotalCostByCostCategoryID(ctx context.Context, costCategoryId *uuid.UUID) (*decimal.Decimal, *models.ExpenseServiceError)
@@ -68,6 +64,7 @@ func (cr *CostRepository) GetCostOverview(ctx context.Context, userId *uuid.UUID
 		log.Printf("Error while executing query: %v", err)
 		return nil, expense_errors.EXPENSE_INTERNAL_ERROR
 	}
+	defer rows.Close()
 
 	// Iterate over every trip
 	for rows.Next() {
@@ -133,6 +130,7 @@ func (cr *CostRepository) GetCostOverview(ctx context.Context, userId *uuid.UUID
 				Amount:           costCategoryCosts.String(),
 			})
 		}
+		costRow.Close()
 
 		// Add trip to trip distribution
 		tripDistribution = append(tripDistribution, &models.TripDistributionDTO{
@@ -177,30 +175,13 @@ func (cr *CostRepository) GetCostOverview(ctx context.Context, userId *uuid.UUID
 	return response, nil
 }
 
-// CreateCost Creates a new cost in the database
-func (cr *CostRepository) CreateCost(ctx context.Context, cost *models.CostSchema) *models.ExpenseServiceError {
-	_, err := cr.DatabaseMgr.ExecuteStatement(ctx, "INSERT INTO cost (id, amount, description, created_at, deducted_at, end_date, id_cost_category) VALUES ($1, $2, $3, $4, $5, $6, $7)", cost.CostID, cost.Amount, cost.Description, cost.CreationDate, cost.DeductionDate, cost.EndDate, cost.CostCategoryID)
-	if err != nil {
-
-		// Check if cost category exists
-		var pgxErr *pgconn.PgError
-		if errors.As(err, &pgxErr); pgxErr.Code == "foreign_key_violation" {
-			return expense_errors.EXPENSE_NOT_FOUND // CostCategory not found
-		}
-
-		log.Printf("Error while inserting cost into database: %v", err)
-		return expense_errors.EXPENSE_INTERNAL_ERROR
-	}
-	return nil
-}
-
 // GetCostByID returns a cost by its id
 func (cr *CostRepository) GetCostByID(ctx context.Context, costId *uuid.UUID) (*models.CostSchema, *models.ExpenseServiceError) {
 	cost := &models.CostSchema{}
 
 	row := cr.DatabaseMgr.ExecuteQueryRow(ctx, "SELECT id, amount, description, created_at, deducted_at, end_date, id_cost_category FROM cost WHERE id = $1", costId)
 	if err := row.Scan(&cost.CostID, &cost.Amount, &cost.Description, &cost.CreationDate, &cost.DeductionDate, &cost.EndDate, &cost.CostCategoryID); err != nil {
-		if err == sql.ErrNoRows {
+		if err == pgx.ErrNoRows {
 			return nil, expense_errors.EXPENSE_NOT_FOUND
 		}
 
@@ -211,42 +192,7 @@ func (cr *CostRepository) GetCostByID(ctx context.Context, costId *uuid.UUID) (*
 	return cost, nil
 }
 
-// UpdateCost updates a cost in the database
-func (cr *CostRepository) UpdateCost(ctx context.Context, cost *models.CostSchema) *models.ExpenseServiceError {
-	result, err := cr.DatabaseMgr.ExecuteStatement(ctx, "UPDATE cost SET amount = $1, description = $2, created_at = $3, deducted_at = $4, end_date = $5, id_cost_category = $6 WHERE id = $7", cost.Amount, cost.Description, cost.CreationDate, cost.DeductionDate, cost.EndDate, cost.CostCategoryID, cost.CostID)
-	if err != nil {
-		var pgxErr *pgconn.PgError
-		if errors.As(err, &pgxErr); pgxErr.Code == "foreign_key_violation" {
-			return expense_errors.EXPENSE_NOT_FOUND // CostCategory not found
-		}
-
-		log.Printf("Error while updating cost in database: %v", err)
-		return expense_errors.EXPENSE_INTERNAL_ERROR
-	}
-
-	if rowsAffected := result.RowsAffected(); rowsAffected == 0 {
-		return expense_errors.EXPENSE_NOT_FOUND
-	}
-
-	return nil
-}
-
-// DeleteCostEntry deletes a cost from the database
-func (cr *CostRepository) DeleteCostEntry(ctx context.Context, costId *uuid.UUID) *models.ExpenseServiceError {
-	result, err := cr.DatabaseMgr.ExecuteStatement(ctx, "DELETE FROM cost WHERE id = $1", costId)
-	if err != nil {
-		log.Printf("Error while deleting cost from database: %v", err)
-		return expense_errors.EXPENSE_INTERNAL_ERROR
-	}
-
-	if rowsAffected := result.RowsAffected(); rowsAffected == 0 {
-		return expense_errors.EXPENSE_NOT_FOUND
-	}
-
-	return nil
-}
-
-func (cr *CostRepository) AddTx(ctx context.Context, tx pgx.Tx, cost *models.CostSchema) *models.ExpenseServiceError {
+func (*CostRepository) AddTx(ctx context.Context, tx pgx.Tx, cost *models.CostSchema) *models.ExpenseServiceError {
 	query := "INSERT INTO cost (id, amount, description, created_at, deducted_at, end_date, id_cost_category) VALUES ($1, $2, $3, $4, $5, $6, $7)"
 	_, err := tx.Exec(ctx, query, cost.CostID, cost.Amount, cost.Description, cost.CreationDate, cost.DeductionDate, cost.EndDate, cost.CostCategoryID)
 	if err != nil {
@@ -261,7 +207,7 @@ func (cr *CostRepository) AddTx(ctx context.Context, tx pgx.Tx, cost *models.Cos
 	return nil
 }
 
-func (cr *CostRepository) UpdateTx(ctx context.Context, tx pgx.Tx, cost *models.CostSchema) *models.ExpenseServiceError {
+func (*CostRepository) UpdateTx(ctx context.Context, tx pgx.Tx, cost *models.CostSchema) *models.ExpenseServiceError {
 	query := "UPDATE cost SET amount = $1, description = $2, deducted_at = $3, end_date = $4, id_cost_category = $5 WHERE id = $6"
 	result, err := tx.Exec(ctx, query, cost.Amount, cost.Description, cost.DeductionDate, cost.EndDate, cost.CostCategoryID, cost.CostID)
 	if err != nil {
@@ -281,7 +227,7 @@ func (cr *CostRepository) UpdateTx(ctx context.Context, tx pgx.Tx, cost *models.
 	return nil
 }
 
-func (cr *CostRepository) DeleteTx(ctx context.Context, tx pgx.Tx, costId *uuid.UUID) *models.ExpenseServiceError {
+func (*CostRepository) DeleteTx(ctx context.Context, tx pgx.Tx, costId *uuid.UUID) *models.ExpenseServiceError {
 	query := "DELETE FROM cost WHERE id = $1"
 	result, err := tx.Exec(ctx, query, costId)
 	if err != nil {
@@ -303,6 +249,7 @@ func (cr *CostRepository) GetCostsByTripID(ctx context.Context, tripId *uuid.UUI
 		log.Printf("Error while querying database: %v", err)
 		return nil, expense_errors.EXPENSE_INTERNAL_ERROR
 	}
+	defer rows.Close()
 
 	return getCostsFromRows(rows)
 }
@@ -314,6 +261,7 @@ func (cr *CostRepository) GetCostsByCostCategoryID(ctx context.Context, costCate
 		log.Printf("Error while querying database: %v", err)
 		return nil, expense_errors.EXPENSE_INTERNAL_ERROR
 	}
+	defer rows.Close()
 
 	return getCostsFromRows(rows)
 }
@@ -325,6 +273,7 @@ func (cr *CostRepository) GetCostsByTripIDAndContributorID(ctx context.Context, 
 		log.Printf("Error while querying database: %v", err)
 		return nil, expense_errors.EXPENSE_INTERNAL_ERROR
 	}
+	defer rows.Close()
 
 	return getCostsFromRows(rows)
 }
@@ -336,6 +285,7 @@ func (cr *CostRepository) GetCostsByCostCategoryIDAndContributorID(ctx context.C
 		log.Printf("Error while querying database: %v", err)
 		return nil, expense_errors.EXPENSE_INTERNAL_ERROR
 	}
+	defer rows.Close()
 
 	return getCostsFromRows(rows)
 }
@@ -347,6 +297,7 @@ func (cr *CostRepository) GetCostsByContributorID(ctx context.Context, contribut
 		log.Printf("Error while querying database: %v", err)
 		return nil, expense_errors.EXPENSE_INTERNAL_ERROR
 	}
+	defer rows.Close()
 
 	return getCostsFromRows(rows)
 }
@@ -362,6 +313,7 @@ func (cr *CostRepository) GetCostContributors(ctx context.Context, costId *uuid.
 		log.Printf("Error while querying database: %v", err)
 		return nil, expense_errors.EXPENSE_INTERNAL_ERROR
 	}
+	defer rows.Close()
 
 	contributors := make([]*models.CostContributionSchema, 0)
 	for rows.Next() {
@@ -435,7 +387,7 @@ func (cr *CostRepository) GetCostCreditor(ctx context.Context, id *uuid.UUID) (*
 	return &creditor, nil
 }
 
-func (cr *CostRepository) AddCostContributorTx(ctx context.Context, tx pgx.Tx, contributor *models.CostContributionSchema) *models.ExpenseServiceError {
+func (*CostRepository) AddCostContributorTx(ctx context.Context, tx pgx.Tx, contributor *models.CostContributionSchema) *models.ExpenseServiceError {
 	query := "INSERT INTO user_cost_association (id_user, id_cost, is_creditor, amount) VALUES ($1, $2, $3, $4)"
 	_, err := tx.Exec(ctx, query, contributor.UserID, contributor.CostID, contributor.IsCreditor, contributor.Amount)
 	if err != nil {
@@ -450,8 +402,8 @@ func (cr *CostRepository) AddCostContributorTx(ctx context.Context, tx pgx.Tx, c
 	return nil
 }
 
-func (cr *CostRepository) DeleteCostContributionTx(ctx context.Context, tx pgx.Tx, contributorId *uuid.UUID) *models.ExpenseServiceError {
-	_, err := tx.Exec(ctx, "DELETE FROM user_cost_association WHERE id_user = $1", contributorId)
+func (*CostRepository) DeleteCostContributionTx(ctx context.Context, tx pgx.Tx, contributorId *uuid.UUID, costId *uuid.UUID) *models.ExpenseServiceError {
+	_, err := tx.Exec(ctx, "DELETE FROM user_cost_association WHERE id_user = $1 AND id_cost = $2", contributorId, costId)
 	if err != nil {
 		log.Printf("Error while deleting cost contribution: %v", err)
 		return expense_errors.EXPENSE_INTERNAL_ERROR
@@ -471,6 +423,7 @@ func (cr *CostRepository) GetTotalCostByTripID(ctx context.Context, tripId *uuid
 		log.Printf("Error while querying database: %v", err)
 		return nil, expense_errors.EXPENSE_INTERNAL_ERROR
 	}
+	defer row.Close()
 
 	if !row.Next() {
 		return nil, expense_errors.EXPENSE_NOT_FOUND // Trip not found

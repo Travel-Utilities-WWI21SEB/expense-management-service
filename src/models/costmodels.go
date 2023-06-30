@@ -13,7 +13,7 @@ type CostDTO struct {
 	DeductionDate  string         `json:"deductedAt"`
 	EndDate        string         `json:"endDate"`
 	Creditor       string         `json:"creditor"`
-	Contributors   []*Contributor `json:"contributors"`
+	Debtors        []*Contributor `json:"contributors"`
 }
 
 type CostDistributionDTO struct {

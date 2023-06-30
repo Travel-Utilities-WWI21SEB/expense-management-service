@@ -105,18 +105,26 @@ func (cc *CostController) CreateCostEntry(ctx context.Context, tripId *uuid.UUID
 		return nil, repoErr
 	}
 
-	// Create cost contribution for contributors
-	contributors := make([]*models.Contributor, len(createCostRequest.Contributors))
-	var creditorIsPartOfContributors bool
-	for i, contributor := range createCostRequest.Contributors {
+	// Add creditor with zero amount to contributors if not already present
+	var creditorFound bool
+	for _, contributor := range createCostRequest.Debtors {
+		if contributor.Username == creditorUser.Username {
+			creditorFound = true
+			break
+		}
+	}
+	if !creditorFound {
+		createCostRequest.Debtors = append(createCostRequest.Debtors, &models.Contributor{
+			Username: creditorUser.Username,
+			Amount:   "0.0",
+		})
+	}
+
+	contributors := make([]*models.Contributor, len(createCostRequest.Debtors))
+	for i, contributor := range createCostRequest.Debtors {
 		contributorUser, repoErr := cc.UserRepo.GetUserBySchema(ctx, &models.UserSchema{Username: contributor.Username})
 		if repoErr != nil {
 			return nil, repoErr
-		}
-
-		// Check if creditor is part of contributors
-		if contributor.Username == createCostRequest.Creditor {
-			creditorIsPartOfContributors = true
 		}
 
 		// Check if user is part of the trip
@@ -147,11 +155,6 @@ func (cc *CostController) CreateCostEntry(ctx context.Context, tripId *uuid.UUID
 			Username: contributor.Username,
 			Amount:   contributor.Amount,
 		}
-	}
-
-	// Check if creditor is part of contributors
-	if !creditorIsPartOfContributors {
-		return nil, expense_errors.EXPENSE_BAD_REQUEST
 	}
 
 	// Commit transaction
@@ -277,7 +280,6 @@ func (cc *CostController) GetCostEntries(ctx context.Context, params *models.Cos
 		args = append(args, params.PageSize, (params.Page-1)*params.PageSize)
 	}
 
-	log.Printf("Query: %v", query)
 	rows, err := cc.DatabaseMgr.ExecuteQuery(ctx, query, args...)
 	if err != nil {
 		log.Printf("Error while executing query: %v", err)
@@ -324,9 +326,15 @@ func (cc *CostController) PatchCostEntry(ctx context.Context, tripId *uuid.UUID,
 		return nil, repoErr
 	}
 
-	amountChanged := request.Amount != ""
-	creditorChanged := request.Creditor != ""
-	contributorsChanged := (request.Contributors != nil && len(request.Contributors) > 0) || creditorChanged
+	oldCreditorUser, repoErr := cc.CostRepo.GetCostCreditor(ctx, costId)
+	if repoErr != nil {
+		return nil, repoErr
+	}
+
+	amountChanged := request.Amount != "" && request.Amount != cost.Amount.String()
+	creditorChanged := request.Creditor != "" && request.Creditor != oldCreditorUser.Username
+	debtorsChanged := request.Debtors != nil && len(request.Debtors) > 0
+	contributionsChanged := creditorChanged || debtorsChanged
 
 	// Update cost entry if request contains new values
 	if amountChanged {
@@ -335,8 +343,6 @@ func (cc *CostController) PatchCostEntry(ctx context.Context, tripId *uuid.UUID,
 			return nil, err
 		}
 		cost.Amount = amount
-	} else {
-		request.Amount = cost.Amount.String()
 	}
 
 	if request.Description != "" {
@@ -367,69 +373,54 @@ func (cc *CostController) PatchCostEntry(ctx context.Context, tripId *uuid.UUID,
 			return nil, repoErr
 		}
 	} else {
-		if creditor, repoErr = cc.CostRepo.GetCostCreditor(ctx, costId); repoErr != nil {
-			return nil, repoErr
-		}
+		creditor = oldCreditorUser
 	}
 	request.Creditor = creditor.Username // Only a check, not needed for response
 
-	// If only amount has changed, not the contributors, then get the contributors from the database
-	if amountChanged && !contributorsChanged {
+	// If only amount has changed, not the contributions, then get the contributions from the database
+	if amountChanged && !contributionsChanged {
 		contributions, repoErr := cc.CostRepo.GetCostContributors(ctx, costId)
 		if repoErr != nil {
 			return nil, repoErr
 		}
 
-		request.Contributors = make([]*models.Contributor, len(contributions))
+		request.Debtors = make([]*models.Contributor, len(contributions))
 		for i, contribution := range contributions {
 			user, err := cc.UserRepo.GetUserById(ctx, contribution.UserID)
 			if err != nil {
 				return nil, err
 			}
 
-			request.Contributors[i] = &models.Contributor{
+			request.Debtors[i] = &models.Contributor{
 				Username: user.Username,
 				Amount:   "", // Algorithm will calculate new amount
+			}
+
+			if contribution.Amount.IsZero() {
+				request.Debtors[i].Amount = "0" // Stay zero if it was zero before
 			}
 		}
 	}
 
-	// Check if creditor is in contributors
-	if !checkIfCreditorIsContributor(request.Creditor, request.Contributors) {
-		return nil, expense_errors.EXPENSE_BAD_REQUEST
+	// Add creditor with zero amount to contributors if not already present
+	var creditorFound bool
+	for _, contributor := range request.Debtors {
+		if contributor.Username == request.Creditor {
+			creditorFound = true
+			break
+		}
+	}
+	if !creditorFound {
+		request.Debtors = append(request.Debtors, &models.Contributor{
+			Username: request.Creditor,
+			Amount:   "0.0",
+		})
 	}
 
 	// Distribute cost among contributors
 	if serviceErr := DistributeCosts(&request); serviceErr != nil {
 		return nil, serviceErr
 	}
-
-	// Validate contributor input
-	var creditorAvailable bool
-	for _, contributor := range request.Contributors {
-		if contributor.Username == request.Creditor {
-			creditorAvailable = true
-		}
-
-		// Get user from database
-		tempCreditor, repoErr := cc.UserRepo.GetUserBySchema(ctx, &models.UserSchema{Username: contributor.Username})
-		if repoErr != nil {
-			return nil, repoErr
-		}
-
-		if repoErr = cc.TripRepo.ValidateIfUserHasAccepted(ctx, tripId, tempCreditor.UserID); repoErr != nil {
-			return nil, repoErr
-		}
-	}
-
-	if !creditorAvailable {
-		return nil, expense_errors.EXPENSE_BAD_REQUEST
-	}
-
-	/*// Delete cost contributions
-	if repoErr := cc.CostRepo.DeleteCostContributions(costId); repoErr != nil {
-		return nil, repoErr
-	}*/
 
 	// Delete old cost contributions and subtract debt from users
 	contributors, repoErr := cc.CostRepo.GetCostContributors(ctx, costId)
@@ -438,7 +429,7 @@ func (cc *CostController) PatchCostEntry(ctx context.Context, tripId *uuid.UUID,
 	}
 	for _, contributor := range contributors {
 		// Delete cost contribution from database
-		if repoErr := cc.CostRepo.DeleteCostContributionTx(ctx, tx, contributor.UserID); repoErr != nil {
+		if repoErr := cc.CostRepo.DeleteCostContributionTx(ctx, tx, contributor.UserID, costId); repoErr != nil {
 			return nil, repoErr
 		}
 
@@ -448,16 +439,12 @@ func (cc *CostController) PatchCostEntry(ctx context.Context, tripId *uuid.UUID,
 		}
 	}
 
-	// Create cost contributions
-	for _, contributor := range request.Contributors {
+	// Create cost contributions and add debt to users
+	for _, contributor := range request.Debtors {
 		// Get user from database
 		user, repoErr := cc.UserRepo.GetUserBySchema(ctx, &models.UserSchema{Username: contributor.Username})
 		if repoErr != nil {
 			return nil, repoErr
-		}
-
-		if creditor.Username == user.Username {
-			creditorAvailable = true
 		}
 
 		contribution := &models.CostContributionSchema{
@@ -560,10 +547,10 @@ func (cc *CostController) mapCostToResponse(ctx context.Context, cost *models.Co
 
 	contributions, _ := cc.CostRepo.GetCostContributors(ctx, cost.CostID)
 
-	response.Contributors = make([]*models.Contributor, len(contributions))
+	response.Debtors = make([]*models.Contributor, len(contributions))
 	for i, contribution := range contributions {
 		user, _ := cc.UserRepo.GetUserById(ctx, contribution.UserID)
-		response.Contributors[i] = &models.Contributor{
+		response.Debtors[i] = &models.Contributor{
 			Username: user.Username,
 			Amount:   contribution.Amount.String(),
 		}
@@ -583,9 +570,6 @@ func ValidateAmount(amount string) (decimal.Decimal, *models.ExpenseServiceError
 		return decimal.Zero, expense_errors.EXPENSE_BAD_REQUEST
 	}
 	if amountDecimal.IsNegative() {
-		return decimal.Zero, expense_errors.EXPENSE_BAD_REQUEST
-	}
-	if amountDecimal.IsZero() {
 		return decimal.Zero, expense_errors.EXPENSE_BAD_REQUEST
 	}
 	return amountDecimal.RoundDown(2), nil
@@ -616,7 +600,7 @@ func DistributeCosts(request *models.CostDTO) *models.ExpenseServiceError {
 	}
 	request.Amount = totalCost.String()
 
-	sum, err := SumContributions(request.Contributors)
+	sum, err := SumContributions(request.Debtors)
 	if err != nil {
 		return err
 	}
@@ -628,7 +612,7 @@ func DistributeCosts(request *models.CostDTO) *models.ExpenseServiceError {
 
 	// Get number of contributors with no amount
 	numContributorsWithNoAmount := 0
-	for _, contributor := range request.Contributors {
+	for _, contributor := range request.Debtors {
 		if contributor.Amount == "" {
 			numContributorsWithNoAmount++
 		}
@@ -638,7 +622,7 @@ func DistributeCosts(request *models.CostDTO) *models.ExpenseServiceError {
 	if numContributorsWithNoAmount > 0 {
 		remainingCost := totalCost.Sub(sum)
 		// Sum of distributed amounts
-		distributedAmount := DistributeRemainingCosts(request.Contributors, remainingCost, numContributorsWithNoAmount, request.Creditor)
+		distributedAmount := DistributeRemainingCosts(request.Debtors, remainingCost, numContributorsWithNoAmount)
 
 		// Add distributed amount to sum
 		sum = sum.Add(distributedAmount)
@@ -646,14 +630,13 @@ func DistributeCosts(request *models.CostDTO) *models.ExpenseServiceError {
 
 	// Check if the sum of contributions equals total cost
 	if !sum.Equal(totalCost) {
-		log.Printf("Sum of contributions (%v) does not equal total cost (%v)", sum, totalCost)
 		return expense_errors.EXPENSE_BAD_REQUEST
 	}
 
 	return nil
 }
 
-func DistributeRemainingCosts(contributors []*models.Contributor, remainingCost decimal.Decimal, numContributorsWithNoAmount int, creditor string) decimal.Decimal {
+func DistributeRemainingCosts(contributors []*models.Contributor, remainingCost decimal.Decimal, numContributorsWithNoAmount int) decimal.Decimal {
 	amountPerContributor := remainingCost.Div(decimal.NewFromInt(int64(numContributorsWithNoAmount)))
 
 	// Round amountPerContributor to 2 decimal places
@@ -664,33 +647,41 @@ func DistributeRemainingCosts(contributors []*models.Contributor, remainingCost 
 
 	// Check before distributing, if rounding difference is greater than 0.00
 	roundingDifference := remainingCost.Sub(amountPerContributor.Mul(decimal.NewFromInt(int64(numContributorsWithNoAmount)))) // roundingDifference = remainingCost - (amountPerContributor * numContributorsWithNoAmount)
-	log.Printf("Rounding difference: %v", roundingDifference)
 	// Rounding difference can only be positive because of the way it is calculated (see above)
 
 	// Distribute remaining cost to contributors with no amount
 	for _, contributor := range contributors {
 		if contributor.Amount == "" {
 			realAmountPerContributor := amountPerContributor
-
-			// Add rounding difference to creditor
-			if contributor.Username == creditor {
-				realAmountPerContributor = realAmountPerContributor.Add(roundingDifference)
-			}
-			log.Printf("Distributing %v to %v", realAmountPerContributor, contributor.Username)
-
 			contributor.Amount = realAmountPerContributor.String()
 			distributedAmount = distributedAmount.Add(realAmountPerContributor)
 		}
 	}
 
-	return distributedAmount
-}
+	// Write a while loop to distribute the rounding difference to the contributors with no amount
+	var i int
 
-func checkIfCreditorIsContributor(creditor string, contributors []*models.Contributor) bool {
-	for _, contributor := range contributors {
-		if contributor.Username == creditor {
-			return true
+	// "I'm a while loop
+	// and I'm here to say
+	// I'm gonna distribute
+	// the rounding difference
+	// in a very special way"
+	for roundingDifference.GreaterThan(decimal.Zero) {
+		// Add a cent to the contributor in the list at index i
+		contributors[i].Amount = decimal.RequireFromString(contributors[i].Amount).Add(decimal.NewFromFloat(0.01)).String()
+
+		// Add a cent to the distributed amount
+		distributedAmount = distributedAmount.Add(decimal.NewFromFloat(0.01))
+
+		// Subtract a cent from the rounding difference
+		roundingDifference = roundingDifference.Sub(decimal.NewFromFloat(0.01))
+
+		// Increment i
+		i++
+
+		if i >= len(contributors) {
+			i = 0
 		}
 	}
-	return false
+	return distributedAmount
 }

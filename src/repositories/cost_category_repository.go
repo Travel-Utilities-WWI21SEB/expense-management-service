@@ -2,12 +2,12 @@ package repositories
 
 import (
 	"context"
-	"database/sql"
 	"errors"
 	"github.com/Travel-Utilities-WWI21SEB/expense-management-service/src/expense_errors"
 	"github.com/Travel-Utilities-WWI21SEB/expense-management-service/src/managers"
 	"github.com/Travel-Utilities-WWI21SEB/expense-management-service/src/models"
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 	"log"
 )
@@ -46,7 +46,7 @@ func (ccr *CostCategoryRepository) GetCostCategoryByID(ctx context.Context, uuid
 	row := ccr.DatabaseMgr.ExecuteQueryRow(ctx, "SELECT * FROM cost_category WHERE id = $1", uuid)
 	if err := row.Scan(&schema.CostCategoryID, &schema.Name, &schema.Description, &schema.Icon, &schema.Color, &schema.TripID); err != nil {
 		// Check if no cost category was found
-		if err == sql.ErrNoRows {
+		if err == pgx.ErrNoRows {
 			return nil, expense_errors.EXPENSE_NOT_FOUND
 		}
 
@@ -65,6 +65,7 @@ func (ccr *CostCategoryRepository) GetCostCategoriesByTripID(ctx context.Context
 		log.Printf("Error while scanning cost categories from database: %v", err)
 		return nil, expense_errors.EXPENSE_INTERNAL_ERROR
 	}
+	defer rows.Close()
 
 	for rows.Next() {
 		schema := models.CostCategorySchema{}
@@ -117,7 +118,7 @@ func (ccr *CostCategoryRepository) GetCostCategoryByTripIdAndName(ctx context.Co
 	row := ccr.DatabaseMgr.ExecuteQueryRow(ctx, "SELECT * FROM cost_category WHERE id_trip = $1 AND name = $2", tripId, name)
 	if err := row.Scan(&schema.CostCategoryID, &schema.Name, &schema.Description, &schema.Icon, &schema.Color, &schema.TripID); err != nil {
 		// Check if no cost category was found
-		if err == sql.ErrNoRows {
+		if err == pgx.ErrNoRows {
 			return nil, expense_errors.EXPENSE_NOT_FOUND
 		}
 

@@ -48,6 +48,15 @@ func CreateTransactionHandler(transactionCtl controllers.TransactionCtl) gin.Han
 		// Get tripId from path
 		tripId := uuid.MustParse(c.Param(models.ExpenseParamKeyTripId))
 
+		// Get user id from context
+		userId := ctx.Value(models.ExpenseContextKeyUserID).(*uuid.UUID)
+
+		// Check if creditor and debtor are the same
+		if userId.String() == transactionRequest.DebtorId.String() {
+			utils.HandleErrorAndAbort(c, *expense_errors.EXPENSE_BAD_REQUEST)
+			return
+		}
+
 		response, serviceErr := transactionCtl.CreateTransactionEntry(ctx, &tripId, transactionRequest)
 		if serviceErr != nil {
 			utils.HandleErrorAndAbort(c, *serviceErr)

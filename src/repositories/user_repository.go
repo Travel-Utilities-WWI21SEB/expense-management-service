@@ -2,13 +2,13 @@ package repositories
 
 import (
 	"context"
-	"database/sql"
 	"errors"
 	"github.com/Travel-Utilities-WWI21SEB/expense-management-service/src/expense_errors"
 	"github.com/Travel-Utilities-WWI21SEB/expense-management-service/src/managers"
 	"github.com/Travel-Utilities-WWI21SEB/expense-management-service/src/models"
 	"github.com/Travel-Utilities-WWI21SEB/expense-management-service/src/utils"
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 	"log"
 	"time"
@@ -118,7 +118,7 @@ func (ur *UserRepository) GetUserById(ctx context.Context, userId *uuid.UUID) (*
 	row := ur.DatabaseMgr.ExecuteQueryRow(ctx, "SELECT id, username, email, activated FROM \"user\" WHERE id = $1", userId)
 	if err := row.Scan(&user.UserID, &user.Username, &user.Email, &user.Activated); err != nil {
 		// Check if no rows were returned, if so return error EXPENSE_USER_NOT_FOUND
-		if err == sql.ErrNoRows {
+		if err == pgx.ErrNoRows {
 			return nil, expense_errors.EXPENSE_USER_NOT_FOUND
 		}
 
@@ -134,7 +134,8 @@ func (ur *UserRepository) GetUserBySchema(ctx context.Context, request *models.U
 	row := ur.DatabaseMgr.ExecuteQueryRow(ctx, "SELECT id, username, email, password, activated FROM \"user\" WHERE username = $1 OR email = $2", request.Username, request.Email)
 	if err := row.Scan(&user.UserID, &user.Username, &user.Email, &user.Password, &user.Activated); err != nil {
 		// Check if no rows were returned, if so return error EXPENSE_USER_NOT_FOUND
-		if err == sql.ErrNoRows {
+		log.Printf("Error while getting user by schema: %v", err)
+		if err == pgx.ErrNoRows {
 			return nil, expense_errors.EXPENSE_USER_NOT_FOUND
 		}
 
@@ -171,11 +172,12 @@ func (ur *UserRepository) UpdatePassword(ctx context.Context, userId *uuid.UUID,
 
 func (ur *UserRepository) ValidateIfUserExists(ctx context.Context, userId *uuid.UUID) *models.ExpenseServiceError {
 	rows, err := ur.DatabaseMgr.ExecuteQuery(ctx, "SELECT id FROM \"user\" WHERE id = $1", userId)
-
 	if err != nil {
 		log.Printf("Error while validating if user exists: %v", err)
 		return expense_errors.EXPENSE_INTERNAL_ERROR
 	}
+
+	defer rows.Close()
 
 	if !rows.Next() {
 		return expense_errors.EXPENSE_USER_NOT_FOUND
@@ -190,7 +192,7 @@ func (ur *UserRepository) GetTokenByUserIdAndType(ctx context.Context, userId *u
 	row := ur.DatabaseMgr.ExecuteQueryRow(ctx, "SELECT id_user, token, created_at, confirmed_at, expires_at FROM token WHERE id_user = $1 AND type = $2", userId, tokenType)
 	if err := row.Scan(&token.UserID, &token.Token, &token.CreatedAt, &token.ConfirmedAt, &token.ExpiresAt); err != nil {
 		// Check if no rows were returned, if so return error EXPENSE_USER_NOT_FOUND
-		if err == sql.ErrNoRows {
+		if err == pgx.ErrNoRows {
 			return nil, expense_errors.EXPENSE_USER_NOT_FOUND
 		}
 
@@ -271,7 +273,7 @@ func (ur *UserRepository) ValidateIfUserIsActivated(ctx context.Context, userId 
 
 	var activated bool
 	if err := row.Scan(&activated); err != nil {
-		if err == sql.ErrNoRows {
+		if err == pgx.ErrNoRows {
 			return expense_errors.EXPENSE_USER_NOT_FOUND
 		}
 
@@ -292,6 +294,7 @@ func (ur *UserRepository) FindUsersLikeUsername(ctx context.Context, username st
 		log.Printf("Error while getting user by username: %v", err)
 		return nil, expense_errors.EXPENSE_INTERNAL_ERROR
 	}
+	defer rows.Close()
 
 	users := make([]*models.UserSchema, 0)
 	for rows.Next() {
@@ -313,7 +316,7 @@ func (ur *UserRepository) GetTokenByTokenAndType(ctx context.Context, token, tok
 	row := ur.DatabaseMgr.ExecuteQueryRow(ctx, "SELECT id_user, token, created_at, confirmed_at, expires_at FROM token WHERE token = $1 AND type = $2", token, tokenType)
 	if err := row.Scan(&tokenSchema.UserID, &tokenSchema.Token, &tokenSchema.CreatedAt, &tokenSchema.ConfirmedAt, &tokenSchema.ExpiresAt); err != nil {
 		// Check if no rows were returned, if so then the token has expired
-		if err == sql.ErrNoRows {
+		if err == pgx.ErrNoRows {
 			return nil, expense_errors.EXPENSE_NOT_FOUND
 		}
 
