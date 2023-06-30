@@ -25,13 +25,13 @@ type DebtController struct {
 // GetDebtEntries Get all debt entries for a trip
 func (dc *DebtController) GetDebtEntries(ctx context.Context, tripId *uuid.UUID) ([]*models.DebtDTO, *models.ExpenseServiceError) {
 	// Get all debt entries from database
-	debtEntries, err := dc.DebtRepo.GetDebtEntriesByTripId(tripId)
+	debtEntries, err := dc.DebtRepo.GetDebtEntriesByTripId(ctx, tripId)
 	if err != nil {
 		return nil, err
 	}
 
 	// Get Trip from database
-	trip, err := dc.TripRepo.GetTripById(tripId)
+	trip, err := dc.TripRepo.GetTripById(ctx, tripId)
 	if err != nil {
 		return nil, err
 	}
@@ -56,7 +56,7 @@ func (dc *DebtController) GetDebtEntries(ctx context.Context, tripId *uuid.UUID)
 			UpdateDate:   debtEntry.UpdateDate.String(),
 		}
 
-		creditor, err := dc.UserRepo.GetUserById(debtEntry.CreditorId)
+		creditor, err := dc.UserRepo.GetUserById(ctx, debtEntry.CreditorId)
 		if err != nil {
 			return nil, err
 		}
@@ -67,7 +67,7 @@ func (dc *DebtController) GetDebtEntries(ctx context.Context, tripId *uuid.UUID)
 		}
 		debtDto.Creditor = creditorDto
 
-		debtor, err := dc.UserRepo.GetUserById(debtEntry.DebtorId)
+		debtor, err := dc.UserRepo.GetUserById(ctx, debtEntry.DebtorId)
 		if err != nil {
 			return nil, err
 		}
@@ -87,13 +87,13 @@ func (dc *DebtController) GetDebtEntries(ctx context.Context, tripId *uuid.UUID)
 // GetDebtDetails Get details of a debt entry
 func (dc *DebtController) GetDebtDetails(ctx context.Context, debtId *uuid.UUID) (*models.DebtDTO, *models.ExpenseServiceError) {
 	// Get debt entry from database
-	debtEntry, err := dc.DebtRepo.GetDebtById(debtId)
+	debtEntry, err := dc.DebtRepo.GetDebtById(ctx, debtId)
 	if err != nil {
 		return nil, err
 	}
 
 	// Get Trip from database
-	trip, err := dc.TripRepo.GetTripById(debtEntry.TripId)
+	trip, err := dc.TripRepo.GetTripById(ctx, debtEntry.TripId)
 	if err != nil {
 		return nil, err
 	}
@@ -116,7 +116,7 @@ func (dc *DebtController) GetDebtDetails(ctx context.Context, debtId *uuid.UUID)
 		UpdateDate:   debtEntry.UpdateDate.String(),
 	}
 
-	creditor, err := dc.UserRepo.GetUserById(debtEntry.CreditorId)
+	creditor, err := dc.UserRepo.GetUserById(ctx, debtEntry.CreditorId)
 	if err != nil {
 		return nil, err
 	}
@@ -127,7 +127,7 @@ func (dc *DebtController) GetDebtDetails(ctx context.Context, debtId *uuid.UUID)
 	}
 	debtDto.Creditor = creditorDto
 
-	debtor, err := dc.UserRepo.GetUserById(debtEntry.DebtorId)
+	debtor, err := dc.UserRepo.GetUserById(ctx, debtEntry.DebtorId)
 	if err != nil {
 		return nil, err
 	}

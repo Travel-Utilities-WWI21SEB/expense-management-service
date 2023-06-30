@@ -2,12 +2,12 @@ package controllers
 
 import (
 	"context"
-	"database/sql"
 	"github.com/Travel-Utilities-WWI21SEB/expense-management-service/src/expense_errors"
 	"github.com/Travel-Utilities-WWI21SEB/expense-management-service/src/managers"
 	"github.com/Travel-Utilities-WWI21SEB/expense-management-service/src/models"
 	"github.com/Travel-Utilities-WWI21SEB/expense-management-service/src/repositories"
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
 	"github.com/shopspring/decimal"
 	"log"
 	"strconv"
@@ -41,7 +41,7 @@ func (cc *CostController) GetCostOverview(ctx context.Context) (*models.CostOver
 		return nil, expense_errors.EXPENSE_INTERNAL_ERROR
 	}
 
-	response, err := cc.CostRepo.GetCostOverview(userId)
+	response, err := cc.CostRepo.GetCostOverview(ctx, userId)
 	if err != nil {
 		return nil, err
 	}
@@ -59,8 +59,8 @@ func (cc *CostController) CreateCostEntry(ctx context.Context, tripId *uuid.UUID
 	}
 
 	// Make sure to rollback the transaction if it fails
-	defer func(tx *sql.Tx) {
-		err := tx.Rollback()
+	defer func(tx pgx.Tx) {
+		err := tx.Rollback(ctx)
 		if err != nil {
 			log.Printf("Error while rolling back transaction: %v", err)
 		}
@@ -95,12 +95,12 @@ func (cc *CostController) CreateCostEntry(ctx context.Context, tripId *uuid.UUID
 	}
 
 	// Insert cost entry into database
-	if repoErr := cc.CostRepo.AddTx(tx, costEntry); repoErr != nil {
+	if repoErr := cc.CostRepo.AddTx(ctx, tx, costEntry); repoErr != nil {
 		return nil, repoErr
 	}
 
 	// Get creditor user from database
-	creditorUser, repoErr := cc.UserRepo.GetUserBySchema(&models.UserSchema{Username: createCostRequest.Creditor})
+	creditorUser, repoErr := cc.UserRepo.GetUserBySchema(ctx, &models.UserSchema{Username: createCostRequest.Creditor})
 	if repoErr != nil {
 		return nil, repoErr
 	}
@@ -109,7 +109,7 @@ func (cc *CostController) CreateCostEntry(ctx context.Context, tripId *uuid.UUID
 	contributors := make([]*models.Contributor, len(createCostRequest.Contributors))
 	var creditorIsPartOfContributors bool
 	for i, contributor := range createCostRequest.Contributors {
-		contributorUser, repoErr := cc.UserRepo.GetUserBySchema(&models.UserSchema{Username: contributor.Username})
+		contributorUser, repoErr := cc.UserRepo.GetUserBySchema(ctx, &models.UserSchema{Username: contributor.Username})
 		if repoErr != nil {
 			return nil, repoErr
 		}
@@ -120,7 +120,7 @@ func (cc *CostController) CreateCostEntry(ctx context.Context, tripId *uuid.UUID
 		}
 
 		// Check if user is part of the trip
-		if repoErr = cc.TripRepo.ValidateIfUserHasAccepted(tripId, contributorUser.UserID); repoErr != nil {
+		if repoErr = cc.TripRepo.ValidateIfUserHasAccepted(ctx, tripId, contributorUser.UserID); repoErr != nil {
 			return nil, repoErr
 		}
 
@@ -132,13 +132,13 @@ func (cc *CostController) CreateCostEntry(ctx context.Context, tripId *uuid.UUID
 		}
 
 		// Insert cost contribution into database using transaction
-		if repoErr = cc.CostRepo.AddCostContributorTx(tx, contribution); repoErr != nil {
+		if repoErr = cc.CostRepo.AddCostContributorTx(ctx, tx, contribution); repoErr != nil {
 			return nil, repoErr
 		}
 
 		// Calculate debt
 		if contributorUser.Username != creditorUser.Username {
-			if serviceErr := cc.DebtRepo.CalculateDebt(tx, creditorUser.UserID, contributorUser.UserID, tripId, contribution.Amount); serviceErr != nil {
+			if serviceErr := cc.DebtRepo.CalculateDebt(ctx, tx, creditorUser.UserID, contributorUser.UserID, tripId, contribution.Amount); serviceErr != nil {
 				return nil, serviceErr
 			}
 		}
@@ -155,24 +155,24 @@ func (cc *CostController) CreateCostEntry(ctx context.Context, tripId *uuid.UUID
 	}
 
 	// Commit transaction
-	if err = tx.Commit(); err != nil {
+	if err = tx.Commit(ctx); err != nil {
 		log.Printf("Error while committing transaction: %v", err)
 		return nil, expense_errors.EXPENSE_INTERNAL_ERROR
 	}
 
-	return cc.mapCostToResponse(costEntry), nil
+	return cc.mapCostToResponse(ctx, costEntry), nil
 }
 
-func (cc *CostController) GetCostDetails(_ context.Context, costId *uuid.UUID) (*models.CostDTO, *models.ExpenseServiceError) {
+func (cc *CostController) GetCostDetails(ctx context.Context, costId *uuid.UUID) (*models.CostDTO, *models.ExpenseServiceError) {
 	// Get cost entry from database
-	cost, repoErr := cc.CostRepo.GetCostByID(costId)
+	cost, repoErr := cc.CostRepo.GetCostByID(ctx, costId)
 	if repoErr != nil {
 		return nil, repoErr
 	}
-	return cc.mapCostToResponse(cost), nil
+	return cc.mapCostToResponse(ctx, cost), nil
 }
 
-func (cc *CostController) GetCostEntries(_ context.Context, params *models.CostQueryParams) ([]*models.CostDTO, *models.ExpenseServiceError) {
+func (cc *CostController) GetCostEntries(ctx context.Context, params *models.CostQueryParams) ([]*models.CostDTO, *models.ExpenseServiceError) {
 	// Mandatory parameters: tripId
 	// Optional parameters: costCategoryId, username
 	var costs []*models.CostSchema
@@ -187,7 +187,7 @@ func (cc *CostController) GetCostEntries(_ context.Context, params *models.CostQ
 	}
 
 	if params.CostCategoryName != nil {
-		costCategory, repoErr := cc.CostCategoryRepo.GetCostCategoryByTripIdAndName(params.TripId, *params.CostCategoryName)
+		costCategory, repoErr := cc.CostCategoryRepo.GetCostCategoryByTripIdAndName(ctx, params.TripId, *params.CostCategoryName)
 		if repoErr != nil {
 			return nil, repoErr
 		}
@@ -206,7 +206,7 @@ func (cc *CostController) GetCostEntries(_ context.Context, params *models.CostQ
 	}
 
 	if params.Username != nil {
-		user, repoErr := cc.UserRepo.GetUserBySchema(&models.UserSchema{Username: *params.Username})
+		user, repoErr := cc.UserRepo.GetUserBySchema(ctx, &models.UserSchema{Username: *params.Username})
 		if repoErr != nil {
 			return nil, repoErr
 		}
@@ -268,6 +268,7 @@ func (cc *CostController) GetCostEntries(_ context.Context, params *models.CostQ
 			If not sanitized inputs,
 			Then "DROP TABLE" you'll meet.
 		*/
+		// Wunderschön Luca. :) - Kevin
 	}
 
 	// Add limit and offset for pagination
@@ -277,7 +278,7 @@ func (cc *CostController) GetCostEntries(_ context.Context, params *models.CostQ
 	}
 
 	log.Printf("Query: %v", query)
-	rows, err := cc.DatabaseMgr.ExecuteQuery(query, args...)
+	rows, err := cc.DatabaseMgr.ExecuteQuery(ctx, query, args...)
 	if err != nil {
 		log.Printf("Error while executing query: %v", err)
 		return nil, expense_errors.EXPENSE_INTERNAL_ERROR
@@ -289,14 +290,13 @@ func (cc *CostController) GetCostEntries(_ context.Context, params *models.CostQ
 		if err != nil {
 			return nil, expense_errors.EXPENSE_INTERNAL_ERROR
 		}
-		log.Printf("Cost: %v", cost.DeductionDate)
 		costs = append(costs, &cost)
 	}
 
 	// Map costs to response
 	costsResponse := make([]*models.CostDTO, len(costs))
 	for i, cost := range costs {
-		costsResponse[i] = cc.mapCostToResponse(cost)
+		costsResponse[i] = cc.mapCostToResponse(ctx, cost)
 	}
 
 	return costsResponse, nil
@@ -311,15 +311,15 @@ func (cc *CostController) PatchCostEntry(ctx context.Context, tripId *uuid.UUID,
 	}
 
 	// Make sure to rollback the transaction if it fails
-	defer func(tx *sql.Tx) {
-		err := tx.Rollback()
+	defer func(tx pgx.Tx) {
+		err := tx.Rollback(ctx)
 		if err != nil {
 			log.Printf("Error while rolling back transaction: %v", err)
 		}
 	}(tx)
 
 	// Get cost entry from database
-	cost, repoErr := cc.CostRepo.GetCostByID(costId)
+	cost, repoErr := cc.CostRepo.GetCostByID(ctx, costId)
 	if repoErr != nil {
 		return nil, repoErr
 	}
@@ -359,15 +359,15 @@ func (cc *CostController) PatchCostEntry(ctx context.Context, tripId *uuid.UUID,
 
 	var creditor *models.UserSchema
 	if creditorChanged {
-		creditor, repoErr = cc.UserRepo.GetUserBySchema(&models.UserSchema{Username: request.Creditor})
+		creditor, repoErr = cc.UserRepo.GetUserBySchema(ctx, &models.UserSchema{Username: request.Creditor})
 		if repoErr != nil {
 			return nil, repoErr
 		}
-		if repoErr = cc.TripRepo.ValidateIfUserHasAccepted(tripId, creditor.UserID); repoErr != nil {
+		if repoErr = cc.TripRepo.ValidateIfUserHasAccepted(ctx, tripId, creditor.UserID); repoErr != nil {
 			return nil, repoErr
 		}
 	} else {
-		if creditor, repoErr = cc.CostRepo.GetCostCreditor(costId); repoErr != nil {
+		if creditor, repoErr = cc.CostRepo.GetCostCreditor(ctx, costId); repoErr != nil {
 			return nil, repoErr
 		}
 	}
@@ -375,14 +375,14 @@ func (cc *CostController) PatchCostEntry(ctx context.Context, tripId *uuid.UUID,
 
 	// If only amount has changed, not the contributors, then get the contributors from the database
 	if amountChanged && !contributorsChanged {
-		contributions, repoErr := cc.CostRepo.GetCostContributors(costId)
+		contributions, repoErr := cc.CostRepo.GetCostContributors(ctx, costId)
 		if repoErr != nil {
 			return nil, repoErr
 		}
 
 		request.Contributors = make([]*models.Contributor, len(contributions))
 		for i, contribution := range contributions {
-			user, err := cc.UserRepo.GetUserById(contribution.UserID)
+			user, err := cc.UserRepo.GetUserById(ctx, contribution.UserID)
 			if err != nil {
 				return nil, err
 			}
@@ -412,12 +412,12 @@ func (cc *CostController) PatchCostEntry(ctx context.Context, tripId *uuid.UUID,
 		}
 
 		// Get user from database
-		tempCreditor, repoErr := cc.UserRepo.GetUserBySchema(&models.UserSchema{Username: contributor.Username})
+		tempCreditor, repoErr := cc.UserRepo.GetUserBySchema(ctx, &models.UserSchema{Username: contributor.Username})
 		if repoErr != nil {
 			return nil, repoErr
 		}
 
-		if repoErr = cc.TripRepo.ValidateIfUserHasAccepted(tripId, tempCreditor.UserID); repoErr != nil {
+		if repoErr = cc.TripRepo.ValidateIfUserHasAccepted(ctx, tripId, tempCreditor.UserID); repoErr != nil {
 			return nil, repoErr
 		}
 	}
@@ -432,18 +432,18 @@ func (cc *CostController) PatchCostEntry(ctx context.Context, tripId *uuid.UUID,
 	}*/
 
 	// Delete old cost contributions and subtract debt from users
-	contributors, repoErr := cc.CostRepo.GetCostContributors(costId)
+	contributors, repoErr := cc.CostRepo.GetCostContributors(ctx, costId)
 	if repoErr != nil {
 		return nil, repoErr
 	}
 	for _, contributor := range contributors {
 		// Delete cost contribution from database
-		if repoErr := cc.CostRepo.DeleteCostContributionTx(tx, contributor.UserID); repoErr != nil {
+		if repoErr := cc.CostRepo.DeleteCostContributionTx(ctx, tx, contributor.UserID); repoErr != nil {
 			return nil, repoErr
 		}
 
 		// Subtract debt from user
-		if repoErr := cc.DebtRepo.CalculateDebt(tx, creditor.UserID, contributor.UserID, tripId, contributor.Amount.Neg()); repoErr != nil {
+		if repoErr := cc.DebtRepo.CalculateDebt(ctx, tx, creditor.UserID, contributor.UserID, tripId, contributor.Amount.Neg()); repoErr != nil {
 			return nil, repoErr
 		}
 	}
@@ -451,7 +451,7 @@ func (cc *CostController) PatchCostEntry(ctx context.Context, tripId *uuid.UUID,
 	// Create cost contributions
 	for _, contributor := range request.Contributors {
 		// Get user from database
-		user, repoErr := cc.UserRepo.GetUserBySchema(&models.UserSchema{Username: contributor.Username})
+		user, repoErr := cc.UserRepo.GetUserBySchema(ctx, &models.UserSchema{Username: contributor.Username})
 		if repoErr != nil {
 			return nil, repoErr
 		}
@@ -468,28 +468,28 @@ func (cc *CostController) PatchCostEntry(ctx context.Context, tripId *uuid.UUID,
 		}
 
 		// Insert cost contribution into database
-		if repoErr := cc.CostRepo.AddCostContributorTx(tx, contribution); repoErr != nil {
+		if repoErr := cc.CostRepo.AddCostContributorTx(ctx, tx, contribution); repoErr != nil {
 			return nil, repoErr
 		}
 
 		// Add debt to user
-		if repoErr := cc.DebtRepo.CalculateDebt(tx, creditor.UserID, user.UserID, tripId, contribution.Amount); repoErr != nil {
+		if repoErr := cc.DebtRepo.CalculateDebt(ctx, tx, creditor.UserID, user.UserID, tripId, contribution.Amount); repoErr != nil {
 			return nil, repoErr
 		}
 	}
 
 	// Update cost entry in database
-	if repoErr := cc.CostRepo.UpdateTx(tx, cost); repoErr != nil {
+	if repoErr := cc.CostRepo.UpdateTx(ctx, tx, cost); repoErr != nil {
 		return nil, repoErr
 	}
 
 	// Commit transaction
-	if err = tx.Commit(); err != nil {
+	if err = tx.Commit(ctx); err != nil {
 		log.Printf("Error while committing transaction: %v", err)
 		return nil, expense_errors.EXPENSE_INTERNAL_ERROR
 	}
 
-	return cc.mapCostToResponse(cost), nil
+	return cc.mapCostToResponse(ctx, cost), nil
 }
 
 func (cc *CostController) DeleteCostEntry(ctx context.Context, tripId *uuid.UUID, costId *uuid.UUID) *models.ExpenseServiceError {
@@ -501,21 +501,21 @@ func (cc *CostController) DeleteCostEntry(ctx context.Context, tripId *uuid.UUID
 	}
 
 	// Make sure to rollback the transaction if it fails
-	defer func(tx *sql.Tx) {
-		err := tx.Rollback()
+	defer func(tx pgx.Tx) {
+		err := tx.Rollback(ctx)
 		if err != nil {
 			log.Printf("Error while rolling back transaction: %v", err)
 		}
 	}(tx)
 
 	// Get all cost contributions
-	contributions, repoErr := cc.CostRepo.GetCostContributors(costId)
+	contributions, repoErr := cc.CostRepo.GetCostContributors(ctx, costId)
 	if repoErr != nil {
 		return repoErr
 	}
 
 	// Get creditor
-	creditor, repoErr := cc.CostRepo.GetCostCreditor(costId)
+	creditor, repoErr := cc.CostRepo.GetCostCreditor(ctx, costId)
 	if repoErr != nil {
 		return repoErr
 	}
@@ -526,16 +526,16 @@ func (cc *CostController) DeleteCostEntry(ctx context.Context, tripId *uuid.UUID
 			continue
 		}
 		// Subtract debt from user
-		cc.DebtRepo.CalculateDebt(tx, creditor.UserID, contribution.UserID, tripId, contribution.Amount.Neg())
+		cc.DebtRepo.CalculateDebt(ctx, tx, creditor.UserID, contribution.UserID, tripId, contribution.Amount.Neg())
 	}
 
-	repoErr = cc.CostRepo.DeleteTx(tx, costId)
+	repoErr = cc.CostRepo.DeleteTx(ctx, tx, costId)
 	if repoErr != nil {
 		return repoErr
 	}
 
 	// Commit transaction
-	if err = tx.Commit(); err != nil {
+	if err = tx.Commit(ctx); err != nil {
 		log.Printf("Error while committing transaction: %v", err)
 		return expense_errors.EXPENSE_INTERNAL_ERROR
 	}
@@ -543,12 +543,8 @@ func (cc *CostController) DeleteCostEntry(ctx context.Context, tripId *uuid.UUID
 	return nil
 }
 
-//**********************************************************************************************************************
-// Helper functions
-//**********************************************************************************************************************
-
-// mapCostToResponse maps a cost entry to a cost response
-func (cc *CostController) mapCostToResponse(cost *models.CostSchema) *models.CostDTO {
+// You can add optional parameters with: func (cc *CostController) GetCostDetails(ctx context.Context, costId *uuid.UUID, optionalParam string) (*models.CostDTO, *models.ExpenseServiceError) {
+func (cc *CostController) mapCostToResponse(ctx context.Context, cost *models.CostSchema) *models.CostDTO {
 	response := &models.CostDTO{
 		CostID:         cost.CostID,
 		Amount:         cost.Amount.String(),
@@ -562,11 +558,11 @@ func (cc *CostController) mapCostToResponse(cost *models.CostSchema) *models.Cos
 		response.EndDate = cost.EndDate.String()
 	}
 
-	contributions, _ := cc.CostRepo.GetCostContributors(cost.CostID)
+	contributions, _ := cc.CostRepo.GetCostContributors(ctx, cost.CostID)
 
 	response.Contributors = make([]*models.Contributor, len(contributions))
 	for i, contribution := range contributions {
-		user, _ := cc.UserRepo.GetUserById(contribution.UserID)
+		user, _ := cc.UserRepo.GetUserById(ctx, contribution.UserID)
 		response.Contributors[i] = &models.Contributor{
 			Username: user.Username,
 			Amount:   contribution.Amount.String(),

@@ -24,7 +24,9 @@ func main() {
 
 	// INITIALIZE DATABASE CONNECTION
 	log.Println("Initializing database connection...")
-	dbConnection := managers.InitializeDatabaseConnection()
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	dbConnection := managers.InitializeDatabaseConnection(ctx)
 	defer dbConnection.Close()
 
 	// CREATE ROUTER
