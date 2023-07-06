@@ -19,10 +19,11 @@ type TripDTO struct {
 }
 
 type TripParticipationDTO struct {
-	Username          string `json:"username"`
-	HasAcceptedInvite bool   `json:"hasAcceptedInvite"`
-	PresenceStartDate string `json:"presenceStartDate"`
-	PresenceEndDate   string `json:"presenceEndDate"`
+	UserID            *uuid.UUID `json:"userId"`
+	Username          string     `json:"username"`
+	HasAcceptedInvite bool       `json:"hasAcceptedInvite"`
+	PresenceStartDate string     `json:"presenceStartDate"`
+	PresenceEndDate   string     `json:"presenceEndDate"`
 }
 
 type SlimTripDTO struct {

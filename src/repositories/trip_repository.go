@@ -72,7 +72,8 @@ func (tr *TripRepository) UpdateTrip(ctx context.Context, trip *models.TripSchem
 	// https://stackoverflow.com/questions/17267417/how-to-upsert-merge-insert-on-duplicate-update-in-postgresql
 
 	// Update trip
-	result, err := tr.DatabaseMgr.ExecuteStatement(ctx, "UPDATE trip SET location = $1, start_date = $2, end_date = $3 WHERE id = $4", trip.Location, trip.StartDate, trip.EndDate, trip.TripID)
+	updateString := "UPDATE trip SET name = $1, description = $2, location = $3, start_date = $4, end_date = $5 WHERE id = $6"
+	result, err := tr.DatabaseMgr.ExecuteStatement(ctx, updateString, trip.Name, trip.Description, trip.Location, trip.StartDate, trip.EndDate, trip.TripID)
 	if err != nil {
 		log.Printf("Error while updating trip: %v", err)
 		return expense_errors.EXPENSE_INTERNAL_ERROR
