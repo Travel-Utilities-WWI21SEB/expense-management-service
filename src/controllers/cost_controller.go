@@ -513,7 +513,7 @@ func (cc *CostController) DeleteCostEntry(ctx context.Context, tripId *uuid.UUID
 			continue
 		}
 		// Subtract debt from user
-		cc.DebtRepo.CalculateDebt(ctx, tx, creditor.UserID, contribution.UserID, tripId, contribution.Amount.Neg())
+		cc.DebtRepo.CalculateDebt(ctx, tx, contribution.UserID, creditor.UserID, tripId, contribution.Amount.Neg())
 	}
 
 	repoErr = cc.CostRepo.DeleteTx(ctx, tx, costId)
@@ -658,7 +658,9 @@ func DistributeRemainingCosts(contributors []*models.Contributor, remainingCost 
 		}
 	}
 
+	// Write a while loop to distribute the rounding difference to the contributors with no amount
 	var i int
+
 	// "I'm a while loop
 	// and I'm here to say
 	// I'm gonna distribute
