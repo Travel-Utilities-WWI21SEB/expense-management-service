@@ -11,7 +11,6 @@ import (
 	"github.com/google/uuid"
 	"log"
 	"mime/multipart"
-	"strings"
 	"time"
 )
 
@@ -64,7 +63,7 @@ func (uc *UserController) RegisterUser(ctx context.Context, registrationData mod
 	}
 
 	birthDate, _ := time.Parse(time.DateOnly, registrationData.Birthday)
-	creationDate, _ := time.Parse(time.DateOnly, time.Now().String())
+	creationDate := time.Now()
 
 	user := &models.UserSchema{
 		UserID:    &userId,
@@ -82,20 +81,22 @@ func (uc *UserController) RegisterUser(ctx context.Context, registrationData mod
 	// Get file and header
 	file := (*form).File["profilePicture"][0]
 
-	// Set profile picture path to avatar_<userId>.<fileExtension>
-	fileExtension := file.Filename[strings.LastIndex(file.Filename, ".")+1:]
-	user.ProfilePicture = fmt.Sprintf("avatar_%s.%s", user.UserID, fileExtension)
-
 	// Upload profile picture
+	var fileEnding string
+	var serviceErr *models.ExpenseServiceError
 	if file != nil {
-		if err := uc.ImageMgr.UploadImage(file, user.UserID); err != nil {
-			return err
+		fileEnding, serviceErr = uc.ImageMgr.UploadImage(file, user.UserID)
+		if serviceErr != nil {
+			return serviceErr
 		}
 	} else {
-		if err := uc.ImageMgr.UploadDefaultProfilePicture(user.UserID); err != nil {
-			return err
+		fileEnding, serviceErr = uc.ImageMgr.UploadDefaultProfilePicture(user.UserID)
+		if serviceErr != nil {
+			return serviceErr
 		}
 	}
+
+	user.ProfilePicture = fmt.Sprintf("avatar_%s%s", user.UserID, fileEnding)
 
 	// Insert user into database
 	if repoErr := uc.UserRepo.CreateUser(ctx, user); repoErr != nil {
@@ -450,7 +451,7 @@ func buildUserResponse(user *models.UserSchema) *models.UserDetailsResponse {
 		UserName:       user.Username,
 		Email:          user.Email,
 		Birthday:       user.Birthday.Format(time.DateOnly),
-		ProfilePicture: "https://raw.githubusercontent.com/Travel-Utilities-WWI21SEB/expense-management-ui/main/static/justinIcon.jpg",
+		ProfilePicture: user.ProfilePicture,
 		CreatedAt:      user.CreatedAt.Format(time.DateOnly),
 		OpenDebts:      2,
 		TripsJoined:    2,
