@@ -108,3 +108,45 @@ func GetTransactionDetailsHandler(transactionCtl controllers.TransactionCtl) gin
 		c.JSON(http.StatusOK, response)
 	}
 }
+
+func AcceptTransaction(transactionCtl controllers.TransactionCtl) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		ctx := c.Request.Context()
+
+		// Get transactionId from path
+		transactionId, err := uuid.Parse(c.Param(models.ExpenseParamKeyTransactionId))
+		if err != nil {
+			utils.HandleErrorAndAbort(c, *expense_errors.EXPENSE_BAD_REQUEST)
+			return
+		}
+
+		response, serviceErr := transactionCtl.AcceptTransaction(ctx, &transactionId)
+		if serviceErr != nil {
+			utils.HandleErrorAndAbort(c, *serviceErr)
+			return
+		}
+
+		c.JSON(http.StatusOK, response)
+	}
+}
+
+func DeclineTransaction(transactionCtl controllers.TransactionCtl) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		ctx := c.Request.Context()
+
+		// Get transactionId from path
+		transactionId, err := uuid.Parse(c.Param(models.ExpenseParamKeyTransactionId))
+		if err != nil {
+			utils.HandleErrorAndAbort(c, *expense_errors.EXPENSE_BAD_REQUEST)
+			return
+		}
+
+		serviceErr := transactionCtl.DeleteTransactionEntry(ctx, &transactionId)
+		if serviceErr != nil {
+			utils.HandleErrorAndAbort(c, *serviceErr)
+			return
+		}
+
+		c.Status(http.StatusNoContent)
+	}
+}

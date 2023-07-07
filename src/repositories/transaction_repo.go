@@ -12,6 +12,7 @@ import (
 
 type TransactionRepo interface {
 	AddTx(ctx context.Context, tx pgx.Tx, transaction *models.TransactionSchema) *models.ExpenseServiceError
+	UpdateTx(ctx context.Context, tx pgx.Tx, transaction *models.TransactionSchema) *models.ExpenseServiceError
 	DeleteTx(ctx context.Context, tx pgx.Tx, transactionId *uuid.UUID) *models.ExpenseServiceError
 
 	GetTransactionsByTripIdAndUserId(ctx context.Context, tripId *uuid.UUID, userId *uuid.UUID) ([]*models.TransactionSchema, *models.ExpenseServiceError)
@@ -25,6 +26,16 @@ type TransactionRepository struct {
 func (*TransactionRepository) AddTx(ctx context.Context, tx pgx.Tx, transaction *models.TransactionSchema) *models.ExpenseServiceError {
 	query := "INSERT INTO transaction (id, id_creditor, id_debtor, id_trip, amount, created_at, currency_code, is_confirmed) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)"
 	_, err := tx.Exec(ctx, query, transaction.TransactionId, transaction.CreditorId, transaction.DebtorId, transaction.TripId, transaction.Amount, transaction.CreationDate, transaction.CurrencyCode, transaction.IsConfirmed)
+	if err != nil {
+		log.Printf("Error while executing query: %v", err)
+		return expense_errors.EXPENSE_INTERNAL_ERROR
+	}
+	return nil
+}
+
+func (*TransactionRepository) UpdateTx(ctx context.Context, tx pgx.Tx, transaction *models.TransactionSchema) *models.ExpenseServiceError {
+	query := "UPDATE transaction SET is_confirmed = $1 WHERE id = $2"
+	_, err := tx.Exec(ctx, query, transaction.IsConfirmed, transaction.TransactionId)
 	if err != nil {
 		log.Printf("Error while executing query: %v", err)
 		return expense_errors.EXPENSE_INTERNAL_ERROR
@@ -49,6 +60,10 @@ func (tr *TransactionRepository) GetTransactionById(ctx context.Context, id *uui
 	var transaction models.TransactionSchema
 	err := row.Scan(&transaction.TransactionId, &transaction.CreditorId, &transaction.DebtorId, &transaction.TripId, &transaction.Amount, &transaction.CreationDate, &transaction.CurrencyCode, &transaction.IsConfirmed)
 	if err != nil {
+		if err == pgx.ErrNoRows {
+			return nil, expense_errors.EXPENSE_NOT_FOUND
+		}
+
 		log.Printf("Error while scanning transaction: %v", err)
 		return nil, expense_errors.EXPENSE_INTERNAL_ERROR
 	}
@@ -60,6 +75,7 @@ func (tr *TransactionRepository) GetTransactionsByTripIdAndUserId(ctx context.Co
 	query := "SELECT id, id_creditor, id_debtor, id_trip, amount, created_at, is_confirmed FROM transaction WHERE id_trip = $1 AND (id_creditor = $2 OR id_debtor = $2)"
 	rows, err := tr.DatabaseMgr.ExecuteQuery(ctx, query, tripId, userId)
 	if err != nil {
+
 		log.Printf("Error while executing query: %v", err)
 		return nil, expense_errors.EXPENSE_INTERNAL_ERROR
 	}

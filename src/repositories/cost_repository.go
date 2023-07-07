@@ -61,6 +61,9 @@ func (cr *CostRepository) GetCostOverview(ctx context.Context, userId *uuid.UUID
 	// Get every trip the user is part of
 	rows, err := cr.DatabaseMgr.ExecuteQuery(ctx, "SELECT id, name FROM trip WHERE id IN (SELECT id_trip FROM user_trip_association WHERE id_user = $1)", userId)
 	if err != nil {
+		if err == pgx.ErrNoRows {
+			return nil, expense_errors.EXPENSE_NOT_FOUND
+		}
 		log.Printf("Error while executing query: %v", err)
 		return nil, expense_errors.EXPENSE_INTERNAL_ERROR
 	}
@@ -112,6 +115,9 @@ func (cr *CostRepository) GetCostOverview(ctx context.Context, userId *uuid.UUID
 			queryString := "SELECT name FROM cost_category WHERE id = $1"
 			nameRow := cr.DatabaseMgr.ExecuteQueryRow(ctx, queryString, costCategoryID)
 			if err != nil {
+				if err == pgx.ErrNoRows {
+					return nil, expense_errors.EXPENSE_NOT_FOUND
+				}
 				log.Printf("Error while executing query: %v", err)
 				return nil, expense_errors.EXPENSE_INTERNAL_ERROR
 			}

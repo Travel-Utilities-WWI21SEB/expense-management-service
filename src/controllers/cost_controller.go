@@ -658,9 +658,7 @@ func DistributeRemainingCosts(contributors []*models.Contributor, remainingCost 
 		}
 	}
 
-	// Write a while loop to distribute the rounding difference to the contributors with no amount
 	var i int
-
 	// "I'm a while loop
 	// and I'm here to say
 	// I'm gonna distribute

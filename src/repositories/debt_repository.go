@@ -37,6 +37,9 @@ func (dr *DebtRepository) GetDebtById(ctx context.Context, debtId *uuid.UUID) (*
 
 	err := row.Scan(&debt.DebtID, &debt.CreditorId, &debt.DebtorId, &debt.TripId, &debt.Amount, &debt.CurrencyCode, &debt.CreationDate, &debt.UpdateDate)
 	if err != nil {
+		if err == pgx.ErrNoRows {
+			return nil, expense_errors.EXPENSE_NOT_FOUND
+		}
 		return nil, expense_errors.EXPENSE_BAD_REQUEST
 	}
 

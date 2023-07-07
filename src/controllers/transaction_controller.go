@@ -18,6 +18,7 @@ type TransactionCtl interface {
 	GetTransactionDetails(ctx context.Context, transactionId *uuid.UUID) (*models.TransactionDTO, *models.ExpenseServiceError)
 	CreateTransactionEntry(ctx context.Context, tripId *uuid.UUID, transactionRequest *models.TransactionDTO) (*models.TransactionDTO, *models.ExpenseServiceError)
 	DeleteTransactionEntry(ctx context.Context, transactionId *uuid.UUID) *models.ExpenseServiceError
+	AcceptTransaction(ctx context.Context, transactionId *uuid.UUID) (*models.TransactionDTO, *models.ExpenseServiceError)
 }
 
 type TransactionController struct {
@@ -256,4 +257,49 @@ func (tc *TransactionController) DeleteTransactionEntry(ctx context.Context, tra
 	}
 
 	return nil
+}
+
+func (tc *TransactionController) AcceptTransaction(ctx context.Context, transactionId *uuid.UUID) (*models.TransactionDTO, *models.ExpenseServiceError) {
+	// Begin transaction
+	tx, err := tc.DatabaseMgr.BeginTx(ctx)
+	if err != nil {
+		log.Printf("Error while beginning transaction: %v", err)
+		return nil, expense_errors.EXPENSE_INTERNAL_ERROR
+	}
+
+	// Make sure to rollback the transaction if it fails
+	defer func(tx pgx.Tx) {
+		err := tx.Rollback(ctx)
+		if err != nil {
+			log.Printf("Error while rolling back transaction: %v", err)
+		}
+	}(tx)
+
+	transaction, repoErr := tc.TransactionRepo.GetTransactionById(ctx, transactionId)
+	if repoErr != nil {
+		return nil, repoErr
+	}
+
+	if transaction.DebtorId.String() == ctx.Value(models.ExpenseContextKeyUserID) {
+		return nil, expense_errors.EXPENSE_UNAUTHORIZED
+	}
+
+	transaction.IsConfirmed = true
+
+	if repoErr := tc.TransactionRepo.UpdateTx(ctx, tx, transaction); repoErr != nil {
+		return nil, expense_errors.EXPENSE_INTERNAL_ERROR
+	}
+
+	// Commit transaction
+	if err := tx.Commit(ctx); err != nil {
+		log.Printf("Error while committing transaction: %v", err)
+		return nil, expense_errors.EXPENSE_INTERNAL_ERROR
+	}
+
+	response, serviceErr := tc.mapTransactionToDto(ctx, transaction)
+	if serviceErr != nil {
+		return nil, serviceErr
+	}
+
+	return response, nil
 }
