@@ -14,18 +14,31 @@ func RegisterUserHandler(userCtl controllers.UserCtl) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		ctx := c.Request.Context()
 
+		// Parse multiform data (max 3MB)
+		if err := c.Request.ParseMultipartForm(3 << 20); err != nil {
+			utils.HandleErrorAndAbort(c, *expense_errors.EXPENSE_BAD_REQUEST)
+			return
+		}
+
+		// Get the multipart form
+		form := c.Request.MultipartForm
+
 		var registrationData models.RegistrationRequest
-		if err := c.ShouldBindJSON(&registrationData); err != nil {
+		registrationData.Username = form.Value["username"][0]
+		registrationData.Password = form.Value["password"][0]
+		registrationData.Email = form.Value["email"][0]
+		registrationData.FirstName = form.Value["firstName"][0]
+		registrationData.LastName = form.Value["lastName"][0]
+		registrationData.Birthday = form.Value["birthday"][0]
+		registrationData.Location = form.Value["location"][0]
+
+		if utils.ContainsEmptyString(registrationData.Username, registrationData.Password, registrationData.Email,
+			registrationData.FirstName, registrationData.LastName, registrationData.Birthday, registrationData.Location) {
 			utils.HandleErrorAndAbort(c, *expense_errors.EXPENSE_BAD_REQUEST)
 			return
 		}
 
-		if utils.ContainsEmptyString(registrationData.Username, registrationData.Password, registrationData.Email) {
-			utils.HandleErrorAndAbort(c, *expense_errors.EXPENSE_BAD_REQUEST)
-			return
-		}
-
-		err := userCtl.RegisterUser(ctx, registrationData)
+		err := userCtl.RegisterUser(ctx, registrationData, form)
 		if err != nil {
 			utils.HandleErrorAndAbort(c, *err)
 			return

@@ -36,11 +36,17 @@ type TripSchema struct {
 }
 
 type UserSchema struct {
-	UserID    *uuid.UUID `json:"userId" db:"id"`
-	Username  string     `json:"userName" db:"username"`
-	Email     string     `json:"email" db:"email"`
-	Password  string     `json:"password" db:"password"`
-	Activated bool       `json:"activated" db:"activated"`
+	UserID         *uuid.UUID `json:"userId" db:"id"`
+	Username       string     `json:"userName" db:"username"`
+	FirstName      string     `json:"firstName" db:"firstname"`
+	LastName       string     `json:"lastName" db:"lastname"`
+	Location       string     `json:"location" db:"location"`
+	Email          string     `json:"email" db:"email"`
+	Password       string     `json:"password" db:"password"`
+	Activated      bool       `json:"activated" db:"activated"`
+	ProfilePicture string     `json:"profilePicture" db:"profile_pic"`
+	Birthday       *time.Time `json:"birthday" db:"birthday"`
+	CreatedAt      *time.Time `json:"createdAt" db:"created_at"`
 }
 
 type TokenSchema struct {

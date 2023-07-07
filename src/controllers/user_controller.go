@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"context"
+	"fmt"
 	"github.com/Travel-Utilities-WWI21SEB/expense-management-service/src/expense_errors"
 	"github.com/Travel-Utilities-WWI21SEB/expense-management-service/src/managers"
 	"github.com/Travel-Utilities-WWI21SEB/expense-management-service/src/models"
@@ -9,11 +10,14 @@ import (
 	"github.com/Travel-Utilities-WWI21SEB/expense-management-service/src/utils"
 	"github.com/google/uuid"
 	"log"
+	"mime/multipart"
+	"strings"
+	"time"
 )
 
 // UserCtl Exposed interface to the handler-package
 type UserCtl interface {
-	RegisterUser(ctx context.Context, registrationData models.RegistrationRequest) *models.ExpenseServiceError
+	RegisterUser(ctx context.Context, registrationData models.RegistrationRequest, form *multipart.Form) *models.ExpenseServiceError
 	LoginUser(ctx context.Context, loginData models.LoginRequest) (*models.LoginResponse, *models.ExpenseServiceError)
 	RefreshToken(ctx context.Context, userId *uuid.UUID) (*models.RefreshTokenResponse, *models.ExpenseServiceError)
 	ForgotPassword(ctx context.Context, email string) *models.ExpenseServiceError
@@ -34,6 +38,7 @@ type UserCtl interface {
 type UserController struct {
 	MailMgr     managers.MailMgr
 	DatabaseMgr managers.DatabaseMgr
+	ImageMgr    managers.ImageMgr
 	UserRepo    repositories.UserRepo
 }
 
@@ -49,7 +54,7 @@ const (
 )
 
 // RegisterUser creates a new user entry in the database
-func (uc *UserController) RegisterUser(ctx context.Context, registrationData models.RegistrationRequest) *models.ExpenseServiceError {
+func (uc *UserController) RegisterUser(ctx context.Context, registrationData models.RegistrationRequest, form *multipart.Form) *models.ExpenseServiceError {
 	// Create user object
 	userId := uuid.New()
 	hashedPassword, err := utils.HashPassword(registrationData.Password)
@@ -58,12 +63,38 @@ func (uc *UserController) RegisterUser(ctx context.Context, registrationData mod
 		return expense_errors.EXPENSE_UPSTREAM_ERROR
 	}
 
+	birthDate, _ := time.Parse(time.DateOnly, registrationData.Birthday)
+	creationDate, _ := time.Parse(time.DateOnly, time.Now().String())
+
 	user := &models.UserSchema{
 		UserID:    &userId,
 		Username:  registrationData.Username,
+		FirstName: registrationData.FirstName,
+		LastName:  registrationData.LastName,
+		Location:  registrationData.Location,
 		Email:     registrationData.Email,
 		Password:  hashedPassword,
 		Activated: false,
+		Birthday:  &birthDate,
+		CreatedAt: &creationDate,
+	}
+
+	// Get file and header
+	file := (*form).File["profilePicture"][0]
+
+	// Set profile picture path to avatar_<userId>.<fileExtension>
+	fileExtension := file.Filename[strings.LastIndex(file.Filename, ".")+1:]
+	user.ProfilePicture = fmt.Sprintf("avatar_%s.%s", user.UserID, fileExtension)
+
+	// Upload profile picture
+	if file != nil {
+		if err := uc.ImageMgr.UploadImage(file, user.UserID); err != nil {
+			return err
+		}
+	} else {
+		if err := uc.ImageMgr.UploadDefaultProfilePicture(user.UserID); err != nil {
+			return err
+		}
 	}
 
 	// Insert user into database
@@ -412,7 +443,16 @@ func (uc *UserController) CheckUsername(ctx context.Context, username string) *m
 
 func buildUserResponse(user *models.UserSchema) *models.UserDetailsResponse {
 	return &models.UserDetailsResponse{
-		UserName: user.Username,
-		Email:    user.Email,
+		ID:             user.UserID,
+		FirstName:      user.FirstName,
+		LastName:       user.LastName,
+		Location:       user.Location,
+		UserName:       user.Username,
+		Email:          user.Email,
+		Birthday:       user.Birthday.Format(time.DateOnly),
+		ProfilePicture: "https://raw.githubusercontent.com/Travel-Utilities-WWI21SEB/expense-management-ui/main/static/justinIcon.jpg",
+		CreatedAt:      user.CreatedAt.Format(time.DateOnly),
+		OpenDebts:      2,
+		TripsJoined:    2,
 	}
 }

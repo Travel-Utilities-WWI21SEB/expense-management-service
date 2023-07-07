@@ -46,7 +46,9 @@ type UserRepository struct {
 }
 
 func (ur *UserRepository) CreateUser(ctx context.Context, user *models.UserSchema) *models.ExpenseServiceError {
-	_, err := ur.DatabaseMgr.ExecuteStatement(ctx, "INSERT INTO \"user\" (id, username, email, password, activated) VALUES ($1, $2, $3, $4, $5)", user.UserID, user.Username, user.Email, user.Password, user.Activated)
+	_, err := ur.DatabaseMgr.ExecuteStatement(ctx,
+		"INSERT INTO \"user\" (id, username, firstname, lastname, location, email, password, activated, profile_pic, birthday, created_at) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)",
+		user.UserID, user.Username, user.FirstName, user.LastName, user.Location, user.Email, user.Password, user.Activated, user.ProfilePicture, user.Birthday, user.CreatedAt)
 	if err != nil {
 		// Check if duplicate key was violated, if so return error EXPENSE_USER_EXISTS
 		var pgxErr *pgconn.PgError
@@ -115,8 +117,9 @@ func (ur *UserRepository) DeleteUser(ctx context.Context, userId *uuid.UUID) *mo
 
 func (ur *UserRepository) GetUserById(ctx context.Context, userId *uuid.UUID) (*models.UserSchema, *models.ExpenseServiceError) {
 	user := &models.UserSchema{}
-	row := ur.DatabaseMgr.ExecuteQueryRow(ctx, "SELECT id, username, email, activated FROM \"user\" WHERE id = $1", userId)
-	if err := row.Scan(&user.UserID, &user.Username, &user.Email, &user.Activated); err != nil {
+	row := ur.DatabaseMgr.ExecuteQueryRow(ctx, "SELECT * FROM \"user\" WHERE id = $1", userId)
+	if err := row.Scan(&user.UserID, &user.Username, &user.FirstName, &user.LastName, &user.Location, &user.Email,
+		&user.Password, &user.Activated, &user.ProfilePicture, &user.Birthday, &user.CreatedAt); err != nil {
 		// Check if no rows were returned, if so return error EXPENSE_USER_NOT_FOUND
 		if err == pgx.ErrNoRows {
 			return nil, expense_errors.EXPENSE_USER_NOT_FOUND

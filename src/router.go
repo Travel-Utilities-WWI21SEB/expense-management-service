@@ -58,6 +58,10 @@ func createRouter(dbConnection *pgxpool.Pool) *gin.Engine {
 		MailgunInstance: mgInstance,
 	}
 
+	imageMgr := &managers.ImageManager{
+		Client: &http.Client{},
+	}
+
 	userRepo := &repositories.UserRepository{
 		DatabaseMgr: databaseMgr,
 	}
@@ -86,6 +90,7 @@ func createRouter(dbConnection *pgxpool.Pool) *gin.Engine {
 		UserController: &controllers.UserController{
 			MailMgr:     mailMgr,
 			DatabaseMgr: databaseMgr,
+			ImageMgr:    imageMgr,
 			UserRepo:    userRepo,
 		},
 		TripController: &controllers.TripController{

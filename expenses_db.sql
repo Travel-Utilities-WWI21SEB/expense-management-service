@@ -10,11 +10,17 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 DROP TABLE IF EXISTS public."user" CASCADE;
 CREATE TABLE public."user"
 (
-    id        uuid              NOT NULL DEFAULT uuid_generate_v4(),
-    username  character varying NOT NULL,
-    email     character varying NOT NULL,
-    password  character varying NOT NULL,
-    activated boolean           NOT NULL,
+    id          uuid                  NOT NULL DEFAULT uuid_generate_v4(),
+    username    character varying(20) NOT NULL,
+    firstname   character varying(25) NOT NULL,
+    lastname    character varying(25) NOT NULL,
+    location    character varying(50),
+    email       character varying     NOT NULL,
+    password    character varying     NOT NULL,
+    activated   boolean               NOT NULL,
+    profile_pic character varying,
+    birthday    date,
+    created_at  timestamp with time zone,
     CONSTRAINT user_pk PRIMARY KEY (id),
     CONSTRAINT username_un UNIQUE (username),
     CONSTRAINT email_un UNIQUE (email)
@@ -25,12 +31,12 @@ CREATE TABLE public."user"
 DROP TABLE IF EXISTS public.trip CASCADE;
 CREATE TABLE public.trip
 (
-    id         uuid NOT NULL DEFAULT uuid_generate_v4(),
-    name       character varying,
+    id          uuid NOT NULL DEFAULT uuid_generate_v4(),
+    name        character varying,
     description character varying,
-    location   character varying,
-    start_date date NOT NULL,
-    end_date   date NOT NULL,
+    location    character varying,
+    start_date  date NOT NULL,
+    end_date    date NOT NULL,
     CONSTRAINT travel_pk PRIMARY KEY (id)
 );
 -- ddl-end --
@@ -110,14 +116,14 @@ CREATE TABLE public.user_cost_association
 DROP TABLE IF EXISTS public.transaction CASCADE;
 CREATE TABLE public.transaction
 (
-    id          uuid NOT NULL DEFAULT uuid_generate_v4(),
-    id_creditor uuid,
-    id_debtor   uuid,
-    id_trip     uuid,
-    amount      numeric,
-    created_at  timestamp with time zone,
-    currency_code    character varying,
-    is_confirmed boolean NOT NULL,
+    id            uuid    NOT NULL DEFAULT uuid_generate_v4(),
+    id_creditor   uuid,
+    id_debtor     uuid,
+    id_trip       uuid,
+    amount        numeric,
+    created_at    timestamp with time zone,
+    currency_code character varying,
+    is_confirmed  boolean NOT NULL,
     CONSTRAINT transaction_pk PRIMARY KEY (id)
 );
 -- ddl-end --
@@ -126,14 +132,14 @@ CREATE TABLE public.transaction
 DROP TABLE IF EXISTS public.debt CASCADE;
 CREATE TABLE public.debt
 (
-    id          uuid NOT NULL DEFAULT uuid_generate_v4(),
-    id_creditor uuid,
-    id_debtor   uuid,
-    id_trip     uuid,
-    amount      numeric,
-    created_at timestamp with time zone,
-    updated_at  timestamp with time zone,
-    currency_code    character varying,
+    id            uuid NOT NULL DEFAULT uuid_generate_v4(),
+    id_creditor   uuid,
+    id_debtor     uuid,
+    id_trip       uuid,
+    amount        numeric,
+    created_at    timestamp with time zone,
+    updated_at    timestamp with time zone,
+    currency_code character varying,
     CONSTRAINT debt_pk PRIMARY KEY (id),
     CONSTRAINT debt_un UNIQUE (id_creditor, id_debtor, id_trip)
 );
