@@ -1,0 +1,26 @@
+_id: req_6adde0d357c74eabba3e3231d083aa0d
+type: Request
+parentId: fld_eb05ed6abb0d45e2b9ef90c680d09136
+modified: 1688711858487
+created: 1688711853239
+url: "{{ _.api_url }}/{{ _.route }}/{% prompt 'TripId', '', _.last_trip_id,
+  'tripid', false, true %}/{{ _.subRoute
+  }}/c7205eca-aa2a-4c5f-8daf-19555ef85a86/accept"
+name: Accept Transaction
+description: ""
+method: POST
+body: {}
+parameters: []
+headers: []
+authentication:
+  type: bearer
+  token: "{{ _.token }}"
+  prefix: Bearer
+metaSortKey: -1684749356498.9375
+isPrivate: false
+settingStoreCookies: true
+settingSendCookies: true
+settingDisableRenderRequestBody: false
+settingEncodeUrl: true
+settingRebuildPath: true
+settingFollowRedirects: global
