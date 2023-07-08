@@ -1,0 +1,28 @@
+_id: req_47da385ea2e94d31bef3c71e2dad3de7
+type: Request
+parentId: fld_377a889e84744fad9aa37e60971a9815
+modified: 1686312531697
+created: 1686302306250
+url: "{{ _.api_url }}/{{ _.route }}/refresh"
+name: Refresh JWT Token
+description: ""
+method: POST
+body:
+  mimeType: application/json
+  text: |-
+    {
+    	"refreshToken": "{{ _.refresh_token }}"
+    }
+parameters: []
+headers:
+  - name: Content-Type
+    value: application/json
+authentication: {}
+metaSortKey: -1684747534772.1406
+isPrivate: false
+settingStoreCookies: true
+settingSendCookies: true
+settingDisableRenderRequestBody: false
+settingEncodeUrl: true
+settingRebuildPath: true
+settingFollowRedirects: global

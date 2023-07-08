@@ -1,0 +1,26 @@
+_id: req_f567ae23333045fc8cfe7d60b2560b32
+type: Request
+parentId: fld_2b6e55b09af64965a02cd1bc8595679d
+modified: 1686329566568
+created: 1684922511197
+url: "{{ _.api_url }}/{{ _.route }}/{% prompt 'TripId', '', 'TripId', 'tripid',
+  false, true %}/{{ _.subRoute }}/{% prompt 'CostCategoryId', 'costCategoryId',
+  'costCategoryId', 'costCategoryId', false, true %}"
+name: Delete Cost Category
+description: ""
+method: DELETE
+body: {}
+parameters: []
+headers: []
+authentication:
+  type: bearer
+  token: "{{ _.token }}"
+  prefix: Bearer
+metaSortKey: -1684747854908.875
+isPrivate: false
+settingStoreCookies: true
+settingSendCookies: true
+settingDisableRenderRequestBody: false
+settingEncodeUrl: true
+settingRebuildPath: true
+settingFollowRedirects: global

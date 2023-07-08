@@ -1,0 +1,55 @@
+_id: req_2cc49a937af740088c417f92f274997e
+type: Request
+parentId: fld_eb05ed6abb0d45e2b9ef90c680d09136
+modified: 1688817641453
+created: 1688815910073
+url: "{{ _.api_url }}/{{ _.subRoute }}"
+name: All User Transactions
+description: ""
+method: GET
+body: {}
+parameters:
+  - name: creditorId
+    value: xxxx
+    id: pair_aa6614ee01e3442b9b86a013eee2eb44
+    disabled: true
+  - name: creditorUsername
+    value: testUser
+    id: pair_9d13987871334673bd18c0b6aaff2e0e
+    disabled: true
+  - name: debtorId
+    value: xxx
+    id: pair_845df60f8f36446f848fb65a50904ce0
+    disabled: true
+  - name: debtorUsername
+    value: testUser
+    id: pair_034015e324ef4ebcb84f5f5f68afbc4a
+    disabled: true
+  - id: pair_9a4cbac81bb6418aaaa12b01aead0257
+    name: sortBy
+    value: amount
+    description: ""
+    disabled: false
+  - id: pair_029cf9f9dcd44faf80160ba3f0bfae37
+    name: sortOrder
+    value: desc
+    description: ""
+    disabled: false
+  - id: pair_71cb579921f74c0d98e95100c5097160
+    name: isConfirmed
+    value: "true"
+    description: ""
+    disabled: true
+headers: []
+authentication:
+  type: bearer
+  token: "{{ _.token }}"
+  prefix: Bearer
+metaSortKey: -1684749926893.3125
+isPrivate: false
+settingStoreCookies: true
+settingSendCookies: true
+settingDisableRenderRequestBody: false
+settingEncodeUrl: true
+settingRebuildPath: true
+settingFollowRedirects: global

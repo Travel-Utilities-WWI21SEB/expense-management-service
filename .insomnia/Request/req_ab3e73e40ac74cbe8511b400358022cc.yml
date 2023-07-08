@@ -1,10 +1,10 @@
 _id: req_ab3e73e40ac74cbe8511b400358022cc
 type: Request
 parentId: fld_d83c1d0d5e75433c97b1979a5f600fb4
-modified: 1684760455296
+modified: 1687290125698
 created: 1684747799383
-url: "{{ _.localUrl }}/{{ _.route }}/{% prompt 'TripId', '', 'TripId', 'tripid',
-  false, true %}"
+url: "{{ _.api_url }}/{{ _.route }}/{% prompt 'TripId', '', _.last_trip_id,
+  'tripid', false, true %}"
 name: Update Trip
 description: >
   This endpoint is used to login a user in our webapplication with given
@@ -86,21 +86,22 @@ description: >
   }
 
   ```
-method: PUT
+method: PATCH
 body:
   mimeType: application/json
-  text: >-
+  text: |-
     {
-    	"location": "{% prompt 'Location', 'location', 'testLocation', 'tripLocation', false, true %}",
-    	"description": "{% prompt 'Description', 'tripDescription', 'Description of trip', 'tripDescription', false, true %}",
-    	"startDate": "{% prompt 'StartDate', 'startdate', '02/08/2023', 'startdate', false, true %}",
-    	"endDate": "{% prompt 'EndDate', 'enddate', '30/10/2023', 'enddate', false, true %}"
+    	"name": "Testing 2024",
+    	"description": "This is for testing purposes."
     }
 parameters: []
 headers:
   - name: Content-Type
     value: application/json
-authentication: {}
+authentication:
+  type: bearer
+  token: "{{ _.token }}"
+  prefix: Bearer
 metaSortKey: -1684747857618.5
 isPrivate: false
 settingStoreCookies: true

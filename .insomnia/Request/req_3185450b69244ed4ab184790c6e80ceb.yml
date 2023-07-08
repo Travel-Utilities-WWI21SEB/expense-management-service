@@ -1,9 +1,9 @@
 _id: req_3185450b69244ed4ab184790c6e80ceb
 type: Request
 parentId: fld_377a889e84744fad9aa37e60971a9815
-modified: 1684882253411
+modified: 1687294165036
 created: 1684746860492
-url: "{{ _.localUrl }}/api/{{ _.apiVersion }}/{{ _.route }}/login"
+url: "{{ _.api_url }}/{{ _.route }}/login"
 name: Login
 description: >-
   This endpoint is used to login a user in our webapplication with given
@@ -151,10 +151,10 @@ description: >-
 method: POST
 body:
   mimeType: application/json
-  text: >-
+  text: |-
     {
-    	"email": "{% prompt 'Email', 'Email', 'testEmail', true, false, true %}",
-    	"password": "{% prompt 'Password', 'password', 'testPassword', 'password', true, true %}"
+    	"email": "testEmail3",
+    	"password": "abcdef"
     }
 parameters: []
 headers:

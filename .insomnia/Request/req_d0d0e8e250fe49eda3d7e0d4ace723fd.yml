@@ -1,11 +1,11 @@
 _id: req_d0d0e8e250fe49eda3d7e0d4ace723fd
 type: Request
 parentId: fld_fb964101ac2d4651a16e19aa1fefe039
-modified: 1684760123196
+modified: 1688063433720
 created: 1684754226862
-url: "{{ _.scheme }}{{ _.localUrl }}/{{ _.route }}/{% prompt 'TripId', '',
-  'tripId', 'tripid', false, true %}/{{ _.subRoute }}"
-name: All Costs (toggle filter)
+url: "{{ _.api_url }}/{{ _.route }}/{% prompt 'TripId', '', _.last_trip_id,
+  'tripid', false, true %}/{{ _.subRoute }}"
+name: All Costs
 description: >
   This endpoint is used to login a user in our webapplication with given
   credentials and set a JWT Header.
@@ -89,14 +89,51 @@ description: >
 method: GET
 body: {}
 parameters:
-  - id: pair_12bff161bb5b41909959bbdb8bfb2ee7
-    name: user
-    value: "{% prompt 'UserID of Creator', 'userid', 'userId', 'userid', false, true
-      %}"
-    description: UserID to query
+  - name: minDeductionDate
+    value: 2023-06-07T20:04:05Z
+    id: pair_287e1bf14a2643e5a18ecc52be44f343
+    disabled: true
+  - name: maxDeductionDate
+    value: 2023-06-07T20:04:05Z
+    id: pair_18bf47fe7afc431c9fd3ec72e31557da
+    disabled: true
+  - name: minEndDate
+    value: 2023-06-07T20:04:05Z
+    id: pair_b2d2d29ee7014e5cb52b26eab81baedb
+    disabled: true
+  - name: maxEndDate
+    value: 2023-06-07T20:04:05Z
+    id: pair_fd001765228849fd819dd23833011f70
+    disabled: true
+  - name: minCreationDate
+    value: 2023-06-07T20:04:05Z
+    id: pair_b027039882eb47b8833124bc2459e02d
+    disabled: true
+  - name: maxCreationDate
+    value: 2023-06-07T20:04:05Z
+    id: pair_503d7e1939d947c2ab84b927bc6a62de
+    disabled: true
+  - name: page
+    value: "1"
+    id: pair_84485856ef894b3ebf3ba849ed6160a8
+    disabled: true
+  - name: pageSize
+    value: "20"
+    id: pair_7810e88fb60a4d408d4adaf86bea5c60
+    disabled: true
+  - name: sortBy
+    value: amount
+    id: pair_10bbf88a56db4526ac5b9a658eb8c4d5
+    disabled: true
+  - name: sortOrder
+    value: asc
+    id: pair_8bc175ae6719400ba6efaf85c085bbc5
     disabled: true
 headers: []
-authentication: {}
+authentication:
+  type: bearer
+  token: "{{ _.token }}"
+  prefix: Bearer
 metaSortKey: -1684747912553
 isPrivate: false
 settingStoreCookies: true

@@ -1,11 +1,12 @@
-_id: req_93d1fd1e9ca246318a66111cc29937cf
+_id: req_ac3af01eb9e14fe3989f6421f473a5e2
 type: Request
 parentId: fld_eb05ed6abb0d45e2b9ef90c680d09136
-modified: 1688064474771
-created: 1684761345887
+modified: 1688068781983
+created: 1688068753086
 url: "{{ _.api_url }}/{{ _.route }}/{% prompt 'TripId', '', _.last_trip_id,
-  'tripid', false, true %}/{{ _.subRoute }}"
-name: All Transactions
+  'tripid', false, true %}/{{ _.subRoute
+  }}/c7205eca-aa2a-4c5f-8daf-19555ef85a86"
+name: Transaction Details
 description: ""
 method: GET
 body: {}
@@ -15,7 +16,7 @@ authentication:
   type: bearer
   token: "{{ _.token }}"
   prefix: Bearer
-metaSortKey: -1684750212090.5
+metaSortKey: -1684749641696.125
 isPrivate: false
 settingStoreCookies: true
 settingSendCookies: true

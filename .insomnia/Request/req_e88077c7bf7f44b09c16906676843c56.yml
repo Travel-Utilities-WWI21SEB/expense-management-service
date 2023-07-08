@@ -1,11 +1,11 @@
 _id: req_e88077c7bf7f44b09c16906676843c56
 type: Request
 parentId: fld_7dbd01f829da460490b15b6ab7baa058
-modified: 1684760414080
+modified: 1688069217541
 created: 1684747892683
-url: "{{ _.localUrl }}/{{ _.route }}/{% prompt 'TripId', '', 'TripId', 'tripid',
-  false, true %}/{{ _.subRoute }}/{% prompt 'DebtId', 'debtId', 'debtId',
-  'debtId', false, true %}"
+url: "{{ _.api_url }}/{{ _.route }}/{% prompt 'TripId', '', _.last_trip_id,
+  'tripid', false, true %}/{{ _.subRoute
+  }}/e1d0e5e7-7137-4fd1-88cc-fae1a4f26a0a"
 name: Debt Details
 description: >
   This endpoint is used to login a user in our webapplication with given
@@ -91,7 +91,10 @@ method: GET
 body: {}
 parameters: []
 headers: []
-authentication: {}
+authentication:
+  type: bearer
+  token: "{{ _.token }}"
+  prefix: Bearer
 metaSortKey: -1684747892683
 isPrivate: false
 settingStoreCookies: true

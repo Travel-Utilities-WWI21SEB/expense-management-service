@@ -1,11 +1,11 @@
 _id: req_48f31a9e2b3648ddb06a4a8df9297c45
 type: Request
 parentId: fld_fb964101ac2d4651a16e19aa1fefe039
-modified: 1684760432302
+modified: 1686737861951
 created: 1684747894593
-url: "{{ _.localUrl }}/{{ _.route }}/{% prompt 'TripId', '', 'TripId', 'tripid',
-  false, true %}/{{ _.subRoute }}/{% prompt 'CostId', '', 'costId', 'costid',
-  false, true %}"
+url: "{{ _.api_url }}/{{ _.route }}/{% prompt 'TripId', '', _.last_trip_id,
+  'tripid', false, true %}/{{ _.subRoute }}/{% prompt 'CostId', '', 'costId',
+  'costid', false, true %}"
 name: Cost Details
 description: >
   This endpoint is used to login a user in our webapplication with given
@@ -91,7 +91,10 @@ method: GET
 body: {}
 parameters: []
 headers: []
-authentication: {}
+authentication:
+  type: bearer
+  token: "{{ _.token }}"
+  prefix: Bearer
 metaSortKey: -1684747894593
 isPrivate: false
 settingStoreCookies: true

@@ -1,9 +1,9 @@
 _id: req_741f4d909f414b678b36ff3408e1265d
 type: Request
 parentId: fld_377a889e84744fad9aa37e60971a9815
-modified: 1684865600141
+modified: 1687100172079
 created: 1684746520798
-url: "{{ _.localUrl }}/api/{{ _.apiVersion }}/{{ _.route }}/register"
+url: "{{ _.api_url }}/{{ _.route }}/register"
 name: Register
 description: |
   This endpoint is used to register a new user in our webapplication.
@@ -47,6 +47,23 @@ description: |
 
   - Status Code: `200`
   - Content Type: `application/json`
+
+  Example response:
+
+  ```json
+  {
+    "userId": "ea64bfb9-9f0a-4803-8536-e0280e06a630"
+  }
+  ```
+
+  ---
+
+  #### <span style="color:orange">Partial Success Response</span>
+
+  - Status Code: `206`
+  - Content Type: `application/json`
+
+  The user was registered successfully but the activation email was not sent.
 
   Example response:
 
@@ -108,11 +125,11 @@ description: |
 method: POST
 body:
   mimeType: application/json
-  text: >-
+  text: |-
     {
-    	"username": "{% prompt 'Username', '', 'testUser', 'username', _.username, true %}",
-    	"email": "{% prompt 'Email', _.email, 'testEmail', true, _.email, true %}",
-    	"password": "{% prompt 'Password', 'password', 'testPassword', true, true, true %}"
+    	"username": "testUser3",
+    	"email": "testEmail3",
+    	"password": "abcdef"
     }
 parameters: []
 headers:

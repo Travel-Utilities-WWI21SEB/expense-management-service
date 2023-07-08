@@ -1,9 +1,9 @@
 _id: req_2a53069be7ba4859b530dfa96b019b3e
 type: Request
 parentId: fld_d83c1d0d5e75433c97b1979a5f600fb4
-modified: 1684760465314
+modified: 1687091241277
 created: 1684747727157
-url: "{{ _.localUrl }}/{{ _.route }}"
+url: "{{ _.api_url }}/{{ _.route }}"
 name: Create Trip
 description: >
   This endpoint is used to login a user in our webapplication with given
@@ -88,19 +88,22 @@ description: >
 method: POST
 body:
   mimeType: application/json
-  text: >-
+  text: |-
     {
-    	"creator": "{% prompt 'UserID of Creator', 'userid', 'userId', 'userid', false, true %}",
-    	"location": "{% prompt 'Location', 'location', 'testLocation', 'tripLocation', false, true %}",
-    	"description": "{% prompt 'Description', 'tripDescription', 'Description of trip', 'tripDescription', false, true %}",
-    	"startDate": "{% prompt 'StartDate', 'startdate', '02/08/2023', 'startdate', false, true %}",
-    	"endDate": "{% prompt 'EndDate', 'enddate', '30/10/2023', 'enddate', false, true %}"
+    	"name": "Testing 2023",
+    	"description": "This is for testing purposes.",
+    	"location": "Palo Alto",
+    	"startDate": "2023-08-02",
+    	"endDate": "2023-10-30"
     }
 parameters: []
 headers:
   - name: Content-Type
     value: application/json
-authentication: {}
+authentication:
+  type: bearer
+  token: "{{ _.token }}"
+  prefix: Bearer
 metaSortKey: -1684747857768.5
 isPrivate: false
 settingStoreCookies: true

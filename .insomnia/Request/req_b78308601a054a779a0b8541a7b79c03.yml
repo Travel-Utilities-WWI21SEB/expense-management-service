@@ -1,12 +1,11 @@
 _id: req_b78308601a054a779a0b8541a7b79c03
 type: Request
 parentId: fld_377a889e84744fad9aa37e60971a9815
-modified: 1684883084396
+modified: 1686161672887
 created: 1684747557399
-url: "{{ _.localUrl }}/api/{{ _.apiVersion }}/{{ _.route }}/{% prompt 'UserId',
-  '', 'userId', 'userid', false, true %}"
+url: "{{ _.api_url }}/{{ _.route }}"
 name: Delete User
-description: >
+description: >-
   This endpoint is used to delete an user in our web application. The server
   also does some follow-up work needed when deleting an user, e.g. handling open
   transactions.
@@ -64,7 +63,31 @@ description: >
   ---
 
 
-  #### <span style="color:red">Wrong Credentials</span>
+  #### <span style="color:red">Bad Request</span>
+
+
+  - Status Code: `400`
+
+  - Content Type: `application/json`
+
+
+  Example response:
+
+
+  ```json
+
+  {
+    "errorCode": "EM-005",
+  	"errorMessage": "BAD_REQUEST"
+  }
+
+  ```
+
+
+  ---
+
+
+  #### <span style="color:red">Unauthorized</span>
 
 
   - Status Code: `401`
@@ -78,7 +101,80 @@ description: >
   ```json
 
   {
-    "err": "some error message"
+    "errorCode": "EM-006",
+  	"errorMessage": "UNAUTHORIZED"
+  }
+
+  ```
+
+
+  ---
+
+
+  #### <span style="color:red">User not found</span>
+
+
+  - Status Code: `404`
+
+  - Content Type: `application/json`
+
+
+  Example response:
+
+
+  ```json
+
+  {
+    "errorCode": "EM-009",
+  	"errorMessage": "USER_NOT_FOUND"
+  }
+
+  ```
+
+
+  ---
+
+
+  #### <span style="color:red">Internal Error</span>
+
+
+  - Status Code: `500`
+
+  - Content Type: `application/json`
+
+
+  Example response:
+
+
+  ```json
+
+  {
+    "errorCode": "EM-002",
+  	"errorMessage": "INTERAL_ERROR"
+  }
+
+  ```
+
+
+  ---
+
+
+  #### <span style="color:red">Upstream Error</span>
+
+
+  - Status Code: `500`
+
+  - Content Type: `application/json`
+
+
+  Example response:
+
+
+  ```json
+
+  {
+    "errorCode": "EM-001",
+  	"errorMessage": "UPSTREAM_ERROR"
   }
 
   ```
@@ -86,7 +182,10 @@ method: DELETE
 body: {}
 parameters: []
 headers: []
-authentication: {}
+authentication:
+  type: bearer
+  prefix: Bearer
+  token: "{{ _.token }}"
 metaSortKey: -1684746520748
 isPrivate: false
 settingStoreCookies: true

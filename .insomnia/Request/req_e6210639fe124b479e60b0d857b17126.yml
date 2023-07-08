@@ -1,11 +1,11 @@
 _id: req_e6210639fe124b479e60b0d857b17126
 type: Request
 parentId: fld_7dbd01f829da460490b15b6ab7baa058
-modified: 1684760417097
+modified: 1688064266353
 created: 1684754525155
-url: "{{ _.localUrl }}/{{ _.route }}/{% prompt 'TripId', '', 'TripId', 'tripid',
-  false, true %}/{{ _.subRoute }}"
-name: All Debts (toggle filter)
+url: "{{ _.api_url }}/{{ _.route }}/{% prompt 'TripId', '', _.last_trip_id,
+  'tripid', false, true %}/{{ _.subRoute }}"
+name: All Debts
 description: >
   This endpoint is used to login a user in our webapplication with given
   credentials and set a JWT Header.
@@ -88,14 +88,12 @@ description: >
   ```
 method: GET
 body: {}
-parameters:
-  - id: pair_98a2c0f429c74994b5ade0ed7b43329a
-    name: user
-    value: "{% prompt 'UserID of Creator', 'userid', 'userId', 'userid', false, true
-      %}"
-    description: UserID to query
+parameters: []
 headers: []
-authentication: {}
+authentication:
+  type: bearer
+  token: "{{ _.token }}"
+  prefix: Bearer
 metaSortKey: -1684754525155
 isPrivate: false
 settingStoreCookies: true
