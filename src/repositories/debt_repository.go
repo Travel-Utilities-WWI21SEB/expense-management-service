@@ -21,6 +21,8 @@ type DebtRepo interface {
 	GetDebtByCreditorId(ctx context.Context, creditorId *uuid.UUID) (*models.DebtSchema, *models.ExpenseServiceError)
 	GetDebtByCreditorIdAndDebtorIdAndTripIdTx(ctx context.Context, tx pgx.Tx, creditorId *uuid.UUID, debtorId *uuid.UUID, tripId *uuid.UUID) (*models.DebtSchema, *models.ExpenseServiceError)
 	GetDebtEntriesByTripId(ctx context.Context, tripId *uuid.UUID) ([]*models.DebtSchema, *models.ExpenseServiceError)
+	GetCumulativeDebtByUserIDAndTripID(ctx context.Context, userId *uuid.UUID, tripId *uuid.UUID) (decimal.Decimal, *models.ExpenseServiceError)
+	GetCumulativeCreditByUserIDAndTripID(ctx context.Context, userId *uuid.UUID, tripId *uuid.UUID) (decimal.Decimal, *models.ExpenseServiceError)
 
 	CalculateDebt(ctx context.Context, tx pgx.Tx, creditorId *uuid.UUID, debtorId *uuid.UUID, tripId *uuid.UUID, amountToAdd decimal.Decimal) *models.ExpenseServiceError
 }
@@ -124,6 +126,32 @@ func (dr *DebtRepository) GetDebtEntriesByTripId(ctx context.Context, tripId *uu
 	}
 
 	return debts, nil
+}
+
+func (dr *DebtRepository) GetCumulativeCreditByUserIDAndTripID(ctx context.Context, userId *uuid.UUID, tripId *uuid.UUID) (decimal.Decimal, *models.ExpenseServiceError) {
+	query := "SELECT COALESCE(SUM(amount),0) FROM debt WHERE id_creditor = $1 AND id_trip = $2"
+	row := dr.DatabaseMgr.ExecuteQueryRow(ctx, query, userId, tripId)
+
+	var cumulativeDebt decimal.Decimal
+	err := row.Scan(&cumulativeDebt)
+	if err != nil {
+		return decimal.Zero, expense_errors.EXPENSE_BAD_REQUEST
+	}
+
+	return cumulativeDebt, nil
+}
+
+func (dr *DebtRepository) GetCumulativeDebtByUserIDAndTripID(ctx context.Context, userId *uuid.UUID, tripId *uuid.UUID) (decimal.Decimal, *models.ExpenseServiceError) {
+	query := "SELECT COALESCE(SUM(amount),0) FROM debt WHERE id_debtor = $1 AND id_trip = $2"
+	row := dr.DatabaseMgr.ExecuteQueryRow(ctx, query, userId, tripId)
+
+	var cumulativeCredit decimal.Decimal
+	err := row.Scan(&cumulativeCredit)
+	if err != nil {
+		return decimal.Zero, expense_errors.EXPENSE_BAD_REQUEST
+	}
+
+	return cumulativeCredit, nil
 }
 
 func (dr *DebtRepository) CalculateDebt(ctx context.Context, tx pgx.Tx, creditorId *uuid.UUID, debtorId *uuid.UUID, tripId *uuid.UUID, amountToAdd decimal.Decimal) *models.ExpenseServiceError {

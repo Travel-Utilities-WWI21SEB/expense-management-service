@@ -396,6 +396,18 @@ func (tc *TripController) mapTripToResponse(ctx context.Context, trip *models.Tr
 
 	}
 
+	// Get commulative debt for user in trip
+	userDebtTotal, repoErr := tc.DebtRepo.GetCumulativeDebtByUserIDAndTripID(ctx, ctx.Value(models.ExpenseContextKeyUserID).(*uuid.UUID), trip.TripID)
+	if repoErr != nil {
+		return nil, repoErr
+	}
+
+	// Get commulative credit for user in trip
+	userCreditTotal, repoErr := tc.DebtRepo.GetCumulativeCreditByUserIDAndTripID(ctx, ctx.Value(models.ExpenseContextKeyUserID).(*uuid.UUID), trip.TripID)
+	if repoErr != nil {
+		return nil, repoErr
+	}
+
 	// Build trip response
 	return &models.TripDTO{
 		TripID:         trip.TripID,
@@ -406,8 +418,8 @@ func (tc *TripController) mapTripToResponse(ctx context.Context, trip *models.Tr
 		EndDate:        trip.EndDate.Format(time.DateOnly),
 		CostCategories: costCategoryResponses,
 		TotalCost:      totalCostOfTrip.String(),
-		UserDebt:       "0.00",
-		UserCredit:     "0.00",
+		UserDebt:       userDebtTotal.String(),
+		UserCredit:     userCreditTotal.String(),
 		Participants:   participationResponses,
 	}, nil
 }
