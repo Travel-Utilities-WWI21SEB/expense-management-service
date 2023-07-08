@@ -183,6 +183,7 @@ func createRouter(dbConnection *pgxpool.Pool) *gin.Engine {
 	// Transaction Routes
 	securedTripApiv1.Handle(http.MethodPost, "/transactions", handlers.CreateTransactionHandler(controller.TransactionController))
 	securedTripApiv1.Handle(http.MethodGet, "/transactions", handlers.GetTransactionsHandler(controller.TransactionController))
+	securedApiv1.Handle(http.MethodGet, "/transactions", handlers.GetUserTransactionsHandler(controller.TransactionController))
 	securedTripApiv1.Handle(http.MethodGet, "/transactions/:transactionId", handlers.GetTransactionDetailsHandler(controller.TransactionController))
 	securedTripApiv1.Handle(http.MethodDelete, "/transactions/:transactionId", handlers.DeleteTransactionHandler(controller.TransactionController))
 	securedTripApiv1.Handle(http.MethodPost, "/transactions/:transactionId/accept", handlers.AcceptTransaction(controller.TransactionController))

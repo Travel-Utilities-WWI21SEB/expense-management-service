@@ -514,7 +514,7 @@ func (cc *CostController) DeleteCostEntry(ctx context.Context, tripId *uuid.UUID
 			continue
 		}
 		// Subtract debt from user
-		cc.DebtRepo.CalculateDebt(ctx, tx, contribution.UserID, creditor.UserID, tripId, contribution.Amount.Neg())
+		cc.DebtRepo.CalculateDebt(ctx, tx, creditor.UserID, contribution.UserID, tripId, contribution.Amount.Neg())
 	}
 
 	repoErr = cc.CostRepo.DeleteTx(ctx, tx, costId)

@@ -60,7 +60,6 @@ func (*DebtRepository) AddTx(ctx context.Context, tx pgx.Tx, debt *models.DebtSc
 func (*DebtRepository) UpdateTx(ctx context.Context, tx pgx.Tx, debt *models.DebtSchema) *models.ExpenseServiceError {
 	query := "UPDATE debt SET id_creditor = $1, id_debtor = $2, id_trip = $3, amount = $4, currency_code = $5, updated_at = $6 WHERE id = $7"
 	_, err := tx.Exec(ctx, query, debt.CreditorId, debt.DebtorId, debt.TripId, debt.Amount, debt.CurrencyCode, debt.UpdateDate, debt.DebtID)
-	log.Printf("Updated debt: %v", debt.Amount)
 	if err != nil {
 		return expense_errors.EXPENSE_BAD_REQUEST
 	}
@@ -129,7 +128,7 @@ func (dr *DebtRepository) GetDebtEntriesByTripId(ctx context.Context, tripId *uu
 }
 
 func (dr *DebtRepository) GetCumulativeCreditByUserIDAndTripID(ctx context.Context, userId *uuid.UUID, tripId *uuid.UUID) (decimal.Decimal, *models.ExpenseServiceError) {
-	query := "SELECT COALESCE(SUM(amount),0) FROM debt WHERE id_creditor = $1 AND id_trip = $2"
+	query := "SELECT COALESCE(SUM(amount),0) FROM debt WHERE id_creditor = $1 AND id_trip = $2 AND amount > 0"
 	row := dr.DatabaseMgr.ExecuteQueryRow(ctx, query, userId, tripId)
 
 	var cumulativeDebt decimal.Decimal
@@ -142,7 +141,7 @@ func (dr *DebtRepository) GetCumulativeCreditByUserIDAndTripID(ctx context.Conte
 }
 
 func (dr *DebtRepository) GetCumulativeDebtByUserIDAndTripID(ctx context.Context, userId *uuid.UUID, tripId *uuid.UUID) (decimal.Decimal, *models.ExpenseServiceError) {
-	query := "SELECT COALESCE(SUM(amount),0) FROM debt WHERE id_debtor = $1 AND id_trip = $2"
+	query := "SELECT COALESCE(SUM(amount),0) FROM debt WHERE id_debtor = $1 AND id_trip = $2 AND amount > 0"
 	row := dr.DatabaseMgr.ExecuteQueryRow(ctx, query, userId, tripId)
 
 	var cumulativeCredit decimal.Decimal

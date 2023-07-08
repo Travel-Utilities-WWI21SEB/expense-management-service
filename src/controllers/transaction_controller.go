@@ -10,6 +10,7 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/shopspring/decimal"
 	"log"
+	"strconv"
 	"time"
 )
 
@@ -19,6 +20,7 @@ type TransactionCtl interface {
 	CreateTransactionEntry(ctx context.Context, tripId *uuid.UUID, transactionRequest *models.TransactionDTO) (*models.TransactionDTO, *models.ExpenseServiceError)
 	DeleteTransactionEntry(ctx context.Context, transactionId *uuid.UUID) *models.ExpenseServiceError
 	AcceptTransaction(ctx context.Context, transactionId *uuid.UUID) (*models.TransactionDTO, *models.ExpenseServiceError)
+	GetUserTransactions(ctx context.Context, params *models.TransactionQueryParams) ([]*models.TransactionDTO, *models.ExpenseServiceError)
 }
 
 type TransactionController struct {
@@ -73,6 +75,62 @@ func (tc *TransactionController) GetTransactionDetails(ctx context.Context, tran
 	return transactionDto, nil
 }
 
+func (tc *TransactionController) GetUserTransactions(ctx context.Context, params *models.TransactionQueryParams) ([]*models.TransactionDTO, *models.ExpenseServiceError) {
+	// Get user id from context
+	userId := ctx.Value(models.ExpenseContextKeyUserID).(*uuid.UUID)
+
+	var args []interface{}
+	query := `SELECT DISTINCT t.id, t.id_creditor, t.id_debtor, t.id_trip, t.amount, t.created_at, t.currency_code, t.is_confirmed FROM transaction t WHERE (id_creditor = $1 OR id_debtor = $1)`
+	args = append(args, userId)
+
+	if params.DebtorId != nil {
+		query += ` AND id_debtor = $` + strconv.Itoa(len(args)+1)
+		args = append(args, params.DebtorId)
+	} else if params.DebtorUsername != "" {
+		query += ` AND id_debtor = (SELECT id FROM "user" WHERE username = $` + strconv.Itoa(len(args)+1) + `)`
+		args = append(args, params.DebtorUsername)
+	}
+
+	if params.CreditorId != nil {
+		query += ` AND id_creditor = $` + strconv.Itoa(len(args)+1)
+		args = append(args, params.CreditorId)
+	} else if params.CreditorUsername != "" {
+		query += ` AND id_creditor = (SELECT id FROM "user" WHERE username = $` + strconv.Itoa(len(args)+1) + `)`
+		args = append(args, params.CreditorUsername)
+	}
+
+	if params.IsConfirmed != nil {
+		query += ` AND is_confirmed = $` + strconv.Itoa(len(args)+1)
+		args = append(args, params.IsConfirmed)
+	}
+
+	query += ` ORDER BY t.` + params.SortBy + ` ` + params.SortOrder
+
+	rows, err := tc.DatabaseMgr.ExecuteQuery(ctx, query, args...)
+	if err != nil {
+		log.Printf("Error while executing query: %v", err)
+		return nil, expense_errors.EXPENSE_INTERNAL_ERROR
+	}
+
+	transactionResponses := make([]*models.TransactionDTO, 0)
+	for rows.Next() {
+		var transaction models.TransactionSchema
+		err := rows.Scan(&transaction.TransactionId, &transaction.CreditorId, &transaction.DebtorId, &transaction.TripId, &transaction.Amount, &transaction.CreationDate, &transaction.CurrencyCode, &transaction.IsConfirmed)
+		if err != nil {
+			log.Printf("Error while scanning row: %v", err)
+			return nil, expense_errors.EXPENSE_INTERNAL_ERROR
+		}
+		transactionResponse, serviceErr := tc.mapTransactionToDto(ctx, &transaction)
+		if serviceErr != nil {
+			return nil, serviceErr
+		}
+
+		transactionResponses = append(transactionResponses, transactionResponse)
+	}
+
+	return transactionResponses, nil
+}
+
 func (tc *TransactionController) CreateTransactionEntry(ctx context.Context, tripId *uuid.UUID, transactionRequest *models.TransactionDTO) (*models.TransactionDTO, *models.ExpenseServiceError) {
 	// Begin transaction
 	tx, err := tc.DatabaseMgr.BeginTx(ctx)
@@ -91,7 +149,6 @@ func (tc *TransactionController) CreateTransactionEntry(ctx context.Context, tri
 
 	// Get user id from context
 	userId := ctx.Value(models.ExpenseContextKeyUserID).(*uuid.UUID)
-	log.Printf("User id: %v", userId)
 	// Get creditor from request
 	creditor, repoErr := tc.UserRepo.GetUserById(ctx, userId)
 	if repoErr != nil {

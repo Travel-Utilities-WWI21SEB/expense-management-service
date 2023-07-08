@@ -8,7 +8,10 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"github.com/shopspring/decimal"
+	"log"
 	"net/http"
+	"strconv"
+	"strings"
 )
 
 func GetTransactionsHandler(transactionCtl controllers.TransactionCtl) gin.HandlerFunc {
@@ -148,5 +151,104 @@ func DeclineTransaction(transactionCtl controllers.TransactionCtl) gin.HandlerFu
 		}
 
 		c.Status(http.StatusNoContent)
+	}
+}
+
+func GetUserTransactionsHandler(transactionCtl controllers.TransactionCtl) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		ctx := c.Request.Context()
+
+		// Create query params
+		queryParams := models.TransactionQueryParams{
+			DebtorId:         nil,
+			DebtorUsername:   "",
+			CreditorId:       nil,
+			CreditorUsername: "",
+			IsConfirmed:      nil,
+			SortBy:           "created_at",
+			SortOrder:        "DESC",
+		}
+
+		DebtorIdStr := c.Query("deborId")
+		DebtorUsernameStr := c.Query("debtorUsername")
+		CreditorIdStr := c.Query("creditorId")
+		CreditorUsernameStr := c.Query("creditorUsername")
+		IsConfirmedStr := c.Query("isConfirmed")
+		SortByStr := c.Query("sortBy")
+		SortOrderStr := c.Query("sortOrder")
+
+		if DebtorIdStr != "" {
+			DebtorId, err := uuid.Parse(DebtorIdStr)
+			if err != nil {
+				utils.HandleErrorAndAbort(c, *expense_errors.EXPENSE_BAD_REQUEST)
+				return
+			}
+			queryParams.DebtorId = &DebtorId
+		}
+
+		if DebtorUsernameStr != "" {
+			queryParams.DebtorUsername = DebtorUsernameStr
+		}
+
+		if CreditorIdStr != "" {
+			CreditorId, err := uuid.Parse(CreditorIdStr)
+			if err != nil {
+				utils.HandleErrorAndAbort(c, *expense_errors.EXPENSE_BAD_REQUEST)
+				return
+			}
+			queryParams.CreditorId = &CreditorId
+		}
+
+		if CreditorUsernameStr != "" {
+			queryParams.CreditorUsername = CreditorUsernameStr
+		}
+
+		if SortByStr != "" {
+			// Switch case from json tag to db column name
+			switch SortByStr {
+			case "createdAt":
+				SortByStr = "created_at"
+			case "amount":
+				SortByStr = "amount"
+			case "tripId":
+				SortByStr = "id_trip"
+			default:
+				log.Printf("Invalid sortBy: %s", SortByStr)
+				utils.HandleErrorAndAbort(c, *expense_errors.EXPENSE_BAD_REQUEST)
+				return
+			}
+			queryParams.SortBy = SortByStr
+		}
+
+		if SortOrderStr != "" {
+			// Switch case from json tag to db column name
+			switch strings.ToLower(SortOrderStr) {
+			case "asc":
+				SortOrderStr = "ASC"
+			case "desc":
+				SortOrderStr = "DESC"
+			default:
+				utils.HandleErrorAndAbort(c, *expense_errors.EXPENSE_BAD_REQUEST)
+				return
+			}
+			queryParams.SortOrder = SortOrderStr
+		}
+
+		if IsConfirmedStr != "" {
+			IsConfirmed, err := strconv.ParseBool(IsConfirmedStr)
+			if err != nil {
+				utils.HandleErrorAndAbort(c, *expense_errors.EXPENSE_BAD_REQUEST)
+				return
+			}
+			queryParams.IsConfirmed = &IsConfirmed
+		}
+
+		response, serviceErr := transactionCtl.GetUserTransactions(ctx, &queryParams)
+		if serviceErr != nil {
+			utils.HandleErrorAndAbort(c, *serviceErr)
+			return
+		}
+
+		c.JSON(http.StatusOK, response)
 	}
 }
