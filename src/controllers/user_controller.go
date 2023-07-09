@@ -79,13 +79,13 @@ func (uc *UserController) RegisterUser(ctx context.Context, registrationData mod
 	}
 
 	// Get file and header
-	file := (*form).File["profilePicture"][0]
+	file := (*form).File["profilePicture"]
 
 	// Upload profile picture
 	var fileEnding string
 	var serviceErr *models.ExpenseServiceError
 	if file != nil {
-		fileEnding, serviceErr = uc.ImageMgr.UploadImage(file, user.UserID)
+		fileEnding, serviceErr = uc.ImageMgr.UploadImage(file[0], user.UserID)
 		if serviceErr != nil {
 			return serviceErr
 		}
