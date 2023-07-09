@@ -62,6 +62,9 @@ func (ccr *CostCategoryRepository) GetCostCategoriesByTripID(ctx context.Context
 
 	rows, err := ccr.DatabaseMgr.ExecuteQuery(ctx, "SELECT * FROM cost_category WHERE id_trip = $1", tripId)
 	if err != nil {
+		if err == pgx.ErrNoRows {
+			return nil, expense_errors.EXPENSE_NOT_FOUND
+		}
 		log.Printf("Error while scanning cost categories from database: %v", err)
 		return nil, expense_errors.EXPENSE_INTERNAL_ERROR
 	}

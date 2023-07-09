@@ -14,14 +14,15 @@ import (
 
 type DebtRepo interface {
 	GetDebtById(ctx context.Context, debtId *uuid.UUID) (*models.DebtSchema, *models.ExpenseServiceError)
-	GetDebts(ctx context.Context) ([]*models.DebtSchema, *models.ExpenseServiceError)
 	AddTx(ctx context.Context, tx pgx.Tx, debt *models.DebtSchema) *models.ExpenseServiceError
 	UpdateTx(ctx context.Context, tx pgx.Tx, debt *models.DebtSchema) *models.ExpenseServiceError
 	DeleteTx(ctx context.Context, tx pgx.Tx, debtId *uuid.UUID) *models.ExpenseServiceError
 
 	GetDebtByCreditorId(ctx context.Context, creditorId *uuid.UUID) (*models.DebtSchema, *models.ExpenseServiceError)
-	GetDebtByCreditorIdAndDebtorIdAndTripId(ctx context.Context, creditorId *uuid.UUID, debtorId *uuid.UUID, tripId *uuid.UUID) (*models.DebtSchema, *models.ExpenseServiceError)
+	GetDebtByCreditorIdAndDebtorIdAndTripIdTx(ctx context.Context, tx pgx.Tx, creditorId *uuid.UUID, debtorId *uuid.UUID, tripId *uuid.UUID) (*models.DebtSchema, *models.ExpenseServiceError)
 	GetDebtEntriesByTripId(ctx context.Context, tripId *uuid.UUID) ([]*models.DebtSchema, *models.ExpenseServiceError)
+	GetCumulativeDebtByUserIDAndTripID(ctx context.Context, userId *uuid.UUID, tripId *uuid.UUID) (decimal.Decimal, *models.ExpenseServiceError)
+	GetCumulativeCreditByUserIDAndTripID(ctx context.Context, userId *uuid.UUID, tripId *uuid.UUID) (decimal.Decimal, *models.ExpenseServiceError)
 
 	CalculateDebt(ctx context.Context, tx pgx.Tx, creditorId *uuid.UUID, debtorId *uuid.UUID, tripId *uuid.UUID, amountToAdd decimal.Decimal) *models.ExpenseServiceError
 }
@@ -37,32 +38,13 @@ func (dr *DebtRepository) GetDebtById(ctx context.Context, debtId *uuid.UUID) (*
 
 	err := row.Scan(&debt.DebtID, &debt.CreditorId, &debt.DebtorId, &debt.TripId, &debt.Amount, &debt.CurrencyCode, &debt.CreationDate, &debt.UpdateDate)
 	if err != nil {
+		if err == pgx.ErrNoRows {
+			return nil, expense_errors.EXPENSE_NOT_FOUND
+		}
 		return nil, expense_errors.EXPENSE_BAD_REQUEST
 	}
 
 	return debt, nil
-}
-
-func (dr *DebtRepository) GetDebts(ctx context.Context) ([]*models.DebtSchema, *models.ExpenseServiceError) {
-	query := "SELECT * FROM debt"
-	rows, err := dr.DatabaseMgr.ExecuteQuery(ctx, query)
-	if err != nil {
-		return nil, expense_errors.EXPENSE_BAD_REQUEST
-	}
-	defer rows.Close()
-
-	var debts []*models.DebtSchema
-	for rows.Next() {
-		debt := &models.DebtSchema{}
-		err := rows.Scan(&debt.DebtID, &debt.CreditorId, &debt.DebtorId, &debt.TripId, &debt.Amount, &debt.CurrencyCode, &debt.CreationDate, &debt.UpdateDate)
-		if err != nil {
-			return nil, expense_errors.EXPENSE_BAD_REQUEST
-		}
-
-		debts = append(debts, debt)
-	}
-
-	return debts, nil
 }
 
 func (*DebtRepository) AddTx(ctx context.Context, tx pgx.Tx, debt *models.DebtSchema) *models.ExpenseServiceError {
@@ -108,11 +90,12 @@ func (dr *DebtRepository) GetDebtByCreditorId(ctx context.Context, creditorId *u
 	return debt, nil
 }
 
-func (dr *DebtRepository) GetDebtByCreditorIdAndDebtorIdAndTripId(ctx context.Context, creditorId *uuid.UUID, debtorId *uuid.UUID, tripId *uuid.UUID) (*models.DebtSchema, *models.ExpenseServiceError) {
+func (*DebtRepository) GetDebtByCreditorIdAndDebtorIdAndTripIdTx(ctx context.Context, tx pgx.Tx, creditorId *uuid.UUID, debtorId *uuid.UUID, tripId *uuid.UUID) (*models.DebtSchema, *models.ExpenseServiceError) {
+	// It is important to use transaction here, because we are in the middle of a transaction
 	query := "SELECT id, id_creditor, id_debtor, id_trip, amount, currency_code, created_at, updated_at FROM debt WHERE id_creditor = $1 AND id_debtor = $2 AND id_trip = $3"
-	row := dr.DatabaseMgr.ExecuteQueryRow(ctx, query, creditorId, debtorId, tripId)
-	debt := &models.DebtSchema{}
+	row := tx.QueryRow(ctx, query, creditorId, debtorId, tripId)
 
+	debt := &models.DebtSchema{}
 	err := row.Scan(&debt.DebtID, &debt.CreditorId, &debt.DebtorId, &debt.TripId, &debt.Amount, &debt.CurrencyCode, &debt.CreationDate, &debt.UpdateDate)
 	if err != nil {
 		return nil, expense_errors.EXPENSE_BAD_REQUEST
@@ -144,6 +127,32 @@ func (dr *DebtRepository) GetDebtEntriesByTripId(ctx context.Context, tripId *uu
 	return debts, nil
 }
 
+func (dr *DebtRepository) GetCumulativeCreditByUserIDAndTripID(ctx context.Context, userId *uuid.UUID, tripId *uuid.UUID) (decimal.Decimal, *models.ExpenseServiceError) {
+	query := "SELECT COALESCE(SUM(amount),0) FROM debt WHERE id_creditor = $1 AND id_trip = $2 AND amount > 0"
+	row := dr.DatabaseMgr.ExecuteQueryRow(ctx, query, userId, tripId)
+
+	var cumulativeDebt decimal.Decimal
+	err := row.Scan(&cumulativeDebt)
+	if err != nil {
+		return decimal.Zero, expense_errors.EXPENSE_BAD_REQUEST
+	}
+
+	return cumulativeDebt, nil
+}
+
+func (dr *DebtRepository) GetCumulativeDebtByUserIDAndTripID(ctx context.Context, userId *uuid.UUID, tripId *uuid.UUID) (decimal.Decimal, *models.ExpenseServiceError) {
+	query := "SELECT COALESCE(SUM(amount),0) FROM debt WHERE id_debtor = $1 AND id_trip = $2 AND amount > 0"
+	row := dr.DatabaseMgr.ExecuteQueryRow(ctx, query, userId, tripId)
+
+	var cumulativeCredit decimal.Decimal
+	err := row.Scan(&cumulativeCredit)
+	if err != nil {
+		return decimal.Zero, expense_errors.EXPENSE_BAD_REQUEST
+	}
+
+	return cumulativeCredit, nil
+}
+
 func (dr *DebtRepository) CalculateDebt(ctx context.Context, tx pgx.Tx, creditorId *uuid.UUID, debtorId *uuid.UUID, tripId *uuid.UUID, amountToAdd decimal.Decimal) *models.ExpenseServiceError {
 	// Check if creditor and debtor are the same
 	if creditorId.String() == debtorId.String() {
@@ -151,7 +160,7 @@ func (dr *DebtRepository) CalculateDebt(ctx context.Context, tx pgx.Tx, creditor
 	}
 
 	now := time.Now()
-	debt, repoErr := dr.GetDebtByCreditorIdAndDebtorIdAndTripId(ctx, creditorId, debtorId, tripId)
+	debt, repoErr := dr.GetDebtByCreditorIdAndDebtorIdAndTripIdTx(ctx, tx, creditorId, debtorId, tripId)
 	if repoErr != nil {
 		return repoErr
 	}
@@ -163,7 +172,7 @@ func (dr *DebtRepository) CalculateDebt(ctx context.Context, tx pgx.Tx, creditor
 		return repoErr
 	}
 
-	otherDebt, repoErr := dr.GetDebtByCreditorIdAndDebtorIdAndTripId(ctx, debtorId, creditorId, tripId)
+	otherDebt, repoErr := dr.GetDebtByCreditorIdAndDebtorIdAndTripIdTx(ctx, tx, debtorId, creditorId, tripId)
 	if repoErr != nil {
 		return repoErr
 	}

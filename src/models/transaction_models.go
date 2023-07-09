@@ -13,3 +13,13 @@ type TransactionDTO struct {
 	CreationDate string     `json:"createdAt"`
 	IsConfirmed  bool       `json:"isConfirmed"`
 }
+
+type TransactionQueryParams struct {
+	DebtorId         *uuid.UUID `json:"debtorId,omitempty"`
+	DebtorUsername   string     `json:"debtorUsername,omitempty"`
+	CreditorId       *uuid.UUID `json:"creditorId,omitempty"`
+	CreditorUsername string     `json:"creditorUsername,omitempty"`
+	SortBy           string     `json:"sortBy,omitempty"`
+	SortOrder        string     `json:"order,omitempty"`
+	IsConfirmed      *bool      `json:"isConfirmed,omitempty"`
+}

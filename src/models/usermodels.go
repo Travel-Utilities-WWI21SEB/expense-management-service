@@ -5,9 +5,14 @@ import (
 )
 
 type RegistrationRequest struct {
-	Username string `json:"username"`
-	Email    string `json:"email"`
-	Password string `json:"password"`
+	Username       string `json:"username"`
+	FirstName      string `json:"firstName"`
+	LastName       string `json:"lastName"`
+	Location       string `json:"location"`
+	Email          string `json:"email"`
+	Password       string `json:"password"`
+	ProfilePicture string `json:"profilePicture"`
+	Birthday       string `json:"birthday"`
 }
 
 type LoginRequest struct {
@@ -67,8 +72,17 @@ type ActivationResponse struct {
 }
 
 type UserDetailsResponse struct {
-	UserName string `json:"username"`
-	Email    string `json:"email"`
+	ID             *uuid.UUID `json:"id"`
+	FirstName      string     `json:"firstName"`
+	LastName       string     `json:"lastName"`
+	Location       string     `json:"location"`
+	UserName       string     `json:"username"`
+	Email          string     `json:"email"`
+	Birthday       string     `json:"birthday"`
+	ProfilePicture string     `json:"profilePicture"`
+	CreatedAt      string     `json:"createdAt"`
+	OpenDebts      int        `json:"openDebts"`
+	TripsJoined    int        `json:"tripsJoined"`
 }
 
 type UserSuggestResponse struct {

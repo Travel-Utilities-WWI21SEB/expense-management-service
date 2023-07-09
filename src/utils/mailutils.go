@@ -11,7 +11,7 @@ var h = hermes.Hermes{
 	Product: hermes.Product{
 		Name:        "Costventures",
 		Link:        "https://costventures.works",
-		Logo:        "https://github.com/Travel-Utilities-WWI21SEB/expense-management-ui/blob/main/static/BannerLogo.png",
+		Logo:        "https://raw.githubusercontent.com/Travel-Utilities-WWI21SEB/expense-management-ui/main/static/BannerLogo.png",
 		TroubleText: "If the {ACTION}-button is not working for you, just copy and paste the URL below into your web browser.",
 		Copyright:   "Copyright © 2023 Travel-Utilities-WWI21SEB",
 	},
@@ -60,7 +60,7 @@ func PrepareConfirmationMailBody(username string) string {
 					Button: hermes.Button{
 						Color: "#22BC66",
 						Text:  "Go to Costventures",
-						Link:  "https://expenseui.c930.net",
+						Link:  "https://costventures.works",
 					},
 				},
 			},
@@ -121,7 +121,7 @@ func PreparePasswordResetConfirmationMailBody(email string) string {
 					Button: hermes.Button{
 						Color: "#22BC66",
 						Text:  "Go to Costventures",
-						Link:  "https://expenseui.c930.net",
+						Link:  "https://costventures.works",
 					},
 				},
 			},

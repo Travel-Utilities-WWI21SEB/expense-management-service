@@ -58,6 +58,10 @@ func createRouter(dbConnection *pgxpool.Pool) *gin.Engine {
 		MailgunInstance: mgInstance,
 	}
 
+	imageMgr := &managers.ImageManager{
+		Client: &http.Client{},
+	}
+
 	userRepo := &repositories.UserRepository{
 		DatabaseMgr: databaseMgr,
 	}
@@ -86,6 +90,7 @@ func createRouter(dbConnection *pgxpool.Pool) *gin.Engine {
 		UserController: &controllers.UserController{
 			MailMgr:     mailMgr,
 			DatabaseMgr: databaseMgr,
+			ImageMgr:    imageMgr,
 			UserRepo:    userRepo,
 		},
 		TripController: &controllers.TripController{
@@ -178,7 +183,10 @@ func createRouter(dbConnection *pgxpool.Pool) *gin.Engine {
 	// Transaction Routes
 	securedTripApiv1.Handle(http.MethodPost, "/transactions", handlers.CreateTransactionHandler(controller.TransactionController))
 	securedTripApiv1.Handle(http.MethodGet, "/transactions", handlers.GetTransactionsHandler(controller.TransactionController))
+	securedApiv1.Handle(http.MethodGet, "/transactions", handlers.GetUserTransactionsHandler(controller.TransactionController))
 	securedTripApiv1.Handle(http.MethodGet, "/transactions/:transactionId", handlers.GetTransactionDetailsHandler(controller.TransactionController))
 	securedTripApiv1.Handle(http.MethodDelete, "/transactions/:transactionId", handlers.DeleteTransactionHandler(controller.TransactionController))
+	securedTripApiv1.Handle(http.MethodPost, "/transactions/:transactionId/accept", handlers.AcceptTransaction(controller.TransactionController))
+	securedTripApiv1.Handle(http.MethodPost, "/transactions/:transactionId/decline", handlers.DeclineTransaction(controller.TransactionController))
 	return router
 }

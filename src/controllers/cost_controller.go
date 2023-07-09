@@ -427,6 +427,7 @@ func (cc *CostController) PatchCostEntry(ctx context.Context, tripId *uuid.UUID,
 	if repoErr != nil {
 		return nil, repoErr
 	}
+
 	for _, contributor := range contributors {
 		// Delete cost contribution from database
 		if repoErr := cc.CostRepo.DeleteCostContributionTx(ctx, tx, contributor.UserID, costId); repoErr != nil {
