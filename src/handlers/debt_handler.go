@@ -7,8 +7,32 @@ import (
 	"github.com/Travel-Utilities-WWI21SEB/expense-management-service/src/utils"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
+	"log"
 	"net/http"
 )
+
+func GetDebtsOverviewHandler(DebtCtl controllers.DebtCtl) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		ctx := c.Request.Context()
+
+		// Get userid from request context
+		userId, ok := ctx.Value(models.ExpenseContextKeyUserID).(*uuid.UUID)
+		if !ok {
+			log.Printf("Error while getting userId from context")
+			utils.HandleErrorAndAbort(c, *expense_errors.EXPENSE_BAD_REQUEST)
+			return
+		}
+
+		// Get debts
+		response, serviceErr := DebtCtl.GetDebtOverview(ctx, userId)
+		if serviceErr != nil {
+			utils.HandleErrorAndAbort(c, *serviceErr)
+			return
+		}
+
+		c.JSON(http.StatusOK, response)
+	}
+}
 
 func GetDebtsHandler(DebtCtl controllers.DebtCtl) gin.HandlerFunc {
 	return func(c *gin.Context) {

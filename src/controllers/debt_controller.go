@@ -2,24 +2,80 @@ package controllers
 
 import (
 	"context"
+	"github.com/Travel-Utilities-WWI21SEB/expense-management-service/src/expense_errors"
 	"github.com/Travel-Utilities-WWI21SEB/expense-management-service/src/managers"
 	"github.com/Travel-Utilities-WWI21SEB/expense-management-service/src/models"
 	"github.com/Travel-Utilities-WWI21SEB/expense-management-service/src/repositories"
 	"github.com/google/uuid"
+	"github.com/shopspring/decimal"
+	"log"
 )
 
 // DebtCtl Exposed interface to the handler-package
 type DebtCtl interface {
+	GetDebtOverview(ctx context.Context, userId *uuid.UUID) (*models.DebtOverviewDTO, *models.ExpenseServiceError)
 	GetDebtEntries(ctx context.Context, tripId *uuid.UUID) ([]*models.DebtDTO, *models.ExpenseServiceError)
 	GetDebtDetails(ctx context.Context, debtId *uuid.UUID) (*models.DebtDTO, *models.ExpenseServiceError)
 }
 
 // DebtController Debt Controller structure
 type DebtController struct {
-	DatabaseMgr managers.DatabaseMgr
-	DebtRepo    repositories.DebtRepo
-	UserRepo    repositories.UserRepo
-	TripRepo    repositories.TripRepo
+	DatabaseMgr     managers.DatabaseMgr
+	DebtRepo        repositories.DebtRepo
+	UserRepo        repositories.UserRepo
+	TransactionRepo repositories.TransactionRepo
+	TripRepo        repositories.TripRepo
+}
+
+func (dc *DebtController) GetDebtOverview(ctx context.Context, userId *uuid.UUID) (*models.DebtOverviewDTO, *models.ExpenseServiceError) {
+	debtEntries, err := dc.DebtRepo.GetDebtEntries(ctx, userId)
+	if err != nil {
+		log.Printf("Error while getting debt entries: %v", err)
+		return nil, err
+	}
+
+	// Get all transactions from database
+	transactions, err := dc.TransactionRepo.GetAllTransactions(ctx, userId)
+	if err != nil {
+		log.Printf("Error while getting transactions: %v", err)
+		return nil, err
+	}
+
+	// Sum up all transactions, to get the total amount of money spent and received
+	var totalAmountSpent decimal.Decimal
+	var totalAmountReceived decimal.Decimal
+	for _, transaction := range transactions {
+		if transaction.DebtorId == userId {
+			totalAmountReceived = totalAmountReceived.Add(transaction.Amount)
+		} else {
+			totalAmountSpent = totalAmountSpent.Add(transaction.Amount)
+		}
+	}
+
+	// Sum up all debt entries, to get the total amount of money owed and owing
+	var totalAmountOwed decimal.Decimal
+	var totalAmountOwing decimal.Decimal
+	for _, debtEntry := range debtEntries {
+		parsedAmount, err := decimal.NewFromString(debtEntry.Amount)
+		if err != nil {
+			log.Printf("Error while parsing amount: %v", err)
+			return nil, expense_errors.EXPENSE_INTERNAL_ERROR
+		}
+
+		if parsedAmount.GreaterThanOrEqual(decimal.Zero) {
+			totalAmountOwed = totalAmountOwed.Add(parsedAmount)
+		} else {
+			totalAmountOwing = totalAmountOwing.Add(parsedAmount)
+		}
+	}
+
+	return &models.DebtOverviewDTO{
+		Debts:            debtEntries,
+		OpenDebtAmount:   totalAmountOwing.String(),
+		OpenCreditAmount: totalAmountOwed.String(),
+		TotalSpent:       totalAmountSpent.String(),
+		TotalReceived:    totalAmountReceived.String(),
+	}, nil
 }
 
 // GetDebtEntries Get all debt entries for a trip
