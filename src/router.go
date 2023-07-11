@@ -115,10 +115,11 @@ func createRouter(dbConnection *pgxpool.Pool) *gin.Engine {
 			DebtRepo:         debtRepo,
 		},
 		DebtController: &controllers.DebtController{
-			DatabaseMgr: databaseMgr,
-			DebtRepo:    debtRepo,
-			UserRepo:    userRepo,
-			TripRepo:    tripRepo,
+			DatabaseMgr:     databaseMgr,
+			DebtRepo:        debtRepo,
+			UserRepo:        userRepo,
+			TransactionRepo: transactionRepo,
+			TripRepo:        tripRepo,
 		},
 		TransactionController: &controllers.TransactionController{
 			DatabaseMgr:     databaseMgr,
@@ -177,6 +178,7 @@ func createRouter(dbConnection *pgxpool.Pool) *gin.Engine {
 	securedTripApiv1.Handle(http.MethodDelete, "/costs/:costId", handlers.DeleteCostEntryHandler(controller.CostController))
 
 	// Debts Routes
+	securedApiv1.Handle(http.MethodGet, "/debts/overview", handlers.GetDebtsOverviewHandler(controller.DebtController))
 	securedTripApiv1.Handle(http.MethodGet, "/debts", handlers.GetDebtsHandler(controller.DebtController))
 	securedTripApiv1.Handle(http.MethodGet, "/debts/:debtId", handlers.GetDebtDetailsHandler(controller.DebtController))
 

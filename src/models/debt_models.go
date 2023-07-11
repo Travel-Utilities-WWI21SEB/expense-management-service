@@ -13,3 +13,12 @@ type DebtDTO struct {
 	CreationDate string       `json:"createdAt"`
 	UpdateDate   string       `json:"updatedAt"`
 }
+
+// DebtOverviewDTO Data transfer object for the debt overview in the UI
+type DebtOverviewDTO struct {
+	Debts            []*DebtDTO `json:"debts"`
+	OpenDebtAmount   string     `json:"openDebtAmount"`
+	OpenCreditAmount string     `json:"openCreditAmount"`
+	TotalSpent       string     `json:"totalSpent"`
+	TotalReceived    string     `json:"totalReceived"`
+}

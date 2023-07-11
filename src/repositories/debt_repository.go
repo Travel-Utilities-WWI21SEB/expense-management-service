@@ -25,13 +25,64 @@ type DebtRepo interface {
 	GetCumulativeCreditByUserIDAndTripID(ctx context.Context, userId *uuid.UUID, tripId *uuid.UUID) (decimal.Decimal, *models.ExpenseServiceError)
 
 	CalculateDebt(ctx context.Context, tx pgx.Tx, creditorId *uuid.UUID, debtorId *uuid.UUID, tripId *uuid.UUID, amountToAdd decimal.Decimal) *models.ExpenseServiceError
+	GetDebtEntries(ctx context.Context, id *uuid.UUID) ([]*models.DebtDTO, *models.ExpenseServiceError)
 }
 
 type DebtRepository struct {
 	DatabaseMgr *managers.DatabaseManager
 }
 
+func (dr *DebtRepository) GetDebtEntries(ctx context.Context, userId *uuid.UUID) ([]*models.DebtDTO, *models.ExpenseServiceError) {
+	// SELECT EVERYTHING FROM DEBT, THEN JOIN WITH USER TO GET USER ID, EMAIL AND USERNAME
+	// THEN JOIN WITH TRIP TO GET TRIP ID, NAME, LOOCATION, START DATE AND END DATE AND DESCRIPTION
+	query := "SELECT debt.id, debt.id_creditor, debt.id_debtor, debt.id_trip, debt.amount, debt.currency_code, debt.created_at, debt.updated_at, " +
+		"creditor.id, creditor.email, creditor.username, " +
+		"debtor.id, debtor.email, debtor.username, " +
+		"trip.id, trip.name, trip.location, trip.start_date, trip.end_date, trip.description " +
+		"FROM debt " +
+		"INNER JOIN \"user\" AS creditor ON debt.id_creditor = creditor.id " +
+		"INNER JOIN \"user\" AS debtor ON debt.id_debtor = debtor.id " +
+		"INNER JOIN trip ON debt.id_trip = trip.id " +
+		"WHERE debt.id_creditor = $1"
+
+	rows, err := dr.DatabaseMgr.ExecuteQuery(ctx, query, userId)
+	if err != nil {
+		return nil, expense_errors.EXPENSE_BAD_REQUEST
+	}
+	defer rows.Close()
+
+	var debts []*models.DebtDTO
+	for rows.Next() {
+		debt := &models.DebtDTO{
+			Creditor: &models.UserDto{},
+			Debtor:   &models.UserDto{},
+			Trip:     &models.SlimTripDTO{},
+		}
+		var startDate, endDate, creationDate, updateDate time.Time
+
+		err := rows.Scan(&debt.DebtID, &debt.Creditor.UserID, &debt.Debtor.UserID, &debt.Trip.TripID, &debt.Amount,
+			&debt.CurrencyCode, &creationDate, &updateDate, &debt.Creditor.UserID, &debt.Creditor.Email, &debt.Creditor.Username,
+			&debt.Debtor.UserID, &debt.Debtor.Email, &debt.Debtor.Username, &debt.Trip.TripID, &debt.Trip.Name, &debt.Trip.Location,
+			&startDate, &endDate, &debt.Trip.Description)
+
+		if err != nil {
+			log.Printf("Error while scanning debt: %v", err)
+			return nil, expense_errors.EXPENSE_BAD_REQUEST
+		}
+
+		debt.CreationDate = creationDate.String()
+		debt.UpdateDate = updateDate.String()
+		debt.Trip.StartDate = startDate.String()
+		debt.Trip.EndDate = endDate.String()
+
+		debts = append(debts, debt)
+	}
+
+	return debts, nil
+}
+
 func (dr *DebtRepository) GetDebtById(ctx context.Context, debtId *uuid.UUID) (*models.DebtSchema, *models.ExpenseServiceError) {
+	// SELECT DEBT_DTO WITH JOINS
 	query := "SELECT id, id_creditor, id_debtor, id_trip, amount, currency_code, created_at, updated_at FROM debt WHERE id = $1"
 	row := dr.DatabaseMgr.ExecuteQueryRow(ctx, query, debtId)
 	debt := &models.DebtSchema{}

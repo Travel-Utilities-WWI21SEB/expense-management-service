@@ -15,12 +15,35 @@ type TransactionRepo interface {
 	UpdateTx(ctx context.Context, tx pgx.Tx, transaction *models.TransactionSchema) *models.ExpenseServiceError
 	DeleteTx(ctx context.Context, tx pgx.Tx, transactionId *uuid.UUID) *models.ExpenseServiceError
 
+	GetAllTransactions(ctx context.Context, userId *uuid.UUID) ([]*models.TransactionSchema, *models.ExpenseServiceError)
 	GetTransactionsByTripIdAndUserId(ctx context.Context, tripId *uuid.UUID, userId *uuid.UUID) ([]*models.TransactionSchema, *models.ExpenseServiceError)
 	GetTransactionById(ctx context.Context, id *uuid.UUID) (*models.TransactionSchema, *models.ExpenseServiceError)
 }
 
 type TransactionRepository struct {
 	DatabaseMgr managers.DatabaseMgr
+}
+
+func (tr *TransactionRepository) GetAllTransactions(ctx context.Context, userId *uuid.UUID) ([]*models.TransactionSchema, *models.ExpenseServiceError) {
+	query := "SELECT * FROM transaction WHERE id_creditor = $1 OR id_debtor = $1"
+	rows, err := tr.DatabaseMgr.ExecuteQuery(ctx, query, userId)
+	if err != nil {
+		log.Printf("Error while executing query: %v", err)
+		return nil, expense_errors.EXPENSE_INTERNAL_ERROR
+	}
+	defer rows.Close()
+
+	var transactions []*models.TransactionSchema
+	for rows.Next() {
+		var transaction models.TransactionSchema
+		err := rows.Scan(&transaction.TransactionId, &transaction.CreditorId, &transaction.DebtorId, &transaction.TripId, &transaction.Amount, &transaction.CreationDate, &transaction.CurrencyCode, &transaction.IsConfirmed)
+		if err != nil {
+			log.Printf("Error while scanning row: %v", err)
+			return nil, expense_errors.EXPENSE_INTERNAL_ERROR
+		}
+		transactions = append(transactions, &transaction)
+	}
+	return transactions, nil
 }
 
 func (*TransactionRepository) AddTx(ctx context.Context, tx pgx.Tx, transaction *models.TransactionSchema) *models.ExpenseServiceError {
