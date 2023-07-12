@@ -1,5 +1,5 @@
 # Golang Base Image
-FROM golang:1.20.5-alpine3.18 AS build
+FROM golang:1.20.6-alpine3.18 AS build
 
 ## Build the executable in the first stage
 
