@@ -6,7 +6,7 @@ require (
 	github.com/gin-gonic/gin v1.9.1
 	github.com/golang-jwt/jwt/v5 v5.0.0
 	github.com/google/uuid v1.3.0
-	github.com/jackc/pgx/v5 v5.4.1
+	github.com/jackc/pgx/v5 v5.4.2
 	github.com/joho/godotenv v1.5.1
 	github.com/mailgun/mailgun-go/v4 v4.9.2
 	github.com/shopspring/decimal v1.3.1
