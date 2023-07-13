@@ -7,6 +7,7 @@ WORKDIR /go/app
 
 COPY go.mod go.sum ./
 COPY src/ ./src
+COPY static/default_avatar.png ./static/default_avatar.png
 
 RUN go mod download
 RUN go build -o expense-api ./src
@@ -19,5 +20,6 @@ RUN apk --update --no-cache add curl
 
 # Copy the Pre-built binary file from the previous stage
 COPY --from=build /go/app/expense-api /go/app/expense-api
+COPY --from=build /go/app/static/default_avatar.png /go/app/static/default_avatar.png
 
 CMD ["/go/app/expense-api"]

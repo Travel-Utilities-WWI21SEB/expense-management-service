@@ -39,17 +39,20 @@ func (im *ImageManager) UploadImage(header *multipart.FileHeader, userId *uuid.U
 	// Create form file
 	file, err := writer.CreateFormFile("image", header.Filename)
 	if err != nil {
+		log.Printf("Error creating form file: %v", err)
 		return "", expense_errors.EXPENSE_INTERNAL_ERROR
 	}
 
 	// Open image
 	image, err := header.Open()
 	if err != nil {
+		log.Printf("Error opening image: %v", err)
 		return "", expense_errors.EXPENSE_INTERNAL_ERROR
 	}
 
 	fileExtension, err := utils.GetFileExtension(image)
 	if err != nil {
+		log.Printf("Error getting file extension: %v", err)
 		return "", expense_errors.EXPENSE_INTERNAL_ERROR
 	}
 
@@ -57,6 +60,7 @@ func (im *ImageManager) UploadImage(header *multipart.FileHeader, userId *uuid.U
 	defer func(image multipart.File) *models.ExpenseServiceError {
 		err := image.Close()
 		if err != nil {
+			log.Printf("Error closing image: %v", err)
 			return expense_errors.EXPENSE_INTERNAL_ERROR
 		}
 
@@ -65,17 +69,20 @@ func (im *ImageManager) UploadImage(header *multipart.FileHeader, userId *uuid.U
 
 	// Copy image to file
 	if _, err = io.Copy(file, image); err != nil {
+		log.Printf("Error copying image to file: %v", err)
 		return "", expense_errors.EXPENSE_INTERNAL_ERROR
 	}
 
 	// Close writer
 	if err := writer.Close(); err != nil {
+		log.Printf("Error closing writer: %v", err)
 		return "", expense_errors.EXPENSE_INTERNAL_ERROR
 	}
 
 	log.Printf("Uploading image to %s/images", IMAGE_SERVICE_API)
 	req, err := http.NewRequest("POST", fmt.Sprintf("%s/api/v1/images", IMAGE_SERVICE_API), &b)
 	if err != nil {
+		log.Printf("Error while uploading image: %s", err.Error())
 		return "", expense_errors.EXPENSE_INTERNAL_ERROR
 	}
 
@@ -104,12 +111,14 @@ func (im *ImageManager) UploadDefaultProfilePicture(userId *uuid.UUID) (string, 
 
 	// Create form field
 	if err := writer.WriteField("userId", userId.String()); err != nil {
+		log.Printf("Error creating form field: %v", err)
 		return "", expense_errors.EXPENSE_BAD_REQUEST
 	}
 
 	// Get default profile picture from file system
 	image, err := os.Open("static/default_avatar.png")
 	if err != nil {
+		log.Printf("Error opening default profile picture: %v", err)
 		return "", expense_errors.EXPENSE_INTERNAL_ERROR
 	}
 
@@ -117,6 +126,7 @@ func (im *ImageManager) UploadDefaultProfilePicture(userId *uuid.UUID) (string, 
 	defer func(image multipart.File) *models.ExpenseServiceError {
 		err := image.Close()
 		if err != nil {
+			log.Printf("Error closing image: %v", err)
 			return expense_errors.EXPENSE_INTERNAL_ERROR
 		}
 
@@ -125,27 +135,32 @@ func (im *ImageManager) UploadDefaultProfilePicture(userId *uuid.UUID) (string, 
 
 	fileExtension, err := utils.GetFileExtension(image)
 	if err != nil {
+		log.Printf("Error getting file extension: %v", err)
 		return "", expense_errors.EXPENSE_INTERNAL_ERROR
 	}
 
 	// Create form file
 	file, err := writer.CreateFormFile("image", "default_profile_picture.png")
 	if err != nil {
+		log.Printf("Error creating form file: %v", err)
 		return "", expense_errors.EXPENSE_INTERNAL_ERROR
 	}
 
 	// Copy image to file
 	if _, err = io.Copy(file, image); err != nil {
+		log.Printf("Error copying image to file: %v", err)
 		return "", expense_errors.EXPENSE_INTERNAL_ERROR
 	}
 
 	// Close writer
 	if err := writer.Close(); err != nil {
+		log.Printf("Error closing writer: %v", err)
 		return "", expense_errors.EXPENSE_INTERNAL_ERROR
 	}
 
 	req, err := http.NewRequest("POST", fmt.Sprintf("%s/api/v1/images", IMAGE_SERVICE_API), &b)
 	if err != nil {
+		log.Printf("Error while uploading image: %s", err.Error())
 		return "", expense_errors.EXPENSE_INTERNAL_ERROR
 	}
 
