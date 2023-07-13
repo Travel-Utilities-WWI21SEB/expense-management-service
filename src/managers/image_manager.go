@@ -116,7 +116,7 @@ func (im *ImageManager) UploadDefaultProfilePicture(userId *uuid.UUID) (string, 
 	}
 
 	// Get default profile picture from file system
-	image, err := os.Open("static/default_avatar.png")
+	image, err := os.Open("/go/app/static/default_avatar.png")
 	if err != nil {
 		log.Printf("Error opening default profile picture: %v", err)
 		return "", expense_errors.EXPENSE_INTERNAL_ERROR

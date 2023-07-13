@@ -1,36 +1,41 @@
 package handlers
 
 import (
-	"net/http"
-
 	"github.com/Travel-Utilities-WWI21SEB/expense-management-service/src/controllers"
 	"github.com/Travel-Utilities-WWI21SEB/expense-management-service/src/expense_errors"
 	"github.com/Travel-Utilities-WWI21SEB/expense-management-service/src/models"
 	"github.com/Travel-Utilities-WWI21SEB/expense-management-service/src/utils"
 	"github.com/gin-gonic/gin"
+	"github.com/gin-gonic/gin/binding"
+	"log"
+	"net/http"
 )
 
 func RegisterUserHandler(userCtl controllers.UserCtl) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		ctx := c.Request.Context()
 
-		// Parse multiform data (max 3MB)
-		if err := c.Request.ParseMultipartForm(3 << 20); err != nil {
+		// Get the multipart form
+		log.Printf("RegisterUserHandler: Getting multipart form")
+		if err := c.Request.ParseMultipartForm(10 << 20); err != nil {
 			utils.HandleErrorAndAbort(c, *expense_errors.EXPENSE_BAD_REQUEST)
 			return
 		}
 
-		// Get the multipart form
 		form := c.Request.MultipartForm
 
 		var registrationData models.RegistrationRequest
-		registrationData.Username = form.Value["username"][0]
-		registrationData.Password = form.Value["password"][0]
-		registrationData.Email = form.Value["email"][0]
-		registrationData.FirstName = form.Value["firstName"][0]
-		registrationData.LastName = form.Value["lastName"][0]
-		registrationData.Birthday = form.Value["birthday"][0]
-		registrationData.Location = form.Value["location"][0]
+		// Read the form data into the registrationData struct
+		log.Printf("RegisterUserHandler: Reading form data into struct")
+		if err := c.ShouldBindWith(&registrationData, binding.Form); err != nil {
+			log.Printf("RegisterUserHandler: Error while binding form data to struct")
+			utils.HandleErrorAndAbort(c, *expense_errors.EXPENSE_BAD_REQUEST)
+			return
+		} else {
+			log.Printf("RegisterUserHandler: Successfully bound form data to struct")
+		}
+
+		log.Printf("RegisterUserHandler: Checking if registration data is empty")
 
 		if utils.ContainsEmptyString(registrationData.Username, registrationData.Password, registrationData.Email,
 			registrationData.FirstName, registrationData.LastName, registrationData.Birthday, registrationData.Location) {

@@ -2,15 +2,18 @@ package middlewares
 
 import (
 	"context"
+	"log"
+
 	"github.com/Travel-Utilities-WWI21SEB/expense-management-service/src/expense_errors"
 	"github.com/Travel-Utilities-WWI21SEB/expense-management-service/src/models"
 	"github.com/Travel-Utilities-WWI21SEB/expense-management-service/src/utils"
 	"github.com/gin-gonic/gin"
-	"log"
 )
 
 func JwtAuthMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
+		log.Printf("JwtAuthMiddleware: Validating JWT")
+
 		// Check if Authorization header is set
 		authHeader := c.GetHeader("Authorization")
 		if authHeader == "" {

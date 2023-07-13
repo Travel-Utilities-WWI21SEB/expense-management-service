@@ -25,6 +25,7 @@ type Controllers struct {
 
 func createRouter(dbConnection *pgxpool.Pool) *gin.Engine {
 	router := gin.New()
+	router.MaxMultipartMemory = 10 << 20 // 10 MiB
 
 	// Attach logger middleware
 	router.Use(gin.Logger())

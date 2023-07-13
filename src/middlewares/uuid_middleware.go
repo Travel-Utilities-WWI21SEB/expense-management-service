@@ -1,6 +1,8 @@
 package middlewares
 
 import (
+	"log"
+
 	"github.com/Travel-Utilities-WWI21SEB/expense-management-service/src/expense_errors"
 	"github.com/Travel-Utilities-WWI21SEB/expense-management-service/src/utils"
 	"github.com/gin-gonic/gin"
@@ -9,6 +11,8 @@ import (
 
 func ValidateUUID() gin.HandlerFunc {
 	return func(c *gin.Context) {
+		log.Printf("ValidateUUID: Validating UUIDs")
+
 		// Get Params
 		params := c.Params
 

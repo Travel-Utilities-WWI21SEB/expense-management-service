@@ -1,18 +1,20 @@
 package models
 
 import (
+	"mime/multipart"
+
 	"github.com/google/uuid"
 )
 
 type RegistrationRequest struct {
-	Username       string `json:"username"`
-	FirstName      string `json:"firstName"`
-	LastName       string `json:"lastName"`
-	Location       string `json:"location"`
-	Email          string `json:"email"`
-	Password       string `json:"password"`
-	ProfilePicture string `json:"profilePicture"`
-	Birthday       string `json:"birthday"`
+	Username       string                `json:"username" form:"username" binding:"required"`
+	FirstName      string                `json:"firstName" form:"firstName" binding:"required"`
+	LastName       string                `json:"lastName" form:"lastName" binding:"required"`
+	Location       string                `json:"location" form:"location" binding:"required"`
+	Email          string                `json:"email" form:"email" binding:"required"`
+	Password       string                `json:"password" form:"password" binding:"required"`
+	Birthday       string                `json:"birthday" form:"birthday" binding:"required"`
+	ProfilePicture *multipart.FileHeader `json:"profilePicture" form:"profilePicture"`
 }
 
 type LoginRequest struct {
