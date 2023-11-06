@@ -8,7 +8,7 @@ require (
 	github.com/google/uuid v1.3.0
 	github.com/jackc/pgx/v5 v5.4.2
 	github.com/joho/godotenv v1.5.1
-	github.com/mailgun/mailgun-go/v4 v4.9.2
+	github.com/mailgun/mailgun-go/v4 v4.11.1
 	github.com/shopspring/decimal v1.3.1
 	golang.org/x/crypto v0.11.0
 )
